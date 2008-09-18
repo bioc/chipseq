@@ -1,4 +1,6 @@
 
+ library("chipseq")
+
   ##lanes 1, 3, 6 are Myoblasts
   ##lanes 2, 4, 7 are Myotubes
   ##lane 8 is a reference lane
@@ -24,4 +26,10 @@
  seqRanges = lapply(reads, growSeqs)
 
 
+ cblasts = combineLanes(seqRanges[c(1,3,5)])
+ ctubes = combineLanes(seqRanges[c(2,4,6)])
+
+ all = combineLanes(list(cblasts, ctubes))
+
+ ss1 = laneSubsample(cblasts, ctubes)
 
