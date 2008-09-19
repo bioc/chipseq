@@ -1,6 +1,8 @@
 
  library("chipseq")
 
+ library("BSgenome.Mmusculus.UCSC.mm9")
+
   ##lanes 1, 3, 6 are Myoblasts
   ##lanes 2, 4, 7 are Myotubes
   ##lane 8 is a reference lane
@@ -22,6 +24,11 @@
  ## mouse has 19 chromosomes
 
  chrom.list <- paste("chr", c(1:19), sep = "")
+ nchrom = length(chrom.list)
+ chromLens = rep(NA, nchrom)
+ names(chromLens) = chrom.list
+ for( i in 1:nchrom) 
+    chromLens[i] = nchar(unmasked(Mmusculus[[chrom.list[i]]])) 
 
  seqRanges = lapply(reads, growSeqs)
 
@@ -32,4 +39,10 @@
  all = combineLanes(list(cblasts, ctubes))
 
  ss1 = laneSubsample(cblasts, ctubes)
+
+ covblasts = laneCoverage(cblasts, chromLens)
+
+ blastIslands = islands(covblasts)
+
+ blastIcts = readsPerIsland(blastIslands)
 

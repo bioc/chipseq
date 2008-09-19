@@ -13,7 +13,7 @@
     for(i in chrs) {
         ipos = grep(paste("^", i, "\\+$", sep=""), names(s1))
         ineg = grep(paste("^", i, "-$", sep=""), names(s1))
-        byCIR[[i]] = IRanges(c(s1[[ipos]], s1[[ineg]]-seqLen-readLen),
+        byCIR[[i]] = IRanges(c(s1[[ipos]], s1[[ineg]]-seqLen+readLen),
               c(s1[[ipos]]+seqLen-1, s1[[ineg]]+readLen-1))
         byCIR
     }
@@ -69,3 +69,16 @@ readAndClean <- function(maqDir, pattern = pat, exclude="random",
     s2
 }
 
+laneCoverage <- function(lane, chromLens) 
+    lapply(names(lane), function(x) coverage(lane[[x]], 1,
+    chromLens[x]))
+    
+islands <- function(x) lapply(x, slice, lower = 1)
+
+readsPerIsland <- function(lane, ntperread = 200L) 
+        lapply(lane,
+               function(x) viewSums(x) / ntperread)
+ 
+##we want to get in a lane, essentially a list with one coverage object
+##per chromosome and compute summary information
+#islandSummaries <- function(lane)
