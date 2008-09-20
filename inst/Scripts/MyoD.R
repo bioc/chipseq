@@ -46,3 +46,5 @@
 
  blastIcts = readsPerIsland(blastIslands)
 
+ blastSummaries = islandSummary(blastIslands)
+

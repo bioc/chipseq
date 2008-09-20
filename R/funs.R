@@ -69,16 +69,38 @@ readAndClean <- function(maqDir, pattern = pat, exclude="random",
     s2
 }
 
-laneCoverage <- function(lane, chromLens) 
-    lapply(names(lane), function(x) coverage(lane[[x]], 1,
+laneCoverage <- function(lane, chromLens) {
+    ans = lapply(names(lane), function(x) coverage(lane[[x]], 1,
     chromLens[x]))
-    
+    names(ans) = names(lane)
+    ans
+}
+
 islands <- function(x) lapply(x, slice, lower = 1)
 
 readsPerIsland <- function(lane, ntperread = 200L) 
         lapply(lane,
                function(x) viewSums(x) / ntperread)
- 
+
+maxHeightPerIsland <- function(lane) lapply(lanes, viewMaxs)
+
+islandSummary <- function(x, ntperread = 200L)
+{
+    a1 = sapply(names(x), function(chr) {
+        ans <- data.frame(start = start(x[[chr]]),
+                          end = end(x[[chr]]),
+                          width = width(x[[chr]]),
+                          clones = viewSums(x[[chr]])/ntperread,
+                          maxdepth = viewMaxs(x[[chr]]))
+        if (is.unsorted(ans$start))
+            stop("Starts not sorted! Check code.")
+        n <- nrow(ans)
+        ans$inter <- with(ans, c(NA, start[-1] - end[-n]))
+        ans },
+         simplify = FALSE)
+    names(a1) = names(x)
+    a1
+}
+
 ##we want to get in a lane, essentially a list with one coverage object
 ##per chromosome and compute summary information
-#islandSummaries <- function(lane)
