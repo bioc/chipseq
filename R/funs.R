@@ -1,4 +1,13 @@
 
+#take an IRanges object and merge all Ranges that
+#are less than maxgap apart.
+merge <- function(IR, maxgap)
+{
+  if(!(isNormal(IR))) stop("IR must be a normal IRanges object")
+  width(IR) = width(IR)+maxgap
+  reduce(IR) 
+}
+
  splitbyChr <- function(x) {
     split(x@position, paste(x@chromosome, x@strand, sep=""))
 }
@@ -102,5 +111,15 @@ islandSummary <- function(x, ntperread = 200L)
     a1
 }
 
-##we want to get in a lane, essentially a list with one coverage object
-##per chromosome and compute summary information
+## take some sort of a view and copy it to a new vector
+ copyIRanges <- function(IR1, newX)
+   Views(newX, start=start(IR1), end=end(IR1))
+
+ copyIRangesbyChr <- function(IR1, newX) {
+      nms = names(IR1)
+      ans = vector("list", length=length(nms))
+      names(ans) = nms
+      for(i in nms)
+        ans[[i]] = copyIRanges(IR1[[i]], newX[[i]])
+      ans
+ }
