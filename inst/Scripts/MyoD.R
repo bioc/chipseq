@@ -36,13 +36,15 @@
  cblasts = combineLanes(seqRanges[c(1,3,5)])
  ctubes = combineLanes(seqRanges[c(2,4,6)])
 
- all = combineLanes(list(cblasts, ctubes))
-
- ss1 = laneSubsample(cblasts, ctubes)
-
  covblasts = laneCoverage(cblasts, chromLens)
  covtubes = laneCoverage(ctubes, chromLens)
  covctrl = laneCoverage(seqRanges[["8"]], chromLens)
+
+
+
+ all = combineLanes(list(cblasts, ctubes))
+
+ ss1 = laneSubsample(cblasts, ctubes)
 
  blastIslands = islands(covblasts)
 
@@ -74,8 +76,37 @@
  for(i in names(maxBlast)) 
      ratios[[i]] = maxCtrl[[i]]/maxBlast[[i]]
 
-
+sapply(ratios, function(x) sum(x > 1/6))  ##these are the bad ones
 
  tubesp12 = lapply(covtubes, slice, lower = 12)
  mtubep12 = lapply(tubesp12, merge, maxgap=100)
 
+
+##read in Zizhen's coverage vector - in some compressed form
+if(FALSE) {
+
+ if(FALSE) {
+ ##read in only those records for Chr2
+ my = read.delim("/home/yzizhen/chip_seq/myoD_myo/s_1_3_6.coverage",
+ as.is=TRUE, skip=763857,nrows=815599, head=F)
+
+ Z1 = rep(0, 181748087)
+
+ for(i in 1:nrow(my)) {
+     Z1[(my[i,2]):(my[i,3])] = my[i,5]
+     if(  (i %% 10000000) == 0 ) print(i)
+ }
+
+} else  load("Z1.rda")
+ 
+ my2 = as(covblasts[["chr2"]], "integer")
+ Z1 = Z1[1:chromLens["chr2"]] ##since Zizhen wrote off the end
+
+ diff1 = my2-Z1
+
+ nonz = which(diff1 != 0 )
+
+ mstr = toupper("cttgtgggcacagctcgtgggcacagcagccctgt")
+ 
+
+}
