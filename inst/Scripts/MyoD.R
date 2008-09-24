@@ -1,44 +1,57 @@
 
- library("chipseq")
+library("chipseq")
 
- library("BSgenome.Mmusculus.UCSC.mm9")
+library("BSgenome.Mmusculus.UCSC.mm9")
 
-  ##lanes 1, 3, 6 are Myoblasts
-  ##lanes 2, 4, 7 are Myotubes
-  ##lane 8 is a reference lane
+##lanes 1, 3, 6 are Myoblasts
+##lanes 2, 4, 7 are Myotubes
+##lane 8 is a reference lane
 
-  lanes <- c(1, 2, 3, 4, 6, 7, 8)
- 
-  reads = vector("list", length = length(lanes))
-  names(reads) = as.character(lanes)
+lanes <- c(1, 2, 3, 4, 6, 7, 8)
 
-  for (i in seq_along(lanes) ) {
+reads = vector("list", length = length(lanes))
+names(reads) = as.character(lanes)
+
+for (i in seq_along(lanes) ) {
     lane <- lanes[i]
     message("Starting Lane ", lane)
-    pat = paste("s_", lane, ".map", sep="")
-    reads[[i]] = readAndClean("/home/jdavison/ycao/26-06-2008/binary",
-       pattern = pat, exclude = "[MXY]|rand")
-  }
+    pat <- paste("s_", lane, ".map", sep="")
+    reads[[i]] <- readAndClean("/home/jdavison/ycao/26-06-2008/binary",
+                               pattern = pat, exclude = "[MXY]|rand")
+}
 
- ##we drop the sex chromosomes and mitochondria.
- ## mouse has 19 chromosomes
+## we drop the sex chromosomes and mitochondria.
+## mouse has 19 chromosomes
 
- chrom.list <- paste("chr", c(1:19), sep = "")
- nchrom = length(chrom.list)
- chromLens = rep(NA, nchrom)
- names(chromLens) = chrom.list
- for( i in 1:nchrom) 
-    chromLens[i] = nchar(unmasked(Mmusculus[[chrom.list[i]]])) 
+chrom.list <- paste("chr", c(1:19), sep = "")
 
- seqRanges = lapply(reads, growSeqs)
+## nchrom <- length(chrom.list)
+## chromLens = rep(NA, nchrom)
+## names(chromLens) = chrom.list
+## for( i in 1:nchrom) 
+##     chromLens[i] = nchar(unmasked(Mmusculus[[chrom.list[i]]])) 
+
+chromLens <-
+    sapply(chrom.list,
+           function(chr) {
+               nchar(unmasked(Mmusculus[[chr]]))
+               ## same as 'length(Mmusculus[[chr]])' ?
+           },
+           simplify = TRUE)
+
+system.time(seqRanges.old <- lapply(reads, growSeqs), gcFirst=TRUE)
+
+## basically same, but retains order of chromosomes
+system.time(seqRanges <- lapply(lapply(reads, as.list), growSeqs), gcFirst=TRUE)
 
 
- cblasts = combineLanes(seqRanges[c(1,3,5)])
- ctubes = combineLanes(seqRanges[c(2,4,6)])
 
- covblasts = laneCoverage(cblasts, chromLens)
- covtubes = laneCoverage(ctubes, chromLens)
- covctrl = laneCoverage(seqRanges[["8"]], chromLens)
+cblasts = combineLanes(seqRanges[c(1,3,5)])
+ctubes = combineLanes(seqRanges[c(2,4,6)])
+
+covblasts = laneCoverage(cblasts, chromLens)
+covtubes = laneCoverage(ctubes, chromLens)
+covctrl = laneCoverage(seqRanges[["8"]], chromLens)
 
 
 

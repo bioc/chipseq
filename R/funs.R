@@ -1,4 +1,93 @@
 
+##Fixme: a lot of this functionality will become available in 
+##ReadAligned from the ShortRead package
+readAndClean <-
+    function(maqDir, pattern = pat, exclude="random", 
+             dropDups = TRUE, minScore = 15 ) 
+{
+    s1 <- readAligned(maqDir, pattern = pat, type = "MAQMap")
+    exChr = grep(exclude, s1@chromosome)
+    s1 = s1[-exChr]
+    keep = (s1@alignQuality@quality >= minScore)
+    s2 = s1[keep]
+    if( dropDups )
+        return(s2[!srduplicated(sread(s2))])
+    s2
+}
+
+## summarize an "AlignedRead" as a nested list; may be useful as an
+## intermediate form for storage etc.  Return value is of the form:
+## 
+## List of 20
+##  $ chr1        :List of 2
+##   ..$ -: int [1:88596] 3011060 3023510 3024278 ...
+##   ..$ +: int [1:88333] 3025629 3034277 3058436 ...
+##  $ chr2        :List of 2
+##   ..$ -: int [1:94326] 3006779 3010130 3015418 ...
+##   ..$ +: int [1:95154] 3009910 3010789 3017043 ...
+##  $ ...
+
+setMethod("as.list", "AlignedRead",
+          function(x, ...) {
+              alignLocs <-
+                  split(data.frame(position = x@position, strand = x@strand),
+                        x@chromosome[drop=TRUE])
+              lapply(alignLocs,
+                     function(df) with(df, split(position, strand)))
+          })
+
+
+
+
+splitbyChr <- function(x) {
+    split(x@position, paste(x@chromosome, x@strand, sep=""))
+}
+
+## take input MAQ mapped reads and grow them appropriately.
+## FIXME: support list version? methods?
+growSeqs <- function(reads, readLen=35, seqLen=200)
+{
+    if (is(reads, "AlignedRead")) 
+    {
+        s1 <- splitbyChr(reads)
+        chrs <- unique(gsub("\\+|-", "", names(s1)))
+        byCIR <- vector("list", length=length(chrs))
+        names(byCIR) <- chrs
+        for(i in chrs) {
+            ipos = grep(paste("^", i, "\\+$", sep=""), names(s1))
+            ineg = grep(paste("^", i, "-$", sep=""), names(s1))
+            byCIR[[i]] = IRanges(c(s1[[ipos]], s1[[ineg]]-seqLen+readLen),
+                                 c(s1[[ipos]]+seqLen-1, s1[[ineg]]+readLen-1))
+            byCIR
+        }
+        byCIR
+        ## or, growSeqs(as.list(reads), readLen=readLen, seqLen=seqLen)
+    }
+    else if (is.list(reads)) 
+    {
+        lapply(reads,
+               function(x) {
+                   IRanges(start = c(x[["+"]], x[["-"]] - seqLen + readLen),
+                           end = c(x[["+"]] + seqLen - 1, x[["-"]] + readLen - 1))
+                   ## width = seqLen) # error when start=numeric(0)
+               })
+    }
+    else stop("Invalid value for 'reads'")
+}
+
+
+IRanges(start = c(x[["+"]], x[["-"]] - seqLen + readLen),
+        end = c(x[["+"]] + seqLen - 1, x[["-"]] + readLen - 1),
+        width = seqLen)
+
+
+
+
+
+
+
+
+## FIXME: make this a merge() method?
 #take an IRanges object and merge all Ranges that
 #are less than maxgap apart.
 merge <- function(IR, maxgap)
@@ -8,26 +97,6 @@ merge <- function(IR, maxgap)
   reduce(IR) 
 }
 
- splitbyChr <- function(x) {
-    split(x@position, paste(x@chromosome, x@strand, sep=""))
-}
-
-##take input MAQ mapped reads and grow them appropriately
- growSeqs <- function(reads, readLen=35, seqLen=200 )
-{
-    s1 <- splitbyChr(reads)
-    chrs = unique(gsub("\\+|-", "", names(s1)))
-    byCIR <- vector("list", length=length(chrs))
-    names(byCIR) <- chrs
-    for(i in chrs) {
-        ipos = grep(paste("^", i, "\\+$", sep=""), names(s1))
-        ineg = grep(paste("^", i, "-$", sep=""), names(s1))
-        byCIR[[i]] = IRanges(c(s1[[ipos]], s1[[ineg]]-seqLen+readLen),
-              c(s1[[ipos]]+seqLen-1, s1[[ineg]]+readLen-1))
-        byCIR
-    }
-    byCIR
-}
 
 ##take two or more lanes and combine the data
 combineLanes <- function(laneList, chromList = names(laneList[[1]])) {
@@ -39,10 +108,10 @@ combineLanes <- function(laneList, chromList = names(laneList[[1]])) {
 ##to be somewhat effective
 combineRanges <- function(rlist, byChr)
 {
-    IRanges(start = unlist(lapply(rlist, function(x)
-            start(x[[byChr]])), use.names = FALSE),
-            end = unlist(lapply(rlist, function(x)  end(x[[byChr]])),
-            use.names = FALSE))
+    IRanges(start = unlist(lapply(rlist, function(x) start(x[[byChr]])),
+                           use.names = FALSE),
+            end = unlist(lapply(rlist, function(x) end(x[[byChr]])),
+                         use.names = FALSE))
 }
 
 ##subsampling two "lanes", so that on a per chromosome basis they have
@@ -63,26 +132,13 @@ laneSubsample <- function(lane1, lane2, fudge = 0.05)
     return(list(lane1=lane1, lane2=lane2))
 }
 
-##Fixme: a lot of this functionality will become available in 
-##ReadAligned from the ShortRead package
-readAndClean <- function(maqDir, pattern = pat, exclude="random", 
-   dropDups = TRUE, minScore = 15 ) 
-{
-    s1 <- readAligned(maqDir, pattern = pat, type = "MAQMap")
-    exChr = grep(exclude, s1@chromosome)
-    s1 = s1[-exChr]
-    keep = (s1@alignQuality@quality >= minScore)
-    s2 = s1[keep]
-    if( dropDups )
-        return(s2[!srduplicated(sread(s2))])
-    s2
-}
 
 laneCoverage <- function(lane, chromLens) {
-    ans = lapply(names(lane), function(x) coverage(lane[[x]], 1,
-    chromLens[x]))
-    names(ans) = names(lane)
-    ans
+    sapply(names(lane),
+           function(chr) {
+               coverage(lane[[chr]], 1, chromLens[chr])
+           }, 
+           simplify = FALSE)
 }
 
 islands <- function(x) lapply(x, slice, lower = 1)
@@ -112,14 +168,14 @@ islandSummary <- function(x, ntperread = 200L)
 }
 
 ## take some sort of a view and copy it to a new vector
- copyIRanges <- function(IR1, newX)
-   Views(newX, start=start(IR1), end=end(IR1))
+copyIRanges <- function(IR1, newX)
+    Views(newX, start=start(IR1), end=end(IR1))
 
- copyIRangesbyChr <- function(IR1, newX) {
-      nms = names(IR1)
-      ans = vector("list", length=length(nms))
-      names(ans) = nms
-      for(i in nms)
+copyIRangesbyChr <- function(IR1, newX) {
+    nms = names(IR1)
+    ans = vector("list", length=length(nms))
+    names(ans) = nms
+    for(i in nms)
         ans[[i]] = copyIRanges(IR1[[i]], newX[[i]])
-      ans
- }
+    ans
+}
