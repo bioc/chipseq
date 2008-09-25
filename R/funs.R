@@ -76,9 +76,9 @@ growSeqs <- function(reads, readLen=35, seqLen=200)
 }
 
 
-IRanges(start = c(x[["+"]], x[["-"]] - seqLen + readLen),
-        end = c(x[["+"]] + seqLen - 1, x[["-"]] + readLen - 1),
-        width = seqLen)
+## IRanges(start = c(x[["+"]], x[["-"]] - seqLen + readLen),
+##         end = c(x[["+"]] + seqLen - 1, x[["-"]] + readLen - 1),
+##         width = seqLen)
 
 
 
