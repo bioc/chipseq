@@ -147,7 +147,7 @@ readsPerIsland <- function(lane, ntperread = 200L)
         lapply(lane,
                function(x) viewSums(x) / ntperread)
 
-maxHeightPerIsland <- function(lane) lapply(lanes, viewMaxs)
+maxHeightPerIsland <- function(lane) lapply(lane, viewMaxs)
 
 islandSummary <- function(x, ntperread = 200L)
 {
