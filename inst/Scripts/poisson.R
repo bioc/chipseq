@@ -160,7 +160,8 @@ xyplot(log2(1+reads.blasts) ~ log2(1+reads.tubes) | chromosome,
 ## weights=1/sqrt(variance)=1/sqrt(x).  This ignores that Poisson has
 ## no scale factor to estimate, but we probably have some variance
 ## inflation anyway.  The other option, of course, is to use glm().
-## UPDATE: the proper weights seem to be 1/x.
+## UPDATE: the proper weights seem to be 1/x, even with sqrt(y) as the
+## response.
 
 peakSummary.lm <- 
     within(peakSummary,
@@ -224,7 +225,9 @@ peakSummary.rob <-
     within(peakSummary,
        {
            diffs <- log2(reads.blasts)-log2(reads.tubes)
-           resids <- diffs - median(diffs)
+           resids <-  # prefer per-chromosome?
+               (diffs - median(diffs)) / mad(diffs)
+           resids.mean <- diffs - mean(diffs[is.finite(diffs)])
        })
 
 median(peakSummary.rob$diffs)
@@ -260,5 +263,6 @@ bwplot(chromosome ~ resids, data = peakSummary.rob)
 toppeaks <- subset(peakSummary.rob, abs(resids) > 4)
 rownames(toppeaks) <- NULL
 toppeaks[rev(order(abs(toppeaks$resids))), 1:6]
+
 
 
