@@ -97,39 +97,45 @@ covtubes = laneCoverage(ctubes[1:4], chromLens)
 covctrl = laneCoverage(seqRanges[["8"]][1:4], chromLens)
 
 
+## coverage() is potentially memory intensive
 
-
-
-ref.peaks <- lapply(covtubes, slice, lower = 10)
-ref.peaks.in.blasts <-
-    copyIRangesbyChr(ref.peaks, covblasts)
-ref.peaks.in.ctrl <-
-    copyIRangesbyChr(ref.peaks, covctrl)
-
-
-## Switch roles (ref vs response).  Beware of wrong column names
-if (FALSE)
+if (file.exists("peakSummary.rda")) load("peakSummary.rda") else
 {
-    ref.peaks <- lapply(covblasts, slice, lower = 10)
+
+    ref.peaks <- lapply(covtubes, slice, lower = 10)
     ref.peaks.in.blasts <-
-        copyIRangesbyChr(ref.peaks, covtubes)
+        copyIRangesbyChr(ref.peaks, covblasts)
     ref.peaks.in.ctrl <-
         copyIRangesbyChr(ref.peaks, covctrl)
+
+
+    ## Switch roles (ref vs response).  Beware of wrong column names
+    if (FALSE)
+    {
+        ref.peaks <- lapply(covblasts, slice, lower = 10)
+        ref.peaks.in.blasts <-
+            copyIRangesbyChr(ref.peaks, covtubes)
+        ref.peaks.in.ctrl <-
+            copyIRangesbyChr(ref.peaks, covctrl)
+    }
+
+
+    peakSummary <-
+        do.call(make.groups,
+                sapply(names(ref.peaks),
+                       function(chr) {
+                           data.frame(start = start(ref.peaks[[chr]]),
+                                      end = end(ref.peaks[[chr]]),
+                                      reads.tubes = viewSums(ref.peaks[[chr]]) / 200,
+                                      reads.blasts = viewSums(ref.peaks.in.blasts[[chr]]) / 200,
+                                      reads.ctrl = viewSums(ref.peaks.in.ctrl[[chr]]) / 200)
+                       },
+                       simplify = FALSE))
+    names(peakSummary)[names(peakSummary) == "which"] <- "chromosome"
+
+
+    save(peakSummary, file = "peakSummary.rda")
 }
-
-
-peakSummary <-
-    do.call(make.groups,
-            sapply(names(ref.peaks),
-                   function(chr) {
-                       data.frame(start = start(ref.peaks[[chr]]),
-                                  end = end(ref.peaks[[chr]]),
-                                  reads.tubes = viewSums(ref.peaks[[chr]]) / 200,
-                                  reads.blasts = viewSums(ref.peaks.in.blasts[[chr]]) / 200,
-                                  reads.ctrl = viewSums(ref.peaks.in.ctrl[[chr]]) / 200)
-                   },
-                   simplify = FALSE))
-names(peakSummary)[names(peakSummary) == "which"] <- "chromosome"
 
 
 xyplot(sqrt(reads.blasts) + sqrt(3 * reads.ctrl) ~ sqrt(reads.tubes) | chromosome,
@@ -175,7 +181,6 @@ peakSummary.lm <-
            rstudent.blasts <- rstudent(fm)
            rm(fm)
        })
-
 
 xyplot(resid.blasts ~ log2(reads.tubes) | chromosome,
        data = peakSummary.lm, auto.key = TRUE,
