@@ -63,6 +63,10 @@ peakSummary.blasts.wrt.tubes <-
     diffPeakSummary(obs.ranges = cblasts, ref.ranges = ctubes,
                     chrom.lens = chromLens, lower = 10)
 
+peakSummary.tubes.wrt.blasts <-
+    diffPeakSummary(obs.ranges = ctubes, ref.ranges = cblasts,
+                    chrom.lens = chromLens, lower = 10)
+
 
 
 ## Robust regression (note that lmrob() in robustbase doesn't seem to
@@ -73,7 +77,7 @@ peakSummary.blasts.wrt.tubes <-
 ##  [ (log(y)-log(x)) - median(log(y)-log(x)) ]
 
 
-peakSummary.rob <- 
+peakSummary.blasts.wrt.tubes <- 
     within(peakSummary.blasts.wrt.tubes,
        {
            diffs <- log2(obs.sums)-log2(ref.sums)
@@ -82,23 +86,33 @@ peakSummary.rob <-
            resids.mean <- diffs - mean(diffs[is.finite(diffs)])
        })
 
+peakSummary.tubes.wrt.blasts <- 
+    within(peakSummary.tubes.wrt.blasts,
+       {
+           diffs <- log2(obs.sums)-log2(ref.sums)
+           resids <-  # prefer per-chromosome?
+               (diffs - median(diffs)) / mad(diffs)
+           resids.mean <- diffs - mean(diffs[is.finite(diffs)])
+       })
+
 xyplot(log2(obs.sums) ~ log2(ref.sums) | chromosome,
-       data = peakSummary.blasts.wrt.tubes, auto.key = TRUE,
-       subset = (chromosome %in% c("chr1", "chr2", "chr3", "chr4") &
+       data = peakSummary.tubes.wrt.blasts, auto.key = TRUE,
+       subset = (chromosome %in% c("chr1", "chr2") &
                  obs.sums > 0),
-       panel = function(...) {
-           panel.smoothScatter(...)
-           ## panel.xyplot(...)
-           panel.abline(median(diffs), 1)
+       panel = function(x, y, ...) {
+           panel.smoothScatter(x, y, ...)
+           ## panel.xyplot(x, y, ...)
+           panel.abline(median(y - x), 1)
        },
        par.settings = simpleTheme(pch = ".", cex = 3),
        type = c("p", "g", "r"), col.line = "black", aspect = "iso")
 
-bwplot(chromosome ~ resids, data = peakSummary.rob)
+bwplot(chromosome ~ resids, data = peakSummary.blasts.wrt.tubes)
+bwplot(chromosome ~ resids, data = peakSummary.tubes.wrt.blasts)
 
 toppeaks <- subset(peakSummary.rob, abs(resids) > 4)
 rownames(toppeaks) <- NULL
-toppeaks[rev(order(abs(toppeaks$resids))), 1:6]
+toppeaks[rev(order(abs(toppeaks$resids))), ]
 
 
 
