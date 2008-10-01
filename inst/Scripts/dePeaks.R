@@ -114,5 +114,43 @@ toppeaks <- subset(peakSummary.rob, abs(resids) > 4)
 rownames(toppeaks) <- NULL
 toppeaks[rev(order(abs(toppeaks$resids))), ]
 
+save(peakSummary.blasts.wrt.tubes, peakSummary.tubes.wrt.blasts,
+     file = "peakSummary.rda")
 
+if (FALSE)
+{
+
+    load("peakSummary.rda")
+
+    peakSummary.blasts.wrt.tubes <- 
+        peakSummary.blasts.wrt.tubes[c("chromosome", "start", "end",
+                                       "ref.sums", "obs.sums",
+                                       "ref.maxs", "obs.maxs")]
+    rownames(peakSummary.blasts.wrt.tubes) <- NULL
+    peakSummary.tubes.wrt.blasts <- 
+        peakSummary.tubes.wrt.blasts[c("chromosome", "start", "end",
+                                       "ref.sums", "obs.sums",
+                                       "ref.maxs", "obs.maxs")]
+    rownames(peakSummary.tubes.wrt.blasts) <- NULL
+
+    peakSummary.blasts.wrt.tubes <- 
+        within(peakSummary.blasts.wrt.tubes,
+           {
+               diffs <- log2(obs.sums)-log2(ref.sums)
+               resids <-  (diffs - median(diffs)) / mad(diffs)
+               rm(diffs)
+           })
+
+    peakSummary.tubes.wrt.blasts <- 
+        within(peakSummary.tubes.wrt.blasts,
+           {
+               diffs <- log2(obs.sums)-log2(ref.sums)
+               resids <-  (diffs - median(diffs)) / mad(diffs)
+               rm(diffs)
+           })
+
+    write.csv(peakSummary.blasts.wrt.tubes, file="peakSummary_blasts_wrt_tubes.csv", quote=FALSE, row.names = FALSE)
+    write.csv(peakSummary.tubes.wrt.blasts, file="peakSummary_tubes_wrt_blasts.csv", quote=FALSE, row.names = FALSE)
+    
+}
 
