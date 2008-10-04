@@ -10,7 +10,10 @@ if (file.exists("geneMouse.rda")) load("geneMouse.rda") else
     save(geneMouse, file = "geneMouse.rda")
 }
 
-gregions <- genomic_regions(genes = geneMouse)
+gregions.500 <- genomic_regions(genes = geneMouse, proximal = 500)
+gregions.2000 <- genomic_regions(genes = geneMouse, proximal = 2000)
+
+gregions <- gregions.2000
 gregions$gene <- as.character(gregions$gene)
 
 library(lattice) # for make.groups
@@ -39,9 +42,10 @@ doPeakSet <- function(peaks, gregions)
         {
             type <- match.arg(type)
             istarts <- sprintf("%s.start", type)
-            iends <- sprintf("%s.start", type)
-            IRanges(start = unique(gregions[[istarts]]),
-                    end = unique(gregions[[iends]]))
+            iends <- sprintf("%s.end", type)
+            keep <- !duplicated(gregions[[istarts]]) ## what's the right thing to do here???
+            IRanges(start = gregions[[istarts]][keep],
+                    end = gregions[[iends]][keep])
         }
     subject <-
         list(promoter = irangeByType("promoter"),
@@ -64,9 +68,9 @@ doChromosome <- function(chr)
     ans <-
         as.data.frame(rbind(tube = doPeakSet(tube.peaks, gregions.sub),
                             blast = doPeakSet(blast.peaks, gregions.sub),
-                            tube.only = doPeakSet(subset(tube.peaks, resids < -3), gregions.sub),
-                            blast.only = doPeakSet(subset(blast.peaks, resids < -3), gregions.sub)))
-    ans <- cbind(type = rownames(ans), ans)
+                            tube.only = doPeakSet(subset(tube.peaks, resids < -2), gregions.sub),
+                            blast.only = doPeakSet(subset(blast.peaks, resids < -2), gregions.sub)))
+    ans <- cbind(type = factor(rownames(ans), levels = unique(rownames(ans))), ans)
     ans
 }
 
@@ -74,11 +78,17 @@ doChromosome <- function(chr)
 
 doAll <- function(chroms = paste("chr", 1:19, sep = ""))
 {
-    ans <- do.call(make.groups, sapply(all.chroms, doChromosome, simplify = FALSE))
+    ans <- do.call(make.groups, sapply(chroms, doChromosome, simplify = FALSE))
     names(ans)[names(ans) == "which"] <- "chromosome"
     rownames(ans) <- NULL
     ans
 }
 
-doAll()
+ans <- doAll()
        
+rbind(total = xtabs(total ~ type, ans),
+      promoter = xtabs(promoter ~ type, ans),
+      threeprime = xtabs(threeprime ~ type, ans),
+      upstream = xtabs(upstream ~ type, ans),
+      downstream = xtabs(downstream ~ type, ans),
+      gene = xtabs(gene ~ type, ans))
