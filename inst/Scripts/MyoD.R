@@ -49,10 +49,13 @@ system.time(seqRanges <- lapply(lapply(reads, as.list), growSeqs), gcFirst=TRUE)
 cblasts = combineLanes(seqRanges[c(1,3,5)])
 ctubes = combineLanes(seqRanges[c(2,4,6)])
 
-covblasts = laneCoverage(cblasts, chromLens)
-covtubes = laneCoverage(ctubes, chromLens)
+covblasts = laneCoverage(cblasts[chrom.list], chromLens)
+covtubes = laneCoverage(ctubes[chrom.list], chromLens)
 covctrl = laneCoverage(seqRanges[["8"]], chromLens)
 
+
+tubes.islands <- islandSummary(islands(covtubes))
+save(tubes.islands, file = "tubes.islands.rda")
 
 
  all = combineLanes(list(cblasts, ctubes))
