@@ -2,10 +2,10 @@
 ##Fixme: a lot of this functionality will become available in 
 ##ReadAligned from the ShortRead package
 readAndClean <-
-    function(maqDir, pattern = pat, exclude="random", 
+    function(maqDir, pattern, exclude="random", 
              dropDups = TRUE, minScore = 15 ) 
 {
-    s1 <- readAligned(maqDir, pattern = pat, type = "MAQMap")
+    s1 <- readAligned(maqDir, pattern = pattern, type = "MAQMap")
     exChr = grep(exclude, s1@chromosome)
     s1 = s1[-exChr]
     keep = (s1@alignQuality@quality >= minScore)
