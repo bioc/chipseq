@@ -9,8 +9,8 @@ library("BSgenome.Mmusculus.UCSC.mm9")
 
 lanes <- c(1, 2, 3, 4, 6, 7, 8)
 
-reads = vector("list", length = length(lanes))
-names(reads) = as.character(lanes)
+reads <- vector("list", length = length(lanes))
+names(reads) <- as.character(lanes)
 
 for (i in seq_along(lanes) ) {
     lane <- lanes[i]
@@ -31,13 +31,7 @@ chrom.list <- paste("chr", c(1:19), sep = "")
 ## for( i in 1:nchrom) 
 ##     chromLens[i] = nchar(unmasked(Mmusculus[[chrom.list[i]]])) 
 
-chromLens <-
-    sapply(chrom.list,
-           function(chr) {
-               nchar(unmasked(Mmusculus[[chr]]))
-               ## same as 'length(Mmusculus[[chr]])' ?
-           },
-           simplify = TRUE)
+chromLens <- seqlengths(Mmusculus)[chrom.list]
 
 system.time(seqRanges.old <- lapply(reads, growSeqs), gcFirst=TRUE)
 
@@ -46,56 +40,53 @@ system.time(seqRanges <- lapply(lapply(reads, as.list), growSeqs), gcFirst=TRUE)
 
 
 
-cblasts = combineLanes(seqRanges[c(1,3,5)])
-ctubes = combineLanes(seqRanges[c(2,4,6)])
+cblasts <- combineLanes(seqRanges[c(1,3,5)])
+ctubes <- combineLanes(seqRanges[c(2,4,6)])
 
-covblasts = laneCoverage(cblasts[chrom.list], chromLens)
-covtubes = laneCoverage(ctubes[chrom.list], chromLens)
-covctrl = laneCoverage(seqRanges[["8"]], chromLens)
+covblasts <- laneCoverage(cblasts[chrom.list], chromLens)
+covtubes <- laneCoverage(ctubes[chrom.list], chromLens)
+covctrl <- laneCoverage(seqRanges[["8"]], chromLens)
 
 
 tubes.islands <- islandSummary(islands(covtubes))
 save(tubes.islands, file = "tubes.islands.rda")
 
 
- all = combineLanes(list(cblasts, ctubes))
+all <- combineLanes(list(cblasts, ctubes))
+ss1 <- laneSubsample(cblasts, ctubes)
 
- ss1 = laneSubsample(cblasts, ctubes)
-
- blastIslands = islands(covblasts)
-
- blastIcts = readsPerIsland(blastIslands)
-
- blastSummaries = islandSummary(blastIslands)
+blastIslands <- islands(covblasts)
+blastIcts <- readsPerIsland(blastIslands)
+blastSummaries <- islandSummary(blastIslands)
 
 
 
- ##now lets see how to do the subtraction that Zizhen is doing
- ## basic work flow: given two IRanges objects, find peaks in
- ## one,  merge those that are close, and then look in the
- ## other to see how many reads there are in that one in the same
- ## location -  would this be more easily done by some form of density
- ## estimation? Does that remove the bias we see due to differences in
- ## counts for each lane?
+##now lets see how to do the subtraction that Zizhen is doing
+## basic work flow: given two IRanges objects, find peaks in
+## one,  merge those that are close, and then look in the
+## other to see how many reads there are in that one in the same
+## location -  would this be more easily done by some form of density
+## estimation? Does that remove the bias we see due to differences in
+## counts for each lane?
 
 
- blastp12 = lapply(covblasts, slice, lower=12)
- mblastp12 = lapply(blastp12, merge, maxgap=100)
+blastp12 <- lapply(covblasts, slice, lower=12)
+mblastp12 <- lapply(blastp12, merge, maxgap=100)
 
- blastinctrl = copyIRangesbyChr(mblastp12, covctrl)
+blastinctrl <- copyIRangesbyChr(mblastp12, covctrl)
 
- maxBlast = lapply(mblastp12, viewMaxs)
- maxCtrl =  lapply(blastinctrl, viewMaxs)
+maxBlast <- lapply(mblastp12, viewMaxs)
+maxCtrl <-  lapply(blastinctrl, viewMaxs)
 
- ratios = vector("list", length=length(maxBlast))
- names(ratios) = names(maxBlast)
- for(i in names(maxBlast)) 
-     ratios[[i]] = maxCtrl[[i]]/maxBlast[[i]]
+ratios <- vector("list", length=length(maxBlast))
+names(ratios) <- names(maxBlast)
+for(i in names(maxBlast)) 
+    ratios[[i]] <- maxCtrl[[i]]/maxBlast[[i]]
 
 sapply(ratios, function(x) sum(x > 1/6))  ##these are the bad ones
 
- tubesp12 = lapply(covtubes, slice, lower = 12)
- mtubep12 = lapply(tubesp12, merge, maxgap=100)
+tubesp12 <- lapply(covtubes, slice, lower = 12)
+mtubep12 <- lapply(tubesp12, merge, maxgap=100)
 
 
 ##read in Zizhen's coverage vector - in some compressed form
@@ -124,5 +115,4 @@ if(FALSE) {
 
  mstr = toupper("cttgtgggcacagctcgtgggcacagcagccctgt")
  
-
 }
