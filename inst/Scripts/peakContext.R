@@ -1,5 +1,4 @@
 
-
 source("/home/dsarkar/svn/Projects/eboxes/context.R")
 
 if (file.exists("geneMouse.rda")) load("geneMouse.rda") else
@@ -86,9 +85,21 @@ doAll <- function(chroms = paste("chr", 1:19, sep = ""))
 
 ans <- doAll()
        
-rbind(total = xtabs(total ~ type, ans),
-      promoter = xtabs(promoter ~ type, ans),
-      threeprime = xtabs(threeprime ~ type, ans),
-      upstream = xtabs(upstream ~ type, ans),
-      downstream = xtabs(downstream ~ type, ans),
-      gene = xtabs(gene ~ type, ans))
+sumtab <- 
+    as.data.frame(rbind(total = xtabs(total ~ type, ans),
+                        promoter = xtabs(promoter ~ type, ans),
+                        threeprime = xtabs(threeprime ~ type, ans),
+                        upstream = xtabs(upstream ~ type, ans),
+                        downstream = xtabs(downstream ~ type, ans),
+                        gene = xtabs(gene ~ type, ans)))
+
+
+sumtab <-
+    within(sumtab,
+       {
+           `tube/blast` <- tube / blast
+           `tube.only/blast.only` <- tube.only / blast.only
+       })
+
+sumtab[c("tube", "blast", "tube/blast", "tube.only", "blast.only", "tube.only/blast.only")]
+

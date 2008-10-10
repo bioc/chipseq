@@ -65,12 +65,13 @@ growSeqs <- function(reads, readLen=35, seqLen=200)
     }
     else if (is.list(reads)) 
     {
-        lapply(reads,
-               function(x) {
-                   IRanges(start = c(x[["+"]], x[["-"]] - seqLen + readLen),
-                           end = c(x[["+"]] + seqLen - 1, x[["-"]] + readLen - 1))
-                   ## width = seqLen) # error when start=numeric(0)
-               })
+        if (all(c("+", "-") %in% names(reads))) 
+        {
+            IRanges(start = c(reads[["+"]], reads[["-"]] - seqLen + readLen),
+                    end = c(reads[["+"]] + seqLen - 1, reads[["-"]] + readLen - 1))
+            ## width = seqLen) # error when start=numeric(0)
+        }
+        else lapply(reads, growSeqs)
     }
     else stop("Invalid value for 'reads'")
 }
@@ -127,7 +128,7 @@ laneSubsample <- function(lane1, lane2, fudge = 0.05)
         if(l1Len[i] < l2Len[i])
             lane2[[i]] = sample(lane2[[i]], l1Len[i])
         if(l1Len[i] > l2Len[i])
-            lane1[[i]] = sample(lane2[[i]], l2Len[i])
+            lane1[[i]] = sample(lane1[[i]], l2Len[i])
     }
     return(list(lane1=lane1, lane2=lane2))
 }
