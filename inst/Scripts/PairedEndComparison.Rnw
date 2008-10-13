@@ -1,0 +1,236 @@
+\documentclass{article}
+\title{Is the paired-end run any good?}
+
+\usepackage[text={178mm,230mm},centering]{geometry}
+\usepackage{Sweave}
+
+\SweaveOpts{keep.source=TRUE,eps=FALSE,pdf=TRUE,width=9,height=10,prefix.string=figs/figs-paired}
+\setkeys{Gin}{width=0.98\textwidth}
+
+\newcommand{\code}[1]{\texttt{#1}}
+
+\begin{document}
+
+\maketitle
+
+\raggedright
+
+<<setup,echo=FALSE,results=hide>>=
+
+library(chipseq)
+library(hexbin)
+library(latticeExtra)
+library(geneplotter)
+
+load("myodFibro.rda")
+load("myodMyo.rda")
+load("pairedReads.rda")
+
+set.seed(20081008)
+
+@ 
+
+
+
+The paired-end run has two lanes (1 and 2) that are replicates of
+lanes in previous runs (fibroblasts and myotubes).  We hope to assess
+whether these replicates have roughly similar signal.
+
+<<echo=FALSE,results=hide>>=
+    
+## one approach is as follows: take data from two lanes, optionally subsample,
+## get peaks from combined coverage, then compare coverage in those peaks.
+
+combinedPeaks <-
+    function(lane1, lane2, subsample = TRUE, chrom.lens,
+             lower = 1, min.depth = lower)
+{
+    lane1 <- growSeqs(lane1)
+    lane2 <- growSeqs(lane2)
+
+    if (subsample)
+    {
+        ss <- laneSubsample(lane1, lane2, fudge = 0)
+        lane1 <- ss$lane1
+        lane2 <- ss$lane2
+    }
+    cov1 <- laneCoverage(lane1, chrom.lens)
+    cov2 <- laneCoverage(lane2, chrom.lens)
+
+    stopifnot(identical(names(cov1), names(cov2)))
+    cov.combined <- mapply("+", cov1, cov2)
+    peaks.combined <- lapply(cov.combined, slice, lower = lower)
+    if (min.depth > lower)
+    {
+        peaks.combined <-
+            lapply(peaks.combined,
+                   function(x) x[viewMaxs(x) >= min.depth])
+    }
+    peaks.sep <-
+        list(peaks1 = copyIRangesbyChr(peaks.combined, cov1),
+             peaks2 = copyIRangesbyChr(peaks.combined, cov2))
+
+    chroms <- names(peaks.sep[[1]])
+    viewSummary <- function(fun, which, chr)
+    {
+        fun(peaks.sep[[which]][[chr]])
+    }
+    summaryByChrom <-
+        sapply(chroms,
+               function(chr) {
+                   data.frame(sums1 = viewSummary(viewSums, 1, chr),
+                              sums2 = viewSummary(viewSums, 2, chr),
+                              maxs1 = viewSummary(viewMaxs, 1, chr),
+                              maxs2 = viewSummary(viewMaxs, 2, chr))
+               },
+               simplify = FALSE)
+    do.call(lattice::make.groups, summaryByChrom)
+}
+
+library("BSgenome.Mmusculus.UCSC.mm9")
+mouse.chromlens <- seqlengths(Mmusculus)
+
+plotLanePair <-
+    function(lane1, lane2, ..., lab1 = "lane1", lab2 = "lane2")
+{
+    if (missing(lab1)) lab1 <- deparse(substitute(lane1))
+    if (missing(lab2)) lab2 <- deparse(substitute(lane2))
+    combdf <- 
+        combinedPeaks(lane1 = lane1, 
+                      lane2 = lane2,
+                      ...)
+    xyplot(log1p(sums1) ~ log1p(sums2), combdf,
+           subset = (sums1+sums2 > 0),
+           main = sprintf("%s vs %s", lab2, lab1),
+           panel = panel.smoothScatter)
+##     hexbinplot(log1p(sums1) ~ log1p(sums2), combdf,
+##                subset = (sums1+sums2 > 0),
+##                main = sprintf("%s vs %s", lab2, lab1),
+##                aspect = "iso",
+##                trans = sqrt, inv = function(x) x^2)
+}
+
+
+@
+
+We try the following algorithm:  
+\begin{itemize}
+\item For a pair of lanes, optionally subsample and then obtain the
+  combined coverage vector.
+\item Slice the coverage at \code{lower=1}, and of the resulting
+  ``peaks'', retain those with depth \code{min.depth} or more.
+\item Compute view summaries (sum, depth) for individual lanes using
+  this subset of peaks.
+\end{itemize}
+
+We plot the results for some pairs of interest (paired end read with a
+corresponding lane from older runs).  For comparison, we also plot
+pairs of ``replicates'' from older runs.
+
+\newpage
+
+
+<<>>=
+## fibro
+plotLanePair(lane1 = pairedReads[["1"]],
+             lane2 = myodFibro[["2"]],
+             chrom.lens = mouse.chromlens,
+             min.depth = 8)
+
+@ 
+\begin{center}
+<<fig=TRUE,echo=FALSE,height=8>>=
+plot(trellis.last.object())
+@ 
+\end{center}
+
+\newpage
+
+
+<<>>=
+## myotubes
+plotLanePair(lane1 = pairedReads[["2"]],
+             lane2 = myodMyo[["2"]],
+             chrom.lens = mouse.chromlens,
+             min.depth = 8)
+
+@ 
+\begin{center}
+<<fig=TRUE,echo=FALSE,height=8>>=
+plot(trellis.last.object())
+@ 
+\end{center}
+
+\newpage
+
+
+
+<<>>=
+## myotubes vs myotubes (run 2)
+plotLanePair(lane1 = myodMyo[["2"]],
+             lane2 = myodMyo[["4"]],
+             chrom.lens = mouse.chromlens,
+             min.depth = 8)
+
+@ 
+\begin{center}
+<<fig=TRUE,echo=FALSE,height=8>>=
+plot(trellis.last.object())
+@ 
+\end{center}
+
+\newpage
+
+
+
+<<>>=
+## fibroblasts vs fibroblasts (run 1)
+plotLanePair(lane1 = myodFibro[["2"]],
+             lane2 = myodFibro[["4"]],
+             chrom.lens = mouse.chromlens,
+             min.depth = 8)
+
+@ 
+\begin{center}
+<<fig=TRUE,echo=FALSE,height=8>>=
+plot(trellis.last.object())
+@ 
+\end{center}
+
+\newpage
+
+
+
+<<>>=
+## fibroblasts vs myotubes 
+plotLanePair(lane1 = myodMyo[["2"]],
+             lane2 = myodFibro[["2"]],
+             chrom.lens = mouse.chromlens,
+             min.depth = 8)
+
+@ 
+\begin{center}
+<<fig=TRUE,echo=FALSE,height=8>>=
+plot(trellis.last.object())
+@ 
+\end{center}
+
+\newpage
+
+<<>>=
+## fibroblasts vs fibroblasts w/o MyoD
+plotLanePair(lane1 = myodFibro[["3"]],
+             lane2 = myodFibro[["2"]],
+             chrom.lens = mouse.chromlens,
+             min.depth = 8)
+
+@ 
+\begin{center}
+<<fig=TRUE,echo=FALSE,height=8>>=
+plot(trellis.last.object())
+@ 
+\end{center}
+
+
+
+\end{document}
