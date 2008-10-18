@@ -99,8 +99,8 @@ plotLanePair <-
         combinedPeaks(lane1 = lane1, 
                       lane2 = lane2,
                       ...)
-    xyplot(log1p(sums1) ~ log1p(sums2), combdf,
-           subset = (sums1+sums2 > 0),
+##    xyplot(log1p(sums1) ~ log1p(sums2), combdf,
+    xyplot(asinh(sums1/200) ~ asinh(sums2/200), combdf, aspect = "iso",
            main = sprintf("%s vs %s", lab2, lab1),
            panel = panel.smoothScatter)
 ##     hexbinplot(log1p(sums1) ~ log1p(sums2), combdf,
@@ -132,10 +132,8 @@ pairs of ``replicates'' from older runs.
 
 <<>>=
 ## fibro
-plotLanePair(lane1 = pairedReads[["1"]],
-             lane2 = myodFibro[["2"]],
-             chrom.lens = mouse.chromlens,
-             min.depth = 8)
+plotLanePair(lane1 = pairedReads[["1"]], lane2 = myodFibro[["2"]],
+             chrom.lens = mouse.chromlens, lower = 1, min.depth = 4)
 
 @ 
 \begin{center}
@@ -149,10 +147,8 @@ plot(trellis.last.object())
 
 <<>>=
 ## myotubes
-plotLanePair(lane1 = pairedReads[["2"]],
-             lane2 = myodMyo[["2"]],
-             chrom.lens = mouse.chromlens,
-             min.depth = 8)
+plotLanePair(lane1 = pairedReads[["2"]], lane2 = myodMyo[["2"]],
+             chrom.lens = mouse.chromlens, lower = 1, min.depth = 4)
 
 @ 
 \begin{center}
@@ -167,10 +163,8 @@ plot(trellis.last.object())
 
 <<>>=
 ## myotubes vs myotubes (run 2)
-plotLanePair(lane1 = myodMyo[["2"]],
-             lane2 = myodMyo[["4"]],
-             chrom.lens = mouse.chromlens,
-             min.depth = 8)
+plotLanePair(lane1 = myodMyo[["2"]], lane2 = myodMyo[["4"]],
+             chrom.lens = mouse.chromlens, lower = 1, min.depth = 4)
 
 @ 
 \begin{center}
@@ -185,10 +179,8 @@ plot(trellis.last.object())
 
 <<>>=
 ## fibroblasts vs fibroblasts (run 1)
-plotLanePair(lane1 = myodFibro[["2"]],
-             lane2 = myodFibro[["4"]],
-             chrom.lens = mouse.chromlens,
-             min.depth = 8)
+plotLanePair(lane1 = myodFibro[["2"]], lane2 = myodFibro[["4"]],
+             chrom.lens = mouse.chromlens, lower = 1, min.depth = 4)
 
 @ 
 \begin{center}
@@ -203,10 +195,8 @@ plot(trellis.last.object())
 
 <<>>=
 ## fibroblasts vs myotubes 
-plotLanePair(lane1 = myodMyo[["2"]],
-             lane2 = myodFibro[["2"]],
-             chrom.lens = mouse.chromlens,
-             min.depth = 8)
+plotLanePair(lane1 = myodMyo[["2"]], lane2 = myodFibro[["2"]],
+             chrom.lens = mouse.chromlens, lower = 1, min.depth = 4)
 
 @ 
 \begin{center}
@@ -219,10 +209,8 @@ plot(trellis.last.object())
 
 <<>>=
 ## fibroblasts vs fibroblasts w/o MyoD
-plotLanePair(lane1 = myodFibro[["3"]],
-             lane2 = myodFibro[["2"]],
-             chrom.lens = mouse.chromlens,
-             min.depth = 8)
+plotLanePair(lane1 = myodFibro[["3"]], lane2 = myodFibro[["2"]],
+             chrom.lens = mouse.chromlens, lower = 1, min.depth = 4)
 
 @ 
 \begin{center}

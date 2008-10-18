@@ -16,6 +16,7 @@
 <<setup,echo=FALSE,results=hide>>=
 
 library(chipseq)
+library(lattice)
 library(hexbin)
 library(latticeExtra)
 
@@ -71,9 +72,9 @@ summarizeLane <- function(clist, summary.fun, ...)
 
 
 summarizeReads <- 
-    function(reads.list, lanes = c("1", "2", "3", "4", "6", "7", "8"), ...)
+    function(reads.list, lanes = c("1", "2", "3", "4", "6", "7", "8"), ..., verbose = FALSE)
 {
-    cat(paste("Processing lanes", paste(lanes, collapse = ",")), fill = TRUE)
+    if (verbose) cat(paste("Processing lanes", paste(lanes, collapse = ",")), fill = TRUE)
     ans <- do.call(lattice::make.groups, lapply(reads.list[lanes], summarizeLane, ...))
     names(ans)[names(ans) == "which"] <- "lane"
     ans
@@ -141,15 +142,29 @@ str(readCountSummary)
 
 @ 
 
-\newpage
-
 The number of reads is as we would expect. The number of paired-end
 reads is comparable to the second (myoblasts and myotubes) run.
 <<>>=
-dotplot(chromosome ~ log2(n) | lane + which, readCountSummary)
+dotplot(xtabs(n ~ lane + which, readCountSummary), type = "o", ylab = "Lane",
+        auto.key = list(space = "right"), par.settings = simpleTheme(pch = 16))
 @ 
 \begin{center}
-<<nreads,fig=TRUE,echo=FALSE>>=
+<<totalreads,fig=TRUE,echo=FALSE,height=3>>=
+plot(trellis.last.object())
+@ 
+\end{center}
+
+
+\newpage
+
+
+A more detailed look.
+<<>>=
+useOuterStrips(dotplot(chromosome ~ (n) | which + lane, 
+                       readCountSummary, as.table = TRUE))
+@ 
+\begin{center}
+<<chrreads,fig=TRUE,echo=FALSE>>=
 plot(trellis.last.object())
 @ 
 \end{center}
