@@ -34,14 +34,14 @@ pat.lanes <- pat.lanes[-5]
 
 ## paired end reads
 
-## lane 1: mouse fibroblast
-## lane 2: mouse myotube
-## lane 3: 
-## lane 4: 
-## lane 5: 
-## lane 6: 
-## lane 7:
-## lane 8: 
+## lane1: mouse fibroblasts expressing Myod, 3 antibodies combined
+## lane2: C2C12 myotube, 3 antibodies combined
+## lane3: human fibroblast expressing Myod, antibody 7311
+## lane4: human fibroblast expressing Myod, antibody 6975b
+
+## lane6: human fibroblast expressing Myod, antibody 6196
+## lane7: human fibroblast controls, 3 antibodies combined
+## lane8: human fibroblast expressing Myod, 3 antibodies combined
 
 
 pairedReads <- lapply(pat.lanes, function(s) readFirstRead(lane = s))
