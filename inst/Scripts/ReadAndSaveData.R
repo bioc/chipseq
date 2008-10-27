@@ -3,10 +3,10 @@ library(ShortRead)
 library(chipseq)
 
 readReads <-
-    function(srcdir, lane, exclude = "[MXY]|rand", ...)
+    function(srcdir, lane, exclude = "[MXY]|rand", type = "MAQMapShort", ...)
 {
     message(sprintf("reading data from lane %s [%s]", lane, srcdir))
-    as.list(readAndClean(srcdir, lane, exclude = exclude, ...))
+    as.list(readAndClean(srcdir, lane, exclude = exclude, type = type, ...))
 }
 
 readFirstRead <-
@@ -44,10 +44,10 @@ pat.lanes <- pat.lanes[-5]
 ## lane 8: 
 
 
-## pairedReads <- lapply(pat.lanes, function(s) readFirstRead(lane = s))
-## save(pairedReads, file = "pairedReads.rda")
-## rm(pairedReads)
-## gc()
+pairedReads <- lapply(pat.lanes, function(s) readFirstRead(lane = s))
+save(pairedReads, file = "pairedReads.rda")
+rm(pairedReads)
+gc()
 
 
 ## myoD_myo
@@ -70,5 +70,7 @@ save(myodFibro, file = "myodFibro.rda")
 rm(myodFibro)
 gc()
 
+
+sessionInfo()
 
 
