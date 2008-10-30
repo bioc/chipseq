@@ -2,12 +2,13 @@
 library("lattice")
 library("chipseq")
 library("geneplotter")
+   library("BSgenome.Mmusculus.UCSC.mm9")
 
+if( FALSE) {
 if (file.exists("alignInfo.rda")) load("alignInfo.rda") else
 {
 
-    library("BSgenome.Mmusculus.UCSC.mm9")
-
+ 
     ##lanes 1, 3, 6 are Myoblasts
     ##lanes 2, 4, 7 are Myotubes
     ##lane 8 is a reference lane
@@ -51,10 +52,13 @@ if (file.exists("alignInfo.rda")) load("alignInfo.rda") else
 
     ## system.time(seqRanges.old <- lapply(reads, growSeqs), gcFirst=TRUE)
 } 
+}
 
+load("myodMyo.rda")
 
-## basically same, but retains order of chromosomes
-system.time(seqRanges <- lapply(lreads, growSeqs), gcFirst=TRUE)
+chromLens <- seqlengths(Mmusculus)
+
+seqRanges <- lapply(myodMyo, growSeqs)
 
 cblasts = combineLanes(seqRanges[c(1,3,5)])
 ctubes = combineLanes(seqRanges[c(2,4,6)])
