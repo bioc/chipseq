@@ -17,8 +17,8 @@
 
 library(chipseq)
 library(lattice)
-## library(hexbin)
-## library(latticeExtra)
+library(latticeExtra)
+library(geneplotter)
 
 set.seed(20081008)
 
@@ -82,11 +82,6 @@ coverageSummary <-
 @ 
 
 
-
-
-\newpage
-
-
 \section*{Combining myotube and myoblast lanes}
 
 <<>>=
@@ -102,66 +97,84 @@ ctubes <- combineLanes(seqRanges[c("2","4","7")])
 covblasts <- laneCoverage(cblasts, mouse.seqlens)
 covtubes <- laneCoverage(ctubes, mouse.seqlens)
 
-isldf <- 
-    do.call(make.groups, 
-            lapply(list(blasts = covblasts, 
-                        tubes = covtubes,
-                        control = myodMyoCoverage),
-                   function(x) viewMaxs(slice(x[["chr1"]], lower = 1))))
-
-
-
-
-
-system.time(
-islandSummaries <- 
-    list(blasts = do.call(make.groups, islandSummary(islands(covblasts))),
-         tubes = do.call(make.groups, islandSummary(islands(covtubes))))
-)
-
-islandSummaries <- 
-    lapply(islandSummaries, 
-           function(x) {
-               names(x)[names(x) == "which"] <- "chromosome"
-               x
-           })
-
-system.time(
-islandSummaries <- with(islandSummaries, make.groups(blasts, tubes))
-)
-
-depth.dist <- xtabs(~cut(maxdepth, c(0, 10, 15, 30, Inf)) + which, islandSummaries)
-names(dimnames(depth.dist))[1] <- "maxdepth"
-depth.dist
-
-islandSummaries.10 <- subset(islandSummaries, maxdepth >= 10)
-
 @ 
 
+We will use one of the samples as a reference. An alternative is to
+combine the lanes and use that as the reference.  Both lead to some
+problems in the subsequent regression (errors in predictor) that we
+ignore for now.
 
+<<>>=
 
+peakSummary.blasts.wrt.tubes <-
+    diffPeakSummary(obs.ranges = cblasts, ref.ranges = ctubes,
+                    chrom.lens = mouse.seqlens, lower = 10)
+
+peakSummary.tubes.wrt.blasts <-
+    diffPeakSummary(obs.ranges = ctubes, ref.ranges = cblasts,
+                    chrom.lens = mouse.seqlens, lower = 10)
+
+peakSummary.blasts.wrt.tubes <- 
+    within(peakSummary.blasts.wrt.tubes,
+       {
+           diffs <- log2(obs.sums)-log2(ref.sums)
+           resids <-  # prefer per-chromosome?
+               (diffs - median(diffs)) / mad(diffs)
+           resids.mean <- diffs - mean(diffs[is.finite(diffs)])
+       })
+
+peakSummary.tubes.wrt.blasts <- 
+    within(peakSummary.tubes.wrt.blasts,
+       {
+           diffs <- log2(obs.sums)-log2(ref.sums)
+           resids <-  # prefer per-chromosome?
+               (diffs - median(diffs)) / mad(diffs)
+           resids.mean <- diffs - mean(diffs[is.finite(diffs)])
+       })
+
+xyplot(log2(obs.sums) ~ log2(ref.sums) | chromosome,
+       data = peakSummary.tubes.wrt.blasts, auto.key = TRUE,
+       subset = (chromosome %in% c("chr1", "chr2") &
+                 obs.sums > 0),
+       panel = function(x, y, ...) {
+           panel.smoothScatter(x, y, ...)
+           ## panel.xyplot(x, y, ...)
+           panel.abline(median(y - x), 1)
+       },
+       par.settings = simpleTheme(pch = ".", cex = 3),
+       type = c("p", "g", "r"), col.line = "black", aspect = "iso")
+
+@ 
 
 \newpage
 
+\begin{center}
+<<fig=TRUE,echo=FALSE>>=
+plot(trellis.last.object())
+@ 
+\end{center}
 
-\section*{Comparison between myotubes and myoblasts}
-
+\newpage
 
 <<>>=
-hexbinplot(log2(clones) ~ log2(maxdepth) | which, 
-           islandSummaries.10, subset = maxdepth < 3000,
-           aspect = 0.7,
-           main = "islands with depth >= 10",
-           type = c("g", "r"),
-           xscale.components = logscale.components("x", 2),
-           yscale.components = logscale.components("y", 2),
-           ## scales = list(x = list(rot = 90)),
-           trans = sqrt, inv = function(x) x^2)
-
+    
+bwplot(chromosome ~ resids, data = peakSummary.blasts.wrt.tubes)
 
 @ 
 \begin{center}
-<<myoReadsByDepth,fig=TRUE,echo=FALSE,height=8>>=
+<<fig=TRUE,echo=FALSE>>=
+plot(trellis.last.object())
+@ 
+\end{center}
+
+\newpage
+
+<<>>=
+bwplot(chromosome ~ resids, data = peakSummary.tubes.wrt.blasts)
+@ 
+
+\begin{center}
+<<fig=TRUE,echo=FALSE>>=
 plot(trellis.last.object())
 @ 
 \end{center}
@@ -169,63 +182,112 @@ plot(trellis.last.object())
 
 \newpage
 
+\section*{Peaks in genomic context}
+
+<<echo=FALSE,results=hide>>=    
+
+source("context.R")
+
+if (file.exists("geneMouse.rda")) load("geneMouse.rda") else
+{
+    geneMouse <-
+        read.table("geneMouse.txt", header = TRUE, sep = "\t",
+                   stringsAsFactors = FALSE)
+    save(geneMouse, file = "geneMouse.rda")
+}
+
+## gregions.500 <- genomic_regions(genes = geneMouse, proximal = 500)
+gregions.2000 <- genomic_regions(genes = geneMouse, proximal = 2000)
+
+gregions <- gregions.2000
+gregions$gene <- as.character(gregions$gene)
+
+library(Matrix)
+library(IRanges)
+
+
+countHits <- function(subject, query)
+{
+    sum(!is.na(overlap(subject, query, multiple = FALSE)))
+}
+
+doPeakSet <- function(peaks, gregions)
+{
+    query <- with(peaks, IRanges(start, end))
+    irangeByType <-
+        function(type = c("promoter", "threeprime",
+                          "upstream", "downstream", "gene"))
+        {
+            type <- match.arg(type)
+            istarts <- sprintf("%s.start", type)
+            iends <- sprintf("%s.end", type)
+            keep <- !duplicated(gregions[[istarts]]) ## what's the right thing to do here???
+            IRanges(start = gregions[[istarts]][keep],
+                    end = gregions[[iends]][keep])
+        }
+    subject <-
+        list(promoter = irangeByType("promoter"),
+             threeprime = irangeByType("threeprime"),
+             upstream = irangeByType("upstream"),
+             downstream = irangeByType("downstream"),
+             gene = irangeByType("gene"))
+    c(total = length(query), sapply(subject, countHits, query = query))
+}
+
+doChromosome <- function(chr)
+{
+    gregions.sub <- subset(gregions, chrom == chr)
+    tube.peaks <-
+        subset(peakSummary.blasts.wrt.tubes,
+               chromosome == chr)
+    blast.peaks <-
+        subset(peakSummary.tubes.wrt.blasts,
+               chromosome == chr)
+    ans <-
+        as.data.frame(rbind(tube = doPeakSet(tube.peaks, gregions.sub),
+                            blast = doPeakSet(blast.peaks, gregions.sub),
+                            tube.only = doPeakSet(subset(tube.peaks, resids < -2), gregions.sub),
+                            blast.only = doPeakSet(subset(blast.peaks, resids < -2), gregions.sub)))
+    ans <- cbind(type = factor(rownames(ans), levels = unique(rownames(ans))), ans)
+    ans
+}
+
+## all.chroms <- levels(peakSummary.blasts.wrt.tubes$chromosome)
+
+doAll <- function(chroms = paste("chr", 1:19, sep = ""))
+{
+    ans <- do.call(make.groups, sapply(chroms, doChromosome, simplify = FALSE))
+    names(ans)[names(ans) == "which"] <- "chromosome"
+    rownames(ans) <- NULL
+    ans
+}
+
+ans <- doAll()
+       
+sumtab <- 
+    as.data.frame(rbind(total = xtabs(total ~ type, ans),
+                        promoter = xtabs(promoter ~ type, ans),
+                        threeprime = xtabs(threeprime ~ type, ans),
+                        upstream = xtabs(upstream ~ type, ans),
+                        downstream = xtabs(downstream ~ type, ans),
+                        gene = xtabs(gene ~ type, ans)))
+
+
+sumtab <-
+    within(sumtab,
+       {
+           `tube/blast` <- tube / blast
+           `tube.only/blast.only` <- tube.only / blast.only
+       })
+
+
+
+
+
+@ 
+
 <<>>=
-
-hexbinplot(log2(end-start) ~ log2(maxdepth) | which, 
-           islandSummaries.10, subset = maxdepth < 3000,
-           aspect = 0.7,
-           main = "islands with depth >= 10",
-           type = c("g", "r"),
-           xscale.components = logscale.components("x", 2),
-           yscale.components = logscale.components("y", 2),
-           ## scales = list(x = list(rot = 90)),
-           trans = sqrt, inv = function(x) x^2)
-
-
+sumtab[c("tube", "blast", "tube/blast", "tube.only", "blast.only", "tube.only/blast.only")]
 @ 
-\begin{center}
-<<myoDiffsByDepth,fig=TRUE,echo=FALSE,height=8>>=
-plot(trellis.last.object())
-@ 
-\end{center}
-
-
-\newpage
-
-
-<<>>=
-
-myo.ntabdf <- as.data.frame(xtabs(~round(clones) + which, islandSummaries.10))
-myo.ntabdf$nreads <- as.numeric(as.character(myo.ntabdf[[1]]))
-xyplot(log2(Freq) ~ log2(nreads), myo.ntabdf, 
-       type = c("p", "g"), par.settings = simpleTheme(pch = 20),
-       groups = which, auto.key = TRUE,
-       xscale.components = logscale.components("x", 2),
-       yscale.components = logscale.components("y", 2),
-       scales = list(x = list(rot = 90)))
-
-## xyplot(log2(Freq) ~ log2(nreads) | which, ntabdf, 
-##        type = c("p", "g"), pch = 20,
-##        xscale.components = logscale.components("x", 2),
-##        yscale.components = logscale.components("y", 2),
-##        scales = list(x = list(rot = 90)))
-
-
-
-## ## all = combineLanes(list(cblasts, ctubes))
-
-## blastIslands = islands(covblasts)
-
-## blastIcts = readsPerIsland(blastIslands)
-
-## blastSummaries = islandSummary(blastIslands)
-
-@ 
-
-\begin{center}
-<<myoReadsDist,fig=TRUE,echo=FALSE,height=8>>=
-plot(trellis.last.object())
-@ 
-\end{center}
-
+    
 \end{document}

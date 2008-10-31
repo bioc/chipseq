@@ -51,7 +51,7 @@ if (file.exists("alignInfo.rda")) load("alignInfo.rda") else
     save(lreads, chromLens, file = "alignInfo.rda")
 
     ## system.time(seqRanges.old <- lapply(reads, growSeqs), gcFirst=TRUE)
-} 
+}
 }
 
 load("myodMyo.rda")

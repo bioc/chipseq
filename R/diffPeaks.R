@@ -11,8 +11,8 @@ diffPeakSummary <-
     ## amount before summarizing
 
 {
-    obs.cov <- laneCoverage(obs.ranges, chromLens)
-    ref.cov <- laneCoverage(ref.ranges, chromLens)
+    obs.cov <- laneCoverage(obs.ranges, chrom.lens)
+    ref.cov <- laneCoverage(ref.ranges, chrom.lens)
     ref.peaks <- lapply(ref.cov, slice, lower = lower) # extend=extend (FIXME: unused)
     ref.peaks.in.obs <- copyIRangesbyChr(ref.peaks, obs.cov)
 
