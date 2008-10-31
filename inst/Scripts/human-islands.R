@@ -58,7 +58,7 @@ save(pairedEndHumanCoverage, file = "pairedEndHumanCoverage.rda")
 isldf <- 
     do.call(make.groups, 
             lapply(pairedEndHumanCoverage,
-                   function(x) viewMaxs(slice(x[["chr1"]], lower = 1))))
+                   function(x) viewMaxs(slice(x[["chr2"]], lower = 1))))
 
 dotplot(xtabs(~data + which, isldf),
         horizontal = FALSE, groups = FALSE,
