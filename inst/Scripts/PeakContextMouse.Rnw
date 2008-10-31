@@ -186,7 +186,7 @@ plot(trellis.last.object())
 
 <<echo=FALSE,results=hide>>=    
 
-source("context.R")
+## source("context.R")
 
 if (file.exists("geneMouse.rda")) load("geneMouse.rda") else
 {

@@ -114,7 +114,7 @@ xyplot(log2(obs.sums) ~ log2(ref.sums) | chromosome,
 bwplot(chromosome ~ resids, data = peakSummary.blasts.wrt.tubes)
 bwplot(chromosome ~ resids, data = peakSummary.tubes.wrt.blasts)
 
-toppeaks <- subset(peakSummary.rob, abs(resids) > 4)
+toppeaks <- subset(peakSummary.tubes.wrt.blasts, abs(resids) > 4)
 rownames(toppeaks) <- NULL
 toppeaks[rev(order(abs(toppeaks$resids))), ]
 
