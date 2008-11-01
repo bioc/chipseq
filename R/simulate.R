@@ -79,7 +79,7 @@
    head2 = "+RGsim"
 
    for( seqs in x ) {
-     numChars = length(seqs)
+     numChars = length(seqs$seqs)
      ans = character(length=4*numChars)
      ans[seq(1, by=4, length.out=numChars)] = head
      ans[seq(2, by=4, length.out=numChars)] = seqs$seqs
