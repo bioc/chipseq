@@ -14,5 +14,5 @@
 
  sims = simulateReads(simv, Mmusculus, 35, qs)
 
- printSims(sims, file="sim.out")
+ printSim(sims, file="sim.out")
 
