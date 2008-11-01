@@ -48,7 +48,7 @@
        stop("need qualityScores for each position")
 
      ans = vector("list", length=length(num))
-     if( all( num < 1 ) ) prop=TRUE
+     if( all( num < 1 ) ) prop=TRUE else prop=FALSE
      names(ans) = names(num)
      for( i in 1:length(num) ){
          chr = names(num)[i]
