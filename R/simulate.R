@@ -48,11 +48,15 @@
        stop("need qualityScores for each position")
 
      ans = vector("list", length=length(num))
+     if( all( num < 1 ) ) prop=TRUE
      names(ans) = names(num)
      for( i in 1:length(num) ){
          chr = names(num)[i]
          seq = unmasked(genome[[chr]])
-         myreads = sample(1:nchar(seq), num[i])	
+         nc = nchar(seq)
+         ##set either proportions or numbers
+         if( prop ) myreads = sample(1:nc, num[i]*nc) else
+             myreads = sample(1:nchar(seq), num[i])	
          myV = Views(seq, start=myreads, end = myreads+ (readLen - 1))
          SimChars = as.character(myV)
          Char2Row = sapply(SimChars, function(x) 
@@ -61,7 +65,9 @@
          SimQ = sapply(Char2Row, function(x) {
 		  r = as.integer(unlist(strsplit(x, "")))
                   return(qualityScores[matrix(c(r, 1:35), nc=2)]) })
-         ans[[i]] = apply(SimQ, 2, paste, sep="", collapse="")
+         ans[[i]] = list(seqs = SimChars,
+                         quality = apply(SimQ, 2, paste, 
+                                      sep="", collapse=""))
     }
     return(ans)
 }
@@ -76,9 +82,9 @@
      numChars = length(seqs)
      ans = character(length=4*numChars)
      ans[seq(1, by=4, length.out=numChars)] = head
-     ans[seq(2, by=4, length.out=numChars)] = SimChars
+     ans[seq(2, by=4, length.out=numChars)] = seqs$seqs
      ans[seq(3, by=4, length.out=numChars)] = head2
-     ans[seq(4, by=4, length.out=numChars)] = SimQ2
+     ans[seq(4, by=4, length.out=numChars)] = seqs$quality
 
      cat(ans, file=filename, sep="\n", append=TRUE)
    }
