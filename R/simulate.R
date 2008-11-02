@@ -42,7 +42,8 @@
 ## is loaded, 
 ## readLen is the length of the reads
 ## qualityScores is a matrix of 5 (ACGTN) by number of cycles
- simulateReads <- function(num, genome, readLen, qualityScores) {
+ simulateReads <- function(num, genome, readLen, qualityScores,
+       verbose=FALSE) {
      ##now we sample 
      if(ncol(qualityScores) != readLen )
        stop("need qualityScores for each position")
@@ -53,10 +54,10 @@
      for( i in 1:length(num) ){
          chr = names(num)[i]
          seq = unmasked(genome[[chr]])
-         nc = nchar(seq)
+         nc = nchar(seq) - readLen ##don't run over the end
          ##set either proportions or numbers
          if( prop ) myreads = sample(1:nc, num[i]*nc) else
-             myreads = sample(1:nchar(seq), num[i])	
+             myreads = sample(1:nc, num[i])	
          myV = Views(seq, start=myreads, end = myreads+ (readLen - 1))
          SimChars = as.character(myV)
          Char2Row = sapply(SimChars, function(x) 
@@ -68,6 +69,7 @@
          ans[[i]] = list(seqs = SimChars,
                          quality = apply(SimQ, 2, paste, 
                                       sep="", collapse=""))
+         if( verbose ) print(paste("iteration", i))
     }
     return(ans)
 }
