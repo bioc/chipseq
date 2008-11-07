@@ -21,6 +21,7 @@ library(lattice)
 ## library(latticeExtra)
 
 load("myodMyo.rda")
+load("myodFibro.rda")
 
 set.seed(20081008)
 
@@ -279,7 +280,48 @@ plot(trellis.last.object())
 \end{center}
 
 
+\section*{Fibroblast run}
 
+
+<<>>=
+myodFibroCoverage <- 
+    summarizeReads(myodFibro,
+                   summary.fun = coverageSummary,
+                   seqlen = mouse.seqlens)
+
+isldf.fibro <- 
+    do.call(make.groups, 
+            lapply(myodFibroCoverage,
+                   function(x) viewMaxs(slice(x[["chr1"]], lower = 1))))
+
+dotplot(xtabs(~data + which, subset(isldf.fibro, data <= 20)),
+        horizontal = FALSE, groups = FALSE,
+        main = "Distribution of island depths (chromosome 1)",
+        scales = list(y = list(log = "e")),
+        panel = function(x, y, ...) {
+            lambda <- 2 * exp(y[2]) / exp(y[1])
+            null.est <- function(xx) { 
+                (xx * log(lambda) - lambda - lgamma(xx + 1))
+            }
+            log.N.hat <- null.est(1) - y[1] # both already log-transformed
+            panel.lines(1:20, -log.N.hat + null.est(1:20))
+            panel.dotplot(x, y, ...)
+            const <- y[1] - (log(lambda) - lambda)
+        },
+        layout = c(1, 7), 
+        strip = FALSE, strip.left = TRUE,
+        aspect = 0.4)
+
+
+@ 
+
+\newpage
+
+\begin{center}
+<<fig=TRUE,echo=FALSE>>=
+plot(trellis.last.object())
+@ 
+\end{center}
 
 
 \end{document}

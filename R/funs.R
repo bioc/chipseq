@@ -44,9 +44,11 @@ splitbyChr <- function(x) {
     split(x@position, paste(x@chromosome, x@strand, sep=""))
 }
 
+
 ## take input MAQ mapped reads and grow them appropriately.
-## FIXME: support list version? methods?
-growSeqs <- function(reads, readLen=35, seqLen=200)
+## FIXME: how should we support list version? methods?
+extendReads <- function(reads, readLen=35, seqLen=200,
+                        strand = c("+", "-"))
 {
     if (is(reads, "AlignedRead")) 
     {
@@ -55,28 +57,35 @@ growSeqs <- function(reads, readLen=35, seqLen=200)
         byCIR <- vector("list", length=length(chrs))
         names(byCIR) <- chrs
         for(i in chrs) {
-            ipos = grep(paste("^", i, "\\+$", sep=""), names(s1))
-            ineg = grep(paste("^", i, "-$", sep=""), names(s1))
+            ipos <-
+                if ("+" %in% strand) grep(paste("^", i, "\\+$", sep=""), names(s1))
+                else character(0)
+            ineg <-
+                if ("-" %in% strand) grep(paste("^", i, "-$", sep=""), names(s1))
+                else character(0)
             byCIR[[i]] = IRanges(c(s1[[ipos]], s1[[ineg]]-seqLen+readLen),
                                  c(s1[[ipos]]+seqLen-1, s1[[ineg]]+readLen-1))
             byCIR
         }
         byCIR
-        ## or, growSeqs(as.list(reads), readLen=readLen, seqLen=seqLen)
+        ## or, extendReads(as.list(reads), readLen=readLen, seqLen=seqLen)
     }
     else if (is.list(reads)) 
     {
         if (all(c("+", "-") %in% names(reads))) 
         {
+            reads <- reads[strand]
             IRanges(start = c(reads[["+"]], reads[["-"]] - seqLen + readLen),
                     end = c(reads[["+"]] + seqLen - 1, reads[["-"]] + readLen - 1))
             ## width = seqLen) # error when start=numeric(0)
         }
-        else lapply(reads, growSeqs)
+        else lapply(reads, extendReads)
     }
     else stop("Invalid value for 'reads'")
 }
 
+## alias, remove later
+growSeqs <- function(...) extendReads(...)
 
 ## IRanges(start = c(x[["+"]], x[["-"]] - seqLen + readLen),
 ##         end = c(x[["+"]] + seqLen - 1, x[["-"]] + readLen - 1),
