@@ -31,8 +31,7 @@ set.seed(20081008)
 
 
 
-<<defs,echo=FALSE>>=
-
+<<defs,echo=FALSE, eval=FALSE>>=
 
 logscale.components <- function(axis = c("x", "y"), base = 2)
 {
@@ -53,8 +52,6 @@ logscale.components <- function(axis = c("x", "y"), base = 2)
                ans
            })
 }
-
-
 
 ## common infrastructure to summarize reads in the form of nested lists: 
 ##  reads.list=list("1" = list("chr1" = list("+"=..., "-"=...), 
