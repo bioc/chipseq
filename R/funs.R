@@ -34,7 +34,7 @@ setMethod("as.list", "AlignedRead",
                   split(data.frame(position = x@position, strand = x@strand),
                         x@chromosome[drop=TRUE])
               lapply(alignLocs,
-                     function(df) with(df, split(position, strand)))
+                     function(df) with(df, split(position, strand))[c("-", "+")])
           })
 
 
