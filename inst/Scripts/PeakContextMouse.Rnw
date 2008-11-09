@@ -24,11 +24,6 @@ set.seed(20081008)
 
 @ 
 
-
-
-
-
-
 \section*{Combining myotube and myoblast lanes}
 
 <<>>=
