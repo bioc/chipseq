@@ -34,6 +34,15 @@ summarizeLane <- function(clist, summary.fun, ...)
     ans
 }
 
+summarizeLane2 <- function(clist, summary.fun, ..., seqlen)
+{
+    ## clist is a list at the lane level, with one list("+"=, "-"=) for each chromsome
+    stopifnot(all(names(clist) %in% names(seqlen)))
+    seqlen <- seqlen[names(clist)]
+    mapply(summary.fun, clist, seqlen, ..., SIMPLIFY = FALSE)
+}
+
+
 
 summarizeReads <- 
     function(reads.list, lanes = names(reads.list), ..., verbose = FALSE)
@@ -84,10 +93,10 @@ sliceSummary <-
 
 
 coverageSummary <-
-    function(x, max = max(end(g)) + 400L)
+    function(x, max = max(end(g)) + 400L, strand = c("+", "-"))
     ## x is a list at the lane->chromosome level, with components "+" and "-"
 {
-    g <- extendReads(x)
+    g <- extendReads(x, strand)
     coverage(g, 1, max)
 }
 
