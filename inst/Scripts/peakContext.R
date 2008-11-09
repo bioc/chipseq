@@ -1,13 +1,7 @@
 
 source("/home/dsarkar/svn/Projects/eboxes/context.R")
 
-if (file.exists("geneMouse.rda")) load("geneMouse.rda") else
-{
-    geneMouse <-
-        read.table("geneMouse.txt", header = TRUE, sep = "\t",
-                   stringsAsFactors = FALSE)
-    save(geneMouse, file = "geneMouse.rda")
-}
+data(geneMouse)
 
 gregions.500 <- genomic_regions(genes = geneMouse, proximal = 500)
 gregions.2000 <- genomic_regions(genes = geneMouse, proximal = 2000)
