@@ -50,7 +50,7 @@ if (file.exists("alignInfo.rda")) load("alignInfo.rda") else
 
     save(lreads, chromLens, file = "alignInfo.rda")
 
-    ## system.time(seqRanges.old <- lapply(reads, growSeqs), gcFirst=TRUE)
+    ## system.time(seqRanges.old <- lapply(reads, extendReads), gcFirst=TRUE)
 }
 }
 
@@ -58,7 +58,7 @@ load("myodMyo.rda")
 
 chromLens <- seqlengths(Mmusculus)
 
-seqRanges <- lapply(myodMyo, growSeqs)
+seqRanges <- lapply(myodMyo, extendReads)
 
 cblasts = combineLanes(seqRanges[c(1,3,5)])
 ctubes = combineLanes(seqRanges[c(2,4,6)])

@@ -26,7 +26,7 @@ coverageSummary <-
     function(x, max = max(end(g)) + 400L)
     ## x is a list at the lane->chromosome level, with components "+" and "-"
 {
-    g <- growSeqs(x)
+    g <- extendReads(x)
     coverage(g, 1, max)
 }
 

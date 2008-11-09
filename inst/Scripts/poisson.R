@@ -47,12 +47,12 @@ if (file.exists("alignInfo.rda")) load("alignInfo.rda") else
 
     save(lreads, chromLens, file = "alignInfo.rda")
 
-    ## system.time(seqRanges.old <- lapply(reads, growSeqs), gcFirst=TRUE)
+    ## system.time(seqRanges.old <- lapply(reads, extendReads), gcFirst=TRUE)
 } 
 
 
 ## basically same, but retains order of chromosomes
-system.time(seqRanges <- lapply(lreads, growSeqs), gcFirst=TRUE)
+system.time(seqRanges <- lapply(lreads, extendReads), gcFirst=TRUE)
 
 cblasts = combineLanes(seqRanges[c(1,3,5)])
 ctubes = combineLanes(seqRanges[c(2,4,6)])

@@ -33,10 +33,11 @@ chrom.list <- paste("chr", c(1:19), sep = "")
 
 chromLens <- seqlengths(Mmusculus)[chrom.list]
 
-system.time(seqRanges.old <- lapply(reads, growSeqs), gcFirst=TRUE)
+system.time(seqRanges.old <- lapply(reads, extendReads), gcFirst=TRUE)
 
 ## basically same, but retains order of chromosomes
-system.time(seqRanges <- lapply(lapply(reads, as.list), growSeqs), gcFirst=TRUE)
+system.time(seqRanges <- lapply(lapply(reads, as.list), extendReads), 
+                                    gcFirst=TRUE)
 
 
 

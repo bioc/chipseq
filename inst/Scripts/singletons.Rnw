@@ -34,48 +34,7 @@ set.seed(20081008)
 
 
 
-<<defs,echo=FALSE>>=
-
-## get islands.  This needs care for right-end of coverage; 
-## coverage is by chromosome, possibly different species.  
-## We'll avoid this by just using the furthest hit
-
-getSingletons <- 
-    function(x, jitter = TRUE)
-    ## x is a list at the lane->chromosome level, with components "+" and "-"
-{
-    g <- growSeqs(x)
-    cov <- coverage(g, 1, max(end(g) + 400L))
-    s <- slice(cov, lower = 1)
-    s <- s[viewMaxs(s) == 1] 
-    ## We retain length-400 islands (actually 2 adjoint length 200), but 
-    ## these are hopefully rare enough not to matter.
-    if (jitter) 
-        0.5 * (start(s) + end(s) + runif(length(s)))
-    else 
-        0.5 * (start(s) + end(s))
-}
-
-
-## common infrastructure to summarize reads in the form of nested lists: 
-##  reads.list=list("1" = list("chr1" = list("+"=..., "-"=...), 
-##                             "chr2"=...), 
-##                  "2" = list(...))
-## other 'summary.fun' can be used for other types of summaries
-
-summarizeLane <- function(clist, summary.fun = getSingletons, ...)
-{
-    ## clist is a list at the lane level, with one list("+"=, "-"=) for each chromsome
-    lapply(clist, summary.fun, ...)
-}
-
-summarizeReads <- 
-    function(reads.list, lanes = c("1", "2", "3", "4", "6", "7", "8"), ..., verbose = FALSE)
-{
-    if (verbose) cat(paste("Processing lanes", paste(lanes, collapse = ",")), fill = TRUE)
-    lapply(reads.list[lanes], summarizeLane, ...)
-}
-
+<<hmm>>=
 
 count.hmm <-
     function(ref.locs, obs.locs, 
@@ -144,22 +103,6 @@ combineLocs <-
                sort(unlist(lapply(dots, "[[", nm), use.names = FALSE))
            },
            simplify = FALSE)
-}
-
-
-
-count.singletons <- function(x) ## x <- summarizeReads(.)
-{
-    ans <- 
-        do.call(make.groups, 
-                lapply(x, 
-                       function(x) {
-                           as.data.frame.table(sapply(x, length))
-                       }))
-    names(ans)[names(ans) == "Freq"] <- "count"
-    names(ans)[names(ans) == "Var1"] <- "chromosome"
-    names(ans)[names(ans) == "which"] <- "lane"
-    ans
 }
 
 

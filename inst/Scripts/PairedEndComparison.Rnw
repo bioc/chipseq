@@ -45,8 +45,8 @@ combinedPeaks <-
     function(lane1, lane2, subsample = TRUE, chrom.lens,
              lower = 1, min.depth = lower)
 {
-    lane1 <- growSeqs(lane1)
-    lane2 <- growSeqs(lane2)
+    lane1 <- extendReads(lane1)
+    lane2 <- extendReads(lane2)
 
     if (subsample)
     {

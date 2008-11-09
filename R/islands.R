@@ -82,3 +82,43 @@ sliceSummary <-
     ans
 }
 
+
+coverageSummary <-
+    function(x, max = max(end(g)) + 400L)
+    ## x is a list at the lane->chromosome level, with components "+" and "-"
+{
+    g <- extendReads(x)
+    coverage(g, 1, max)
+}
+
+
+getSingletons <-
+    function(x, jitter = TRUE)
+    ## x is a list at the lane->chromosome level, with components "+" and "-"
+{
+    g <- growSeqs(x)
+    cov <- coverage(g, 1, max(end(g) + 400L))
+    s <- slice(cov, lower = 1)
+    s <- s[viewMaxs(s) == 1]
+    ## We retain length-400 islands (actually 2 adjoint length 200), but
+    ## these are hopefully rare enough not to matter.
+    if (jitter)
+        0.5 * (start(s) + end(s) + runif(length(s)))
+    else
+        0.5 * (start(s) + end(s))
+}
+
+count.singletons <- function(x) ## x <- summarizeReads(.)
+{
+    ans <-
+        do.call(make.groups,
+                lapply(x,
+                       function(x) {
+                           as.data.frame.table(sapply(x, length))
+                       }))
+    names(ans)[names(ans) == "Freq"] <- "count"
+    names(ans)[names(ans) == "Var1"] <- "chromosome"
+    names(ans)[names(ans) == "which"] <- "lane"
+    ans
+}
+
