@@ -83,7 +83,7 @@ extendReads <- function(reads, readLen=35, seqLen=200,
                     end = c(reads[["+"]] + seqLen - 1, reads[["-"]] + readLen - 1))
             ## width = seqLen) # error when start=numeric(0)
         }
-        else lapply(reads, extendReads)
+        else lapply(reads, extendReads, readLen = readLen, seqLen = seqLen, strand = strand)
     }
     else stop("Invalid value for 'reads'")
 }
