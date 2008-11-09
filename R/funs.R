@@ -37,7 +37,11 @@ setMethod("as.list", "AlignedRead",
                      function(df) with(df, split(position, strand))[c("-", "+")])
           })
 
+setAs("AlignedRead", "AlignedList",
+      function(from) new("AlignedList", as.list(from)))
 
+setMethod("show", "AlignedList",
+          function(object) str(object))
 
 
 splitbyChr <- function(x) {

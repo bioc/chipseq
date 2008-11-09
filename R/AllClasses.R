@@ -1,0 +1,2 @@
+
+setClass("AlignedList", contains = "list")
