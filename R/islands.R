@@ -96,7 +96,7 @@ coverageSummary <-
     function(x, max = max(end(g)) + 400L, strand = c("+", "-"))
     ## x is a list at the lane->chromosome level, with components "+" and "-"
 {
-    g <- extendReads(x, strand)
+    g <- extendReads(x, strand=strand)
     coverage(g, 1, max)
 }
 
