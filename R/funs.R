@@ -41,7 +41,21 @@ setAs("AlignedRead", "AlignedList",
       function(from) new("AlignedList", as.list(from)))
 
 setMethod("show", "AlignedList",
-          function(object) str(object))
+          function(object) {
+              lanes <- names(object)
+              nreads <- sapply(object, function(x) length(unlist(x, use.names = FALSE)))
+              chromosomes <- unique(unlist(lapply(alignedLocs, names)))
+              strands <- unique(unlist(lapply(alignedLocs, function(x) lapply(x, names))))
+              cat(sprintf("'%s' object with %d lanes:\n",
+                          class(object), length(object)))
+              ## print(cbind(nreads = nreads))
+              print(nreads)
+              cat("\nChromosomes: ")
+              cat(chromosomes, fill = TRUE, sep = ", ")
+              cat("\nStrands: ")
+              cat(strands, fill = TRUE, sep = ", ")
+              invisible()
+          })
 
 
 splitbyChr <- function(x) {
