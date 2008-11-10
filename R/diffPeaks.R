@@ -2,7 +2,57 @@
 
 ## functions to identify "differential peaks". See ../inst/Scripts/poisson.R
 
+## symmetric version
+
 diffPeakSummary <-
+    function(ranges1, ranges2, chrom.lens,
+             lower = 10, extend = 0,
+             viewSummary = list(sums = viewSums, maxs = viewMaxs))
+
+    ## 'extend' is unused.  The intent is to extend the peaks by this
+    ## amount before summarizing
+
+{
+    combined <- combineLanes(list(ranges1, ranges2))
+    comb.cov <- laneCoverage(combined, chrom.lens)
+    comb.peaks <- lapply(comb.cov, slice, lower = lower)
+
+    cov1 <- laneCoverage(ranges1, chrom.lens)
+    cov2 <- laneCoverage(ranges2, chrom.lens)
+    peaks1 <- copyIRangesbyChr(comb.peaks, cov1)
+    peaks2 <- copyIRangesbyChr(comb.peaks, cov2)
+
+    peakSummary <-
+        do.call(make.groups,
+                sapply(names(peaks1),
+                       function(chr) {
+                           ans <-
+                               data.frame(start = start(peaks1[[chr]]),
+                                          end = end(peaks1[[chr]]))
+                           if (is.list(viewSummary))
+                           {
+                               for (nm in names(viewSummary))
+                               {
+                                   ans[[paste(nm, "1", sep = "")]] <- viewSummary[[nm]](peaks1[[chr]])
+                                   ans[[paste(nm, "2", sep = "")]] <- viewSummary[[nm]](peaks2[[chr]])
+                               }
+                           }
+                           else 
+                           {
+                               ans[["summary1"]] <- viewSummary(peaks1[[chr]])
+                               ans[["summary2"]] <- viewSummary(peaks2[[chr]])
+                           }
+                           ans
+                       },
+                       simplify = FALSE))
+    names(peakSummary)[names(peakSummary) == "which"] <- "chromosome"
+    peakSummary
+}
+
+
+## version with respect to a reference
+
+diffPeakSummaryRef <-
     function(obs.ranges, ref.ranges, chrom.lens,
              lower = 10, extend = 0,
              viewSummary = list(sums = viewSums, maxs = viewMaxs))
