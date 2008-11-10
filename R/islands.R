@@ -25,6 +25,9 @@ logscale.components <- function(axis = c("x", "y"), base = 2)
 ##                             "chr2"=...), 
 ##                  "2" = list(...))
 
+## NOTE: summary.fun must return a data frame in the current
+## implementation (and shouldn't be very big at that)
+
 summarizeLane <- function(clist, summary.fun, ...)
 {
     ## clist is a list at the lane level, with one list("+"=, "-"=) for each chromsome
@@ -92,14 +95,17 @@ sliceSummary <-
 }
 
 
-coverageSummary <-
-    function(x, max = NULL, strand = c("+", "-"))
-    ## x is a list at the lane->chromosome level, with components "+" and "-"
-{
-    g <- extendReads(x, strand=strand)
-    if( missing(max) ) max = max(end(g)) + 400L
-    coverage(g, 1, max)
-}
+## Not really a summary function. FIXME: coverage should eventually be
+## generic, dealing with 'AlignedList'-type objects
+
+## coverageSummary <-
+##     function(x, max = NULL, strand = c("+", "-"))
+##     ## x is a list at the lane->chromosome level, with components "+" and "-"
+## {
+##     g <- extendReads(x, strand=strand)
+##     if( missing(max) ) max = max(end(g)) + 400L
+##     coverage(g, 1, max)
+## }
 
 
 getSingletons <-

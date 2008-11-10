@@ -1,7 +1,8 @@
 
 ## FIXME: should generalize to conditional plots if i is a vector
 
-plotPeak <-
+plotPeak <- 
+plotCoverage <-
     function(peaks1, peaks2 = NULL, i = 1,
              xlab = "Position", ylab = "Coverage",
              ...) 
@@ -30,3 +31,4 @@ plotPeak <-
            },
            xlab = xlab, ylab = ylab)
 }
+

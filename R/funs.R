@@ -38,15 +38,20 @@ setMethod("as.list", "AlignedRead",
           })
 
 setAs("AlignedRead", "AlignedList",
-      function(from) new("AlignedList", as.list(from)))
+      function(from) {
+          new("AlignedList",
+              lapply(as.list(from),
+                     function(x) new("GenomeList", x)))
+      })
+
 
 setMethod("show", "AlignedList",
           function(object) {
               lanes <- names(object)
               nreads <- sapply(object, function(x) length(unlist(x, use.names = FALSE)))
-              chromosomes <- unique(unlist(lapply(alignedLocs, names)))
-              strands <- unique(unlist(lapply(alignedLocs, function(x) lapply(x, names))))
-              cat(sprintf("'%s' object with %d lanes:\n",
+              chromosomes <- unique(unlist(lapply(object, names)))
+              strands <- unique(unlist(lapply(object, function(x) lapply(x, names))))
+              cat(sprintf("'%s' with %d lanes:\n",
                           class(object), length(object)))
               ## print(cbind(nreads = nreads))
               print(nreads)
@@ -54,6 +59,19 @@ setMethod("show", "AlignedList",
               cat(chromosomes, fill = TRUE, sep = ", ")
               cat("\nStrands: ")
               cat(strands, fill = TRUE, sep = ", ")
+              invisible()
+          })
+
+setMethod("show", "GenomeList",
+          function(object) {
+              chromosomes <- names(object)
+              child.class <- unique(sapply(object, class))
+              cat(sprintf("%s '%s' with %d chromosomes:\n",
+                          object@genome,
+                          class(object),
+                          length(object)))
+              cat("\nClass of children: ")
+              cat(child.class, fill = TRUE, sep = ", ")
               invisible()
           })
 
