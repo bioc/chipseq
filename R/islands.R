@@ -93,7 +93,7 @@ sliceSummary <-
 
 
 coverageSummary <-
-    function(x, max, strand = c("+", "-"))
+    function(x, max = NULL, strand = c("+", "-"))
     ## x is a list at the lane->chromosome level, with components "+" and "-"
 {
     g <- extendReads(x, strand=strand)
