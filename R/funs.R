@@ -188,7 +188,13 @@ laneCoverage <- function(lane, chromLens) {
            simplify = FALSE)
 }
 
-islands <- function(x) lapply(x, slice, lower = 1)
+##takes a GenomeList as input, and returns one
+islands <- function(x) {
+           ans = lapply(x, slice, lower = 1)
+           if( is(x, "GenomeList") )
+              new("GenomeList", ans, genome = x@genome)
+           else ans
+}
 
 readsPerIsland <- function(lane, ntperread = 200L) 
         lapply(lane,
