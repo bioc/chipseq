@@ -59,3 +59,76 @@ genomic_exons <- function(genes) {
   }
   do.call("rbind", as.list(by(genes, genes$chrom, genomic_exons_chrom)))
 }
+
+
+
+countHits <- function(subject, query)
+{
+    sum(!is.na(overlap(subject, query, multiple = FALSE)))
+}
+
+contextDistributionPeakSet <- function(peaks, gregions)
+{
+    query <- with(peaks, IRanges(start, end))
+    irangeByType <-
+        function(type = c("promoter", "threeprime",
+                          "upstream", "downstream", "gene"))
+        {
+            type <- match.arg(type)
+            istarts <- sprintf("%s.start", type)
+            iends <- sprintf("%s.end", type)
+            keep <- !duplicated(gregions[[istarts]]) ## what's the right thing to do here???
+            IRanges(start = gregions[[istarts]][keep],
+                    end = gregions[[iends]][keep])
+        }
+    subject <-
+        list(promoter = irangeByType("promoter"),
+             threeprime = irangeByType("threeprime"),
+             upstream = irangeByType("upstream"),
+             downstream = irangeByType("downstream"),
+             gene = irangeByType("gene"))
+    c(total = length(query),
+      sapply(subject, countHits, query = query))
+}
+
+
+## FIXME: need more flexible interface to define subgroups such as
+## 'up' and 'down'
+
+contextDistributionByChr <- function(chr, peaks, gregions)
+{
+    gregions.sub <- subset(gregions, chrom == chr)
+    peaks.sub <- subset(peaks, chromosome == chr)
+    all <- contextDistributionPeakSet(peaks.sub, gregions.sub)
+    up <- 
+        if ("up" %in% names(peaks))
+            contextDistributionPeakSet(subset(peaks.sub, up), gregions.sub)
+        else NULL
+    down <- 
+        if ("down" %in% names(peaks))
+            contextDistributionPeakSet(subset(peaks.sub, down), gregions.sub)
+        else NULL
+    ans <- as.data.frame(rbind(all = all, up = up, down = down))
+    ans <- cbind(type = factor(rownames(ans), levels = unique(rownames(ans))), 
+                 ans)
+    ans
+}
+
+contextDistribution <-
+    function(peaks, gregions,
+             chroms = levels(peaks$chromosome),
+             ...)
+{
+    ans <-
+        do.call(lattice::make.groups,
+                sapply(chroms, function(chr) {
+                    contextDistributionByChr(chr, peaks, gregions)
+                }, simplify = FALSE))
+    names(ans)[names(ans) == "which"] <- "chromosome"
+    rownames(ans) <- NULL
+    ans
+}
+
+
+
+
