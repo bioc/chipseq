@@ -107,6 +107,28 @@ sliceSummary <-
 ##     coverage(g, 1, max)
 ## }
 
+## specialized coverage methods for our containers
+
+ setMethod("coverage", "GenomeList",
+           function(x, start, end, strand) {
+             ans = lapply(x, coverageperChromosome, end=end,
+               strand = strand)
+             new("GenomeList", ans, genome=x@genome)
+           })
+
+ setMethod("coverage", "AlignedList",
+           function(x, start, end, strand) {
+             ans = lapply(x, coverage, start, end, strand)
+             new("AlignedList", ans)
+           })
+
+ coverageperChromosome <- function (x, end, strand = c("+", "-")) 
+{
+    g <- extendReads(x, strand = strand)
+    if( missing(end) || is.na(end) ) max = max(end(g)) + 400L
+       else max = end
+    coverage(g, 1, max)
+}
 
 getSingletons <-
     function(x, jitter = TRUE)
