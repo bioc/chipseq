@@ -144,6 +144,17 @@ merge <- function(IR, maxgap)
   reduce(IR) 
 }
 
+##take two or more lanes and combine the read positions.  FIXME: This
+##should be unified with combineLanes below
+
+combineLaneReads <- function(laneList, chromList = names(laneList[[1]])) {
+    names(chromList) = chromList ##to get the return value named
+    lapply(chromList,
+           function(chr) {
+               list("+" = unlist(lapply(laneList, function(x) x[[chr]][["+"]])),
+                    "-" = unlist(lapply(laneList, function(x) x[[chr]][["-"]])))
+           })
+}
 
 ##take two or more lanes and combine the data
 combineLanes <- function(laneList, chromList = names(laneList[[1]])) {

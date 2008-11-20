@@ -1,0 +1,266 @@
+\documentclass{article}
+\title{Reproducibility of peaks: is one lane enough?}
+
+
+\usepackage[text={178mm,230mm},centering]{geometry}
+\usepackage{Sweave}
+
+\SweaveOpts{keep.source=TRUE,eps=FALSE,pdf=TRUE,width=9,height=11,prefix.string=figs/figs-peakreproducibility}
+\setkeys{Gin}{width=0.98\textwidth}
+
+\begin{document}
+
+\maketitle
+
+\raggedright
+
+<<setup,echo=FALSE,results=hide>>=
+
+library(chipseq)
+library(lattice)
+## library(hexbin)
+## library(latticeExtra)
+
+
+combineLaneReads <- function(laneList, chromList = names(laneList[[1]])) {
+    names(chromList) = chromList ##to get the return value named
+    lapply(chromList,
+           function(chr) {
+               list("+" = unlist(lapply(laneList, function(x) x[[chr]][["+"]])),
+                    "-" = unlist(lapply(laneList, function(x) x[[chr]][["-"]])))
+           })
+}
+
+
+load("myodMyo.rda")
+load("myodFibro.rda")
+load("pairedReads.rda")
+
+set.seed(20081008)
+
+findPeaks <- function(x, g = extendReads(x), lower = 8)
+{
+    s <- slice(coverage(g, 1, max(end(g))), lower = lower)
+    data.frame(start = start(s), end = end(s))
+}
+
+findIntersections <- function(peaks) 
+{
+    ## peaks = data.frame(start, end, lane).
+    peaks$lane <- as.factor(peaks$lane)
+    peaks <- peaks[order(peaks$start), ]
+    allpeaks <- with(peaks, IRanges(start, end))
+    sapply(levels(peaks$lane),
+           function(x) {
+               subpeaks <- 
+                   with(subset(peaks, lane == x),
+                        IRanges(start, end))
+               overlap(subpeaks, allpeaks, multiple = FALSE)
+           }, simplify = TRUE)
+}
+
+
+## foo <- findIntersections(myodMyoPeaks1)
+## levelplot(head(is.na(foo[, c(1, 3, 5, 2, 4, 6, 7)]), 1000), aspect = "fill")
+
+
+captureRecaptureChr <- function(peaks, chr = "chr1") 
+{
+    peaks <- subset(peaks, chromosome == chr, select = -chromosome)
+    ## peaks = data.frame(start, end, lane).
+    peaks$lane <- as.factor(peaks$lane)
+    peaks <- peaks[order(peaks$start), ]
+    ## For each pair of lanes, we want 
+    ## c(number of peaks in 1,
+    ##   number of peaks in 2,
+    ##   number of 2 peaks overlapping a 1 peak,
+    ##   number of 1 peaks overlapping a 2 peak)
+    ## all this is available if we compute 'number of j peaks overlapping a i peak' for all (i, j)
+    doPair <- function(u, v) {
+        peaks1 <- with(subset(peaks, lane == u), IRanges(start, end))
+        peaks2 <- with(subset(peaks, lane == v), IRanges(start, end))
+        if (length(peaks1) && length(peaks2))
+            sum(!is.na(overlap(peaks1, peaks2, multiple = FALSE)))
+        else 
+            0
+    }
+    lanes <- levels(peaks$lane)
+    nlanes <- length(lanes)
+    est <- common <- matrix(NA, nrow = nlanes, ncol = nlanes, dimnames = list(lanes, lanes))
+    for (i in seq_len(nlanes))
+        for (j in seq_len(nlanes))
+            common[i, j] <- doPair(lanes[i], lanes[j])
+    common
+}
+
+captureRecapture <- function(peaks, combine = TRUE, verbose = interactive()) 
+{
+    peaks$lane <- as.factor(peaks$lane)
+    chroms <- unique(as.character(peaks$chromosome))
+    ans <- 
+        if (combine)
+            with(peaks, 
+                 matrix(0, nrow = nlevels(lane), ncol = nlevels(lane),
+                        dimnames = list(levels(lane), levels(lane))))
+        else 
+            with(peaks, 
+                 array(0, dim = c(nlevels(lane), nlevels(lane), length(chroms)),
+                       dimnames = list(levels(lane), levels(lane), chroms)))
+    for (chr in chroms) {
+        if (verbose) message("Processing ", chr)
+        if (combine)
+            ans <- ans + captureRecaptureChr(peaks, chr)
+        else
+            ans[,,chr] <- captureRecaptureChr(peaks, chr)
+    }
+    ans
+}
+
+
+
+@ 
+
+
+\section*{Capture-recapture estimates for one chromosome}
+
+
+<<>>=
+
+myodMyoPeaks <- summarizeReads(myodMyo, summary.fun = findPeaks, lower = 8)
+common <- captureRecaptureChr(myodMyoPeaks, "chr1")
+common <- common[c(1, 3, 5, 2, 4, 6, 7), c(1, 3, 5, 2, 4, 6, 7)]
+common
+
+## estimated true number of peaks based on lane pair
+est.npeaks <- function(x, i = TRUE) outer(diag(x)[i], diag(x)[i], "*") / x[i, i]
+round(est.npeaks(common))
+
+@ 
+
+
+\section*{Capture-recapture estimates after combining chromosomes}
+
+<<>>=
+
+myodMyoCommon <- captureRecapture(myodMyoPeaks)
+round(est.npeaks(myodMyoCommon, c("1", "3", "6")))
+round(est.npeaks(myodMyoCommon, c("2", "4", "7")))
+
+@ 
+
+With a higher cutoff:
+
+<<>>=
+
+myodMyoPeaks <- summarizeReads(myodMyo, summary.fun = findPeaks, lower = 12)
+myodMyoCommon <- captureRecapture(myodMyoPeaks[-7])
+round(est.npeaks(myodMyoCommon, c("1", "3", "6")))
+round(est.npeaks(myodMyoCommon, c("2", "4", "7")))
+
+@ 
+
+Reported number of peaks from combining lanes:
+
+<<>>=
+
+combinedMyo <- 
+    list(cblasts = combineLaneReads(myodMyo[c("1","3","6")]),
+         ctubes = combineLaneReads(myodMyo[c("2","4","7")]))
+
+combinedMyoPeaks <- 
+    summarizeReads(combinedMyo, summary.fun = findPeaks, lower = 8)
+
+combinedMyoCommon <- captureRecapture(combinedMyoPeaks)
+round(est.npeaks(combinedMyoCommon))
+
+
+@ 
+
+\section*{Fibroblast estimates combining chromosomes}
+
+<<>>=
+
+myodFibroPeaks <- summarizeReads(myodFibro, summary.fun = findPeaks, lower = 8)
+myodFibroCommon <- captureRecapture(myodFibroPeaks)
+round(est.npeaks(myodFibroCommon, c("1", "3", "6")))
+round(est.npeaks(myodFibroCommon, c("2", "4", "7")))
+
+@ 
+
+
+Combining lanes in fibroblast run:
+
+<<>>=
+
+combinedFibro <- 
+    list(fibro = combineLaneReads(myodFibro[c("1","3","6")]),
+         fibroMyoD = combineLaneReads(myodFibro[c("2","4","7")]))
+
+combinedFibroPeaks <- 
+    summarizeReads(combinedFibro, summary.fun = findPeaks, lower = 12)
+
+combinedFibroCommon <- captureRecapture(combinedFibroPeaks)
+round(est.npeaks(combinedFibroCommon))
+
+
+@ 
+
+
+\section*{Comparing with paired end run}
+
+This at least compares similar samples (combining 3 antibodies, either
+virtually or actually).
+
+<<>>=
+
+combinedRuns <- 
+    list(fibroMyoD1 = combinedFibro$fibroMyoD,
+         fibroMyoD3 = pairedReads$"1",
+         myotubes1 = combinedMyo$ctubes,
+         myotubes3 = pairedReads$"2")
+
+combinedRunsPeaks <- 
+    summarizeReads(combinedRuns, summary.fun = findPeaks, lower = 8)
+combinedRunsCommon <- captureRecapture(combinedRunsPeaks)
+combinedRunsCommon
+round(est.npeaks(combinedRunsCommon, 1:2))
+round(est.npeaks(combinedRunsCommon, 3:4))
+
+@ 
+
+
+\section*{Estimated proportion by chromosome}
+
+<<>>=
+
+combinedRunsCommon <- captureRecapture(combinedRunsPeaks, combine = FALSE)
+rbind(combinedRunsCommon[1, 1, ], combinedRunsCommon[2, 2, ])
+rbind(combinedRunsCommon[3, 3, ], combinedRunsCommon[4, 4, ])
+
+## paired-end peaks / combined peaks by chrom, fibro+MyoD
+combinedRunsCommon[1, 2, ] / combinedRunsCommon[1, 1, ]
+
+## paired-end peaks / combined peaks by chrom, myotubes
+combinedRunsCommon[3, 4, ] / combinedRunsCommon[3, 3, ]
+
+
+## other way round
+combinedRunsCommon[2, 1, ] / combinedRunsCommon[2, 2, ]
+combinedRunsCommon[4, 3, ] / combinedRunsCommon[4, 4, ]
+
+
+@ 
+
+\newpage
+
+<<fig=TRUE>>=
+plot(dotplot(sort(combinedRunsCommon[1, 2, ] / combinedRunsCommon[1, 1, ])))
+@ 
+
+\newpage
+
+<<fig=TRUE>>=
+plot(dotplot(sort(combinedRunsCommon[3, 4, ] / combinedRunsCommon[3, 3, ])))
+@ 
+
+\end{document}

@@ -25,7 +25,6 @@ load("myodFibro.rda")
 
 set.seed(20081008)
 
-
 islandDepthSummary <- function(x, g = extendReads(x))
 {
     s <- slice(coverage(g, 1, max(end(g))), lower = 1)
@@ -37,10 +36,10 @@ islandDepthSummary <- function(x, g = extendReads(x))
 plotDepthDistribution <- 
     function(data, chr = "chr1", depth.cutoff = 20, fit = TRUE, ...)
 {
-    xyplot(log(count) ~ depth | lane + chromosome, data, 
+    xyplot(log(count) ~ depth | chromosome + lane, data, 
            subset = (chromosome %in% chr & depth <= depth.cutoff),
-           main = sprintf("Distribution of island depths (%s)", chr),
-           layout = c(length(chr), nlevels(data$lane)), 
+           main = "Distribution of island depths",
+           ## layout = c(length(chr), nlevels(data$lane)), 
            pch = 16, type = c("p", "g"), as.table = TRUE,
            strip = FALSE, strip.left = TRUE, # aspect = 0.4,
            panel = if (fit) function(x, y, ...) {
@@ -58,6 +57,25 @@ plotDepthDistribution <-
 }
 
 
+## Crude FDR calculation. For each cutoff, what is FDR = #FD / #D.  We know 
+## what #D is, but not #FD. Suppose we have a null model; then we can compute 
+## expected #FD.  Note: our estimated null model (Poisson) is crude.
+
+
+null.est <- function(y) 
+{
+    lambda <- 2 * y[2] / y[1]
+    null.est <- function(xx) {
+        xx * log(lambda) - lambda - lgamma(xx + 1)
+    }
+    log.N.hat <- null.est(1) - y[1] # both already log-transformed
+    panel.lines(1:10, -log.N.hat + null.est(1:10))
+}
+
+    
+
+
+
 @ 
 
 
@@ -70,7 +88,8 @@ myodMyoDepth <-
     summarizeReads(myodMyo, 
                    summary.fun = islandDepthSummary)
 
-plotDepthDistribution(myodMyoDepth, chr = "chr1", fit = FALSE)
+plotDepthDistribution(myodMyoDepth, chr = "chr1", 
+                      fit = FALSE, aspect = 0.35)
 
 @ 
 
@@ -102,8 +121,9 @@ combinedMyoDepth <-
                    summary.fun = function(x) {
                        islandDepthSummary(g = x)
                    })
-                   
-plotDepthDistribution(combinedMyoDepth, chr = "chr1", fit = FALSE)
+
+plotDepthDistribution(combinedMyoDepth, chr = "chr1", 
+                      fit = FALSE, aspect = 0.35)
 
 
 @ 
@@ -111,7 +131,7 @@ plotDepthDistribution(combinedMyoDepth, chr = "chr1", fit = FALSE)
 \newpage
 
 \begin{center}
-<<fig=TRUE,echo=FALSE>>=
+<<fig=TRUE,echo=FALSE,height=8>>=
 plot(trellis.last.object())
 @ 
 \end{center}
@@ -158,7 +178,7 @@ we get
 <<>>=
 
 plotDepthDistribution(myodMyoDepth, chr = "chr1", fit = TRUE,
-                      ylim = c(0, 12))
+                      ylim = c(0, 12), aspect = 0.35)
 
 @ 
 
@@ -176,41 +196,36 @@ plot(trellis.last.object())
 <<>>=
 
 plotDepthDistribution(combinedMyoDepth, chr = "chr1", fit = TRUE,
-                      ylim = c(0, 12))
+                      ylim = c(0, 12), aspect = 0.35)
 
 @ 
 
-\newpage
 
 \begin{center}
-<<fig=TRUE,echo=FALSE>>=
+<<fig=TRUE,echo=FALSE,height=8>>=
 plot(trellis.last.object())
 @ 
 \end{center}
 
+\newpage
 
 \section*{Fibroblast run}
 
 
 <<>>=
 
-myodFibroDepth <- 
-    summarizeReads(myodFibro,
-                   summary.fun = islandDepthSummary)
-
-plotDepthDistribution(myodFibroDepth, chr = "chr1", fit = TRUE,
-                      ylim = c(0, 12))
-
+myodFibroDepth <- summarizeReads(myodFibro, summary.fun = islandDepthSummary)
+plotDepthDistribution(myodFibroDepth, chr = "chr1", fit = TRUE, ylim = c(0, 12), aspect = 0.35)
 
 @ 
 
-\newpage
-
 \begin{center}
-<<fig=TRUE,echo=FALSE>>=
+<<fig=TRUE,echo=FALSE,height=9>>=
 plot(trellis.last.object())
 @ 
 \end{center}
+
+\newpage
 
 
 \section*{How do we do in simulation?}
@@ -231,16 +246,39 @@ simulationDepth <-
     summarizeReads(subsim, 
                    summary.fun = islandDepthSummary)
 
-plotDepthDistribution(simulationDepth, chr = c("chr1", "chr2"), fit = TRUE)
+t(plotDepthDistribution(simulationDepth, chr = c("chr1", "chr2"), 
+                        fit = TRUE, aspect = 0.35))
 
 @ 
 
 
-\newpage
+\begin{center}
+<<fig=TRUE,echo=FALSE,height=8>>=
+plot(trellis.last.object())
+@ 
+\end{center}
+
+
+\section*{Variability by chromosome}
+
+<<>>=
+
+combMyoDist <- 
+    plotDepthDistribution(combinedMyoDepth, chr = paste("chr", 1:19, sep = ""),
+                          fit = TRUE, depth.cutoff = 15, aspect = 0.5, 
+                          layout = c(3, 7))
+
+@ 
 
 \begin{center}
-<<fig=TRUE,echo=FALSE>>=
-plot(trellis.last.object())
+<<fig=TRUE,echo=FALSE,height=9>>=
+plot(combMyoDist[, 1])
+@ 
+\end{center}
+
+\begin{center}
+<<fig=TRUE,echo=FALSE,height=9>>=
+plot(combMyoDist[, 2])
 @ 
 \end{center}
 
