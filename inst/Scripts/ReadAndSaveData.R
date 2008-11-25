@@ -1,4 +1,6 @@
 
+## FIXME: update to use filtering in ShortRead
+
 library(ShortRead)
 library(chipseq)
 
@@ -6,8 +8,17 @@ readReads <-
     function(srcdir, lane, exclude = "[MXY]|rand", type = "MAQMapShort", ...)
 {
     message(sprintf("reading data from lane %s [%s]", lane, srcdir))
-    as.list(readAndClean(srcdir, lane, exclude = exclude, type = type, ...))
+    ans <- 
+        readAligned(srcdir, lane, type = type, 
+                    filter = compose(strandFilter(strandLevels=c("-", "+")),
+                                     chromosomeFilter(regex = "chr[0-9]+"),
+                                     uniqueFilter(withSread = FALSE),
+                                     alignQualityFilter(15)))
+    as.list(ans)
+    ## readAndClean(srcdir, lane, exclude = exclude, type = type, ...))
 }
+
+
 
 readFirstRead <-
     function(srcdir = "/home/jdavison/ycao/01-09-2008/text", lane,
