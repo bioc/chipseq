@@ -18,16 +18,16 @@
 
 library(chipseq)
 library(lattice)
-## library(hexbin)
-## library(latticeExtra)
+library(geneplotter)
+library(latticeExtra)
 
 
 combineLaneReads <- function(laneList, chromList = names(laneList[[1]])) {
     names(chromList) = chromList ##to get the return value named
     lapply(chromList,
            function(chr) {
-               list("+" = unlist(lapply(laneList, function(x) x[[chr]][["+"]])),
-                    "-" = unlist(lapply(laneList, function(x) x[[chr]][["-"]])))
+               list("+" = unlist(lapply(laneList, function(x) x[[chr]][["+"]]), use.names = FALSE),
+                    "-" = unlist(lapply(laneList, function(x) x[[chr]][["-"]]), use.names = FALSE))
            })
 }
 
@@ -38,11 +38,21 @@ load("pairedReads.rda")
 
 set.seed(20081008)
 
-findPeaks <- function(x, g = extendReads(x), lower = 8)
+findPeaks <- function(x, g = extendReads(x), lower = 8, 
+                      give.islands = TRUE, df = TRUE)
 {
-    s <- slice(coverage(g, 1, max(end(g))), lower = lower)
-    data.frame(start = start(s), end = end(s))
+    if (give.islands) ## return the whole island when a peak is found
+    {
+        s <- slice(coverage(g, 1, max(end(g))), lower = 1)
+        s <- s[viewMaxs(s) >= lower]
+    }
+    else 
+        s <- slice(coverage(g, 1, max(end(g))), lower = lower)
+    if (df) data.frame(start = start(s), end = end(s))
+    else s
 }
+
+
 
 findIntersections <- function(peaks) 
 {
@@ -114,6 +124,38 @@ captureRecapture <- function(peaks, combine = TRUE, verbose = interactive())
             ans[,,chr] <- captureRecaptureChr(peaks, chr)
     }
     ans
+}
+
+
+divideSample <- function(x, prop = 0.5)
+{
+    ## take a single 'lane' of data, divide (per chromosome/strand) 
+    ## into 2 groups by proportion p
+
+    ans <- list(lane1 = x, lane2 = x)
+    for (chr in names(x))
+        for (strand in names(x[[chr]]))
+        {
+            n <- length(x[[chr]][[strand]])
+            if (n == 0) next
+            m <- ceiling(prop * n)    # m is at least 1...
+            id <- sample(n, size = m) # so indexing by -id is ok.
+            ans$lane1[[chr]][[strand]] <- x[[chr]][[strand]][id]
+            ans$lane2[[chr]][[strand]] <- x[[chr]][[strand]][-id]
+        }
+    ans
+}
+
+
+
+propsWithError <- function(x, n) 
+{
+    p <- x / n
+    psd <- sqrt(p * (1-p) / n)
+    data.frame(chr = reorder(names(p), p), 
+               prop = p, 
+               lower = p - 3 * psd,
+               upper = p + 3 * psd)
 }
 
 
@@ -253,14 +295,425 @@ combinedRunsCommon[4, 3, ] / combinedRunsCommon[4, 4, ]
 
 \newpage
 
-<<fig=TRUE>>=
-plot(dotplot(sort(combinedRunsCommon[1, 2, ] / combinedRunsCommon[1, 1, ])))
+<<fig=TRUE,height=9>>=
+
+plot(segplot(chr ~ lower + upper, 
+             data = propsWithError(combinedRunsCommon[1, 2, ], 
+                                   combinedRunsCommon[1, 1, ]),
+             center = prop, draw.bands = FALSE))
+
 @ 
 
 \newpage
 
-<<fig=TRUE>>=
-plot(dotplot(sort(combinedRunsCommon[3, 4, ] / combinedRunsCommon[3, 3, ])))
+<<fig=TRUE,height=9>>=
+
+plot(segplot(chr ~ lower + upper, 
+             data = propsWithError(combinedRunsCommon[3, 4, ], 
+                                   combinedRunsCommon[3, 3, ]),
+             center = prop, draw.bands = FALSE))
+
 @ 
+
+\newpage
+
+\section*{Combined lanes: subsampling}
+
+
+<<>>=
+
+npeaks.sub <- function(prop) 
+{
+    round(est.npeaks(captureRecapture(summarizeReads(divideSample(combinedMyo$ctubes, prop = prop), 
+                                                     summary.fun = findPeaks, lower = 8))))
+}
+
+npeaks.sub(0.25)
+npeaks.sub(0.25)
+npeaks.sub(0.33)
+npeaks.sub(0.33)
+npeaks.sub(0.5)
+npeaks.sub(0.5)
+
+@ 
+
+
+\newpage
+
+
+\section*{Error rates using combined lanes as gold standard}
+
+
+Assuming that the combined lanes give all the true peaks (for some
+cutoff), we can try to vary the cutoff in the paired-end sample to get
+estimates of error rates.
+
+<<>>=
+
+ctube.peaks.8 <- lapply(combinedMyo$ctubes, findPeaks, lower = 8, df = FALSE)
+ctube.peaks.10 <- lapply(combinedMyo$ctubes, findPeaks, lower = 10, df = FALSE)
+
+commonPeaks <- function(lower = 10, x = pairedReads$"2", ref.peaks)
+{
+    x.peaks <- lapply(x, findPeaks, lower = lower, df = FALSE)
+    ## print(sapply(x.peaks, length))
+    count.overlap <- function(chr) 
+    {
+        if (length(ref.peaks[[chr]]) && length(x.peaks[[chr]])) 
+        {
+            ov.fp <- 
+                overlap(ref.peaks[[chr]], x.peaks[[chr]], multiple = FALSE)
+            ov.fn <- 
+                overlap(x.peaks[[chr]], ref.peaks[[chr]], multiple = FALSE)
+        }
+        else ov.fp <- ov.fn <- integer(0)
+        c(FP = sum(is.na(ov.fp)), total = length(x.peaks[[chr]]),
+          FN = sum(is.na(ov.fn)), total.ref = length(ref.peaks[[chr]]))
+    }
+    ans <- as.data.frame(t(sapply(names(ref.peaks), count.overlap, simplify = TRUE)))
+    ans <- within(ans, {
+        FDR <- FP / total
+        SD.FDR <- sqrt(FDR * (1 - FDR) / total)
+        FNR <- FN / total.ref
+        SD.FNR <- sqrt(FNR * (1 - FNR) / total.ref)
+    })
+    ans$chr <- I(rownames(ans))
+    ans
+}
+
+ER.df.8 <- 
+    do.call(make.groups, 
+            lapply({ x <- 3:12; names(x) <- as.character(x); x }, 
+                   function(i) {
+                       if (interactive()) message("Processing cutoff ", i)
+                       commonPeaks(i, ref.peaks = ctube.peaks.8)
+                   }))
+
+ER.df.10 <- 
+    do.call(make.groups, 
+            lapply({ x <- 3:12; names(x) <- as.character(x); x }, 
+                   function(i) {
+                       if (interactive()) message("Processing cutoff ", i)
+                       commonPeaks(i, ref.peaks = ctube.peaks.10)
+                   }))
+                       
+
+@ 
+
+\newpage
+
+<<fig=TRUE,height=6>>=
+
+plot(segplot(jitter(as.numeric(as.character(which))) ~ I(FDR-3*SD.FDR) + I(FDR+3*SD.FDR), 
+             data = ER.df.8, horizontal = FALSE,
+             ## center = FDR, 
+             draw.bands = FALSE,
+             main = "Myotubes False discovery rate, using combined depth >= 8 as gold standard",
+             panel = function(...) {
+                 panel.grid(h = -12, v = 0, col = "darkgrey")
+                 panel.segplot(...)
+             }))
+
+@ 
+
+\newpage
+
+<<fig=TRUE,height=6>>=
+
+plot(segplot(jitter(as.numeric(as.character(which))) ~ I(FDR-3*SD.FDR) + I(FDR+3*SD.FDR), 
+             data = ER.df.10, horizontal = FALSE,
+             ## center = FDR, 
+             draw.bands = FALSE,
+             main = "Myotubes False discovery rate, using combined depth >= 10 as gold standard",
+             panel = function(...) {
+                 panel.grid(h = -12, v = 0, col = "darkgrey")
+                 panel.segplot(...)
+             }))
+
+@ 
+
+\newpage
+
+<<fig=TRUE,height=6>>=
+
+plot(segplot(jitter(as.numeric(as.character(which))) ~ I(FNR-3*SD.FNR) + I(FNR+3*SD.FNR), 
+             data = ER.df.8, horizontal = FALSE,
+             ## center = FNR, 
+             draw.bands = FALSE,
+             main = "Myotubes False negative rate, using combined depth >= 8 as gold standard",
+             panel = function(...) {
+                 panel.grid(h = -12, v = 0, col = "darkgrey")
+                 panel.segplot(...)
+             }))
+
+@ 
+
+\newpage
+
+<<fig=TRUE,height=6>>=
+
+plot(segplot(jitter(as.numeric(as.character(which))) ~ I(FNR-3*SD.FNR) + I(FNR+3*SD.FNR), 
+             data = ER.df.10, horizontal = FALSE,
+             ## center = FNR, 
+             draw.bands = FALSE,
+             main = "False negative rate, using combined depth >= 10 as gold standard",
+             panel = function(...) {
+                 panel.grid(h = -12, v = 0, col = "darkgrey")
+                 panel.segplot(...)
+             }))
+
+@ 
+
+\newpage
+
+<<fig=TRUE,width=9>>=
+plot(xyplot(1-FNR ~ FDR, data = ER.df.10, type = c("p", "g")))
+@ 
+
+
+\newpage
+
+\section*{A regression-like approach}
+
+Consider all peaks in combined lane. Compute maximum depth over the
+same regions in paired-end sample.
+
+<<>>=
+
+depthUnderPeaks <- function(x = pairedReads$"2", ref.peaks)
+{
+    get.depth <- function(chr) 
+    {
+        ref <- ref.peaks[[chr]]
+        g <- extendReads(x[[chr]])
+        cov <- coverage(g, 1, max(end(g), end(ref)))
+        vcopy <- copyIRanges(ref, cov)
+        data.frame(ref = viewMaxs(ref), 
+                   obs = viewMaxs(vcopy))
+    }
+    do.call(make.groups, sapply(names(ref.peaks), get.depth, simplify = FALSE))
+}
+
+
+depth.paired <- depthUnderPeaks(pairedReads$"2", ref.peaks = ctube.peaks.8)
+xtabs(~ (ref >= 8) + (obs >= 8), depth.paired)
+xtabs(~ (ref >= 10) + (obs >= 8), depth.paired)
+
+with(depth.paired,
+     xyplot(jitter(obs) ~ jitter(ref), pch = ".", cex = 2,
+            subset = (obs < quantile(obs, 0.99) & 
+                      ref < quantile(ref, 0.99)),
+            panel = function(...) {
+                if (panel.number() == 1) panel.smoothScatter(...)
+                panel.abline(h = c(8, 10),
+                             v = c(8, 10),
+                             col = "darkgrey")
+                if (panel.number() == 2) panel.xyplot(...)
+            },
+            aspect = "iso")[c(1, 1)])
+
+
+
+## trans.scales <- 
+##     function(x, trans = sqrt, n = 5, 
+##              at = pretty(range(x), n = n),
+##              ...)
+## {
+##     list(at = trans(at), labels = as.character(at))
+## }
+
+## ticks <- c(0, 8, 10, 20, 50, 100, 200, 500)
+
+## with(depth.paired,
+##      xyplot(sqrt(jitter(obs)) ~ sqrt(jitter(ref)), pch = ".", cex = 3,
+##             panel = function(...) {
+##                 panel.abline(h = asinh(c(8, 10)),
+##                              v = asinh(c(8, 10)),
+##                              col = "darkgrey")
+##                 panel.xyplot(...)
+##             },
+##             aspect = "iso",
+##             default.scales = list(x = trans.scales(ref, at = ticks), 
+##                                   y = trans.scales(obs, at = ticks))))
+
+
+
+
+@ 
+
+\newpage
+
+
+<<fig=TRUE,echo=FALSE>>=
+plot(trellis.last.object())
+@ 
+
+
+
+\section*{Error rates combining fibroblasts+MyoD lanes}
+
+We can do a similar analysis using the fibroblasts+MyoD lanes:
+treating the three lanes from the first run as a gold standard, and
+using the paired-end sample to get estimates of error rates.
+
+<<>>=
+
+cfibro.peaks.8 <- lapply(combinedFibro$fibroMyoD, findPeaks, lower = 8, df = FALSE)
+cfibro.peaks.10 <- lapply(combinedFibro$fibroMyoD, findPeaks, lower = 10, df = FALSE)
+
+ER.df.8 <- 
+    do.call(make.groups, 
+            lapply({ x <- 3:12; names(x) <- as.character(x); x }, 
+                   function(i) {
+                       if (interactive()) message("Processing cutoff ", i)
+                       commonPeaks(i, x = pairedReads$"1", ref.peaks = cfibro.peaks.8)
+                   }))
+
+ER.df.10 <- 
+    do.call(make.groups, 
+            lapply({ x <- 3:12; names(x) <- as.character(x); x }, 
+                   function(i) {
+                       if (interactive()) message("Processing cutoff ", i)
+                       commonPeaks(i, x = pairedReads$"1", ref.peaks = cfibro.peaks.10)
+                   }))
+                       
+
+@ 
+
+\newpage
+
+<<fig=TRUE,height=6>>=
+
+plot(segplot(jitter(as.numeric(as.character(which))) ~ I(FDR-3*SD.FDR) + I(FDR+3*SD.FDR), 
+             data = ER.df.8, horizontal = FALSE,
+             ## center = FDR, 
+             draw.bands = FALSE,
+             main = "Fibro+MyoD False discovery rate, using combined depth >= 8 as gold standard",
+             panel = function(...) {
+                 panel.grid(h = -12, v = 0, col = "darkgrey")
+                 panel.segplot(...)
+             }))
+
+@ 
+
+\newpage
+
+<<fig=TRUE,height=6>>=
+
+plot(segplot(jitter(as.numeric(as.character(which))) ~ I(FDR-3*SD.FDR) + I(FDR+3*SD.FDR), 
+             data = ER.df.10, horizontal = FALSE,
+             ## center = FDR, 
+             draw.bands = FALSE,
+             main = "Fibro+MyoD False discovery rate, using combined depth >= 10 as gold standard",
+             panel = function(...) {
+                 panel.grid(h = -12, v = 0, col = "darkgrey")
+                 panel.segplot(...)
+             }))
+
+@ 
+
+\newpage
+
+<<fig=TRUE,height=6>>=
+
+plot(segplot(jitter(as.numeric(as.character(which))) ~ I(FNR-3*SD.FNR) + I(FNR+3*SD.FNR), 
+             data = ER.df.8, horizontal = FALSE,
+             ## center = FNR, 
+             draw.bands = FALSE,
+             main = "Fibro+MyoD False negative rate, using combined depth >= 8 as gold standard",
+             panel = function(...) {
+                 panel.grid(h = -12, v = 0, col = "darkgrey")
+                 panel.segplot(...)
+             }))
+
+@ 
+
+\newpage
+
+<<fig=TRUE,height=6>>=
+
+plot(segplot(jitter(as.numeric(as.character(which))) ~ I(FNR-3*SD.FNR) + I(FNR+3*SD.FNR), 
+             data = ER.df.10, horizontal = FALSE,
+             ## center = FNR, 
+             draw.bands = FALSE,
+             main = "Fibro+MyoD False negative rate, using combined depth >= 10 as gold standard",
+             panel = function(...) {
+                 panel.grid(h = -12, v = 0, col = "darkgrey")
+                 panel.segplot(...)
+             }))
+
+@ 
+
+\newpage
+
+<<fig=TRUE,width=9>>=
+plot(xyplot(1-FNR ~ FDR, data = ER.df.10, type = c("p", "g")))
+@ 
+
+
+\newpage
+
+\section*{A regression-like approach}
+
+Consider all peaks in combined lane. Compute maximum depth over the
+same regions in paired-end sample.
+
+<<>>=
+
+depth.paired <- depthUnderPeaks(pairedReads$"1", ref.peaks = cfibro.peaks.8)
+xtabs(~ (ref >= 8) + (obs >= 8), depth.paired)
+xtabs(~ (ref >= 10) + (obs >= 8), depth.paired)
+
+with(depth.paired,
+     xyplot(jitter(obs) ~ jitter(ref), pch = ".", cex = 2,
+            subset = (obs < quantile(obs, 0.99) & 
+                      ref < quantile(ref, 0.99)),
+            panel = function(...) {
+                if (panel.number() == 1) panel.smoothScatter(...)
+                panel.abline(h = c(8, 10),
+                             v = c(8, 10),
+                             col = "darkgrey")
+                if (panel.number() == 2) panel.xyplot(...)
+            },
+            aspect = "iso")[c(1, 1)])
+
+
+
+## trans.scales <- 
+##     function(x, trans = sqrt, n = 5, 
+##              at = pretty(range(x), n = n),
+##              ...)
+## {
+##     list(at = trans(at), labels = as.character(at))
+## }
+
+## ticks <- c(0, 8, 10, 20, 50, 100, 200, 500)
+
+## with(depth.paired,
+##      xyplot(sqrt(jitter(obs)) ~ sqrt(jitter(ref)), pch = ".", cex = 3,
+##             panel = function(...) {
+##                 panel.abline(h = asinh(c(8, 10)),
+##                              v = asinh(c(8, 10)),
+##                              col = "darkgrey")
+##                 panel.xyplot(...)
+##             },
+##             aspect = "iso",
+##             default.scales = list(x = trans.scales(ref, at = ticks), 
+##                                   y = trans.scales(obs, at = ticks))))
+
+
+
+
+@ 
+
+\newpage
+
+
+<<fig=TRUE,echo=FALSE>>=
+plot(trellis.last.object())
+@ 
+
+
+
 
 \end{document}

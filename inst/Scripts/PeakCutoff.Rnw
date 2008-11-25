@@ -22,6 +22,7 @@ library(lattice)
 
 load("myodMyo.rda")
 load("myodFibro.rda")
+load("pairedReads.rda")
 
 set.seed(20081008)
 
@@ -62,18 +63,34 @@ plotDepthDistribution <-
 ## expected #FD.  Note: our estimated null model (Poisson) is crude.
 
 
-null.est <- function(y) 
+fdr.est <- function(y)
 {
     lambda <- 2 * y[2] / y[1]
-    null.est <- function(xx) {
-        xx * log(lambda) - lambda - lgamma(xx + 1)
-    }
-    log.N.hat <- null.est(1) - y[1] # both already log-transformed
-    panel.lines(1:10, -log.N.hat + null.est(1:10))
+    n <- exp(log(y[1]) - dpois(1, lambda, log = TRUE))
+    k <- 4:10
+    exp.fd <- n * ppois(k-1, lambda, lower.tail = FALSE)
+    obs.d <- rev(cumsum(rev(y)))[k]
+    data.frame(k = k, FDR = exp.fd / obs.d)
 }
 
-    
+panel.fdrplot <- function(x, y, ...) 
+{
+    ## x is depth value, y is count
+    yy <- integer(max(x))
+    yy[x] <- y
+    with(fdr.est(yy), 
+         panel.xyplot(k, FDR, ...))
+}
 
+fdrplot <- function(data, main = deparse(substitute(data)), ...)
+{
+    xyplot(count ~ depth | lane, data,
+           groups = chromosome, main = main,
+           type = c("g", "l"),
+           prepanel = function(...) list(xlim = c(4, 10), ylim = c(0, 0.5)),
+           panel = panel.superpose,
+           panel.groups = panel.fdrplot, ...)
+}
 
 
 @ 
@@ -281,6 +298,49 @@ plot(combMyoDist[, 1])
 plot(combMyoDist[, 2])
 @ 
 \end{center}
+
+
+\section*{Crude FDR estimates}
+
+We can compute a crude FDR based on the Poisson approximation. For
+each cutoff, we define FDR is E(number of False Discoveries) / (number
+of Discoveries).  We know what the number of Discoveries is, but not
+the expected number of False Discoveries. We compute this (and the
+total number of ``events'' under the null) from the Poisson null model
+estimated from the number of singleton and doubleton islands.
+
+\newpage
+
+<<fig=TRUE>>=
+plot(fdrplot(myodFibroDepth))
+@
+
+\newpage
+
+<<fig=TRUE>>=
+plot(fdrplot(myodMyoDepth))
+@
+
+\newpage
+
+<<fig=TRUE>>=
+plot(fdrplot(combinedMyoDepth))
+@
+
+\newpage
+
+<<fig=TRUE>>=
+plot(fdrplot(simulationDepth))
+@
+
+\newpage
+
+<<fig=TRUE>>=
+plot(fdrplot(summarizeReads(pairedReads, summary.fun = islandDepthSummary)))
+@
+
+
+
 
 
 \end{document}
