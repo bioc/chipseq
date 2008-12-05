@@ -1,0 +1,237 @@
+\documentclass{article}
+\title{Genomic context of (differential) peaks in human data}
+
+\usepackage[text={178mm,230mm},centering]{geometry}
+\usepackage{Sweave}
+
+\SweaveOpts{keep.source=TRUE,eps=FALSE,pdf=TRUE,width=9,height=10,prefix.string=figs/figs-humanpeaks}
+\setkeys{Gin}{width=0.98\textwidth}
+
+\begin{document}
+
+\maketitle
+
+\raggedright
+
+<<setup,echo=FALSE,results=hide>>=
+
+library(chipseq)
+library(lattice)
+#library(latticeExtra)
+#library(geneplotter)
+
+set.seed(20081008)
+
+@ 
+
+
+
+
+<<defs,echo=FALSE>>=
+
+
+logscale.components <- function(axis = c("x", "y"), base = 2)
+{
+    axis <- match.arg(axis)
+    switch(axis,
+           x = 
+           function(...) {
+               ans <- xscale.components.default(...)
+               ans$bottom$labels$labels <- 
+                   base^(ans$bottom$labels$at)
+               ans
+           },
+           y = 
+           function(...) {
+               ans <- yscale.components.default(...)
+               ans$left$labels$labels <- 
+                   base^(ans$left$labels$at)
+               ans
+           })
+}
+
+
+
+summarizeLane <- function(clist, summary.fun, ..., seqlen)
+{
+    ## clist is a list at the lane level, with one list("+"=, "-"=) for each chromsome
+    stopifnot(all(names(clist) %in% names(seqlen)))
+    seqlen <- seqlen[names(clist)]
+    mapply(summary.fun, clist, seqlen, ..., SIMPLIFY = FALSE)
+}
+
+
+summarizeReads <- 
+    function(reads.list, lanes = c("1", "2", "3", "4", "6", "7", "8"), ...,
+             verbose = TRUE)
+{
+    if (verbose) cat(paste("Processing lanes", paste(lanes, collapse = ",")), fill = TRUE)
+    lapply(reads.list[lanes], summarizeLane, ...)
+}
+
+
+coverageSummary <- 
+    function(x, max = max(end(g)) + 400L)
+    ## x is a list at the lane->chromosome level, with components "+" and "-"
+{
+    g <- growSeqs(x)
+    coverage(g, 1, max)
+}
+
+@ 
+
+
+<<>>=
+
+load("pairedReads.rda")
+library(BSgenome.Hsapiens.UCSC.hg18)
+human.seqlens <- seqlengths(Hsapiens)
+
+seqRanges <- lapply(pairedReads[c("3", "4", "6", "7", "8")], growSeqs)
+covlist <- lapply(seqRanges, laneCoverage, chromLens = human.seqlens)
+
+@ 
+
+\section*{Peaks in genomic context}
+
+<<echo=FALSE,results=hide>>=    
+
+if (file.exists("geneHuman.rda")) load("geneHuman.rda") else
+{
+    geneHuman <-
+        read.table("geneHuman.txt", header = TRUE, sep = "\t",
+                   stringsAsFactors = FALSE)
+    save(geneHuman, file = "geneHuman.rda")
+}
+
+## gregions.500 <- genomic_regions(genes = geneHuman, proximal = 500)
+gregions.2000 <- genomic_regions(genes = geneHuman, proximal = 2000)
+
+gregions <- gregions.2000
+gregions$gene <- as.character(gregions$gene)
+
+library(Matrix)
+library(IRanges)
+
+countHits <- function(subject, query)
+{
+    sum(!is.na(overlap(subject, query, multiple = FALSE)))
+}
+
+doPeakSet <- function(peaks, gregions)
+{
+    query <-
+        if (is(peaks, "IRanges")) peaks
+        else  with(peaks, IRanges(start, end))
+    irangeByType <-
+        function(type = c("promoter", "threeprime",
+                          "upstream", "downstream", "gene"))
+        {
+            type <- match.arg(type)
+            istarts <- sprintf("%s.start", type)
+            iends <- sprintf("%s.end", type)
+            keep <- !duplicated(gregions[[istarts]]) ## what's the right thing to do here???
+            IRanges(start = gregions[[istarts]][keep],
+                    end = gregions[[iends]][keep])
+        }
+    subject <-
+        list(promoter = irangeByType("promoter"),
+             threeprime = irangeByType("threeprime"),
+             upstream = irangeByType("upstream"),
+             downstream = irangeByType("downstream"),
+             gene = irangeByType("gene"))
+    c(total = length(query), sapply(subject, countHits, query = query))
+}
+
+doChromosome <- function(chr)
+{
+    gregions.sub <- subset(gregions, chrom == chr)
+    peaklist <- lapply(covlist, function(x) {
+        slice(x[[chr]], lower = 10)
+    })
+    ans <- as.data.frame(do.call(rbind, lapply(peaklist, doPeakSet, gregions = gregions.sub)))
+    ans <- cbind(type = factor(rownames(ans), levels = unique(rownames(ans))), ans)
+    ans
+}
+
+## all.chroms <- levels(peakSummary.blasts.wrt.tubes$chromosome)
+
+doAll <- function(chroms = paste("chr", 1:19, sep = ""))
+{
+    ans <- do.call(make.groups, sapply(chroms, doChromosome, simplify = FALSE))
+    names(ans)[names(ans) == "which"] <- "chromosome"
+    rownames(ans) <- NULL
+    ans
+}
+
+ans <- doAll()
+       
+sumtab <- 
+    rbind(total = xtabs(total ~ type, ans),
+          promoter = xtabs(promoter ~ type, ans),
+          threeprime = xtabs(threeprime ~ type, ans),
+          upstream = xtabs(upstream ~ type, ans),
+          downstream = xtabs(downstream ~ type, ans),
+          gene = xtabs(gene ~ type, ans))
+
+@ 
+
+Lane descriptions:
+\begin{itemize}
+\item lane 3: human fibroblast expressing Myod, antibody 7311
+\item lane 4: human fibroblast expressing Myod, antibody 6975b
+\item lane 6: human fibroblast expressing Myod, antibody 6196
+\item lane 7: human fibroblast controls, 3 antibodies combined
+\item lane 8: human fibroblast expressing Myod, 3 antibodies combined
+\end{itemize}
+
+
+<<>>=
+sumtab
+round(t(t(sumtab) / sumtab["total", ]), 3)
+@ 
+
+\newpage
+
+\begin{center}
+<<fig=TRUE,echo=FALSE>>=
+
+pairedEndHumanCoverage <- 
+    summarizeReads(pairedReads,
+                   lanes = c("3", "4", "6", "7", "8"),
+                   summary.fun = coverageSummary,
+                   seqlen = human.seqlens)
+
+isldf <- 
+    do.call(make.groups, 
+            lapply(pairedEndHumanCoverage,
+                   function(x) viewMaxs(slice(x[["chr2"]], lower = 1))))
+    
+dp <- 
+dotplot(xtabs(~data + which, subset(isldf, data <= 30)),
+        horizontal = FALSE, groups = FALSE,
+        main = "Distribution of island depths (chromosome 2)",
+        scales = list(y = list(log = "e")),
+        panel = function(x, y, ...) {
+            lambda <- 2 * exp(y[2]) / exp(y[1])
+            null.est <- function(xx) { 
+                (xx * log(lambda) - lambda - lgamma(xx + 1))
+            }
+            log.N.hat <- null.est(1) - y[1] # both already log-transformed
+            panel.lines(1:20, -log.N.hat + null.est(1:20))
+            panel.dotplot(x, y, ...)
+            const <- y[1] - (log(lambda) - lambda)
+        },
+        layout = c(1, 5), 
+        strip = FALSE, strip.left = TRUE,
+        aspect = 0.4)
+
+plot(dp)
+@ 
+\end{center}
+
+
+
+\end{document}
+
+

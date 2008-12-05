@@ -1,0 +1,193 @@
+\documentclass{article}
+\title{Do peak heights differ by estimated copy number?}
+
+
+\usepackage[text={178mm,230mm},centering]{geometry}
+\usepackage{Sweave}
+
+\SweaveOpts{keep.source=TRUE,eps=FALSE,pdf=TRUE,width=9,height=11,prefix.string=figs/figs-peakreproducibility}
+\setkeys{Gin}{width=0.98\textwidth}
+
+\begin{document}
+
+\maketitle
+
+\raggedright
+
+<<setup,echo=FALSE,results=hide>>=
+
+library(chipseq)
+library(lattice)
+library(geneplotter)
+library(latticeExtra)
+
+
+combineLaneReads <- function(laneList, chromList = names(laneList[[1]])) {
+    names(chromList) = chromList ##to get the return value named
+    lapply(chromList,
+           function(chr) {
+               list("+" = unlist(lapply(laneList, function(x) x[[chr]][["+"]]), use.names = FALSE),
+                    "-" = unlist(lapply(laneList, function(x) x[[chr]][["-"]]), use.names = FALSE))
+           })
+}
+
+
+load("myodMyo.rda")
+load("myodFibro.rda")
+
+set.seed(20081008)
+
+findPeaks <- function(x, g = extendReads(x), lower = 3, 
+                      give.islands = TRUE, df = TRUE)
+{
+    if (give.islands) ## return the whole island when a peak is found
+    {
+        s <- slice(coverage(g, 1, max(end(g))), lower = 1)
+        s <- s[viewMaxs(s) >= lower]
+    }
+    else 
+        s <- slice(coverage(g, 1, max(end(g))), lower = lower)
+    if (df) data.frame(start = start(s), end = end(s), 
+                       depth = viewMaxs(s))
+    else s
+}
+
+
+findIntersections <- function(peaks, states)
+{
+    ipeaks <- with(peaks, IRanges(start, end))
+    istates <- with(states, IRanges(start, end))
+    overlap(istates, ipeaks, multiple = FALSE)
+}
+
+
+
+
+@ 
+
+
+%% \section*{Capture-recapture estimates for one chromosome}
+
+
+<<>>=
+
+hmmout <- read.csv("hmmout_myotube.csv", header = TRUE)
+hmmout$decoded <- factor(hmmout$decoded)
+dlev <- levels(hmmout$decoded)
+
+combinedMyo <- 
+    list(cblasts = combineLaneReads(myodMyo[c("1","3","6")]),
+         ctubes = combineLaneReads(myodMyo[c("2","4","7")]))
+
+combinedMyoPeaks <- 
+    summarizeReads(combinedMyo, summary.fun = findPeaks, lower = 3)
+
+cblastpeaks <- subset(combinedMyoPeaks, lane == "cblasts")
+ctubepeaks <- subset(combinedMyoPeaks, lane == "ctubes")
+
+@ 
+
+
+\section*{Comparison in chromosome 1}
+
+
+
+<<>>=
+
+
+peakset <- ctubepeaks ## or cblastpeaks
+
+chrom <- "chr1"
+hmmsub <- hmmout[hmmout$chr == chrom, ]
+peaksub <- peakset[peakset$chromosome == chrom, ]
+
+hmmsub1 <- subset(hmmsub, decoded == dlev[1])
+hmmsub2 <- subset(hmmsub, decoded == dlev[2])
+hmmsub3 <- subset(hmmsub, decoded == dlev[3])
+
+inlow <- !is.na(findIntersections(peaksub, hmmsub1))
+inmed <- !is.na(findIntersections(peaksub, hmmsub2))
+inhigh <- !is.na(findIntersections(peaksub, hmmsub3))
+
+peakdf <- 
+    make.groups(low = peaksub$depth[inlow], 
+                medium = peaksub$depth[inmed], 
+                high = peaksub$depth[inhigh])
+
+qqmath(~log2(data), peakdf, groups = which,  f.value = ppoints(500),
+        ylab = "log2(depth)", auto.key = list(columns = 3))
+
+## densityplot(~(data), peakdf, groups = which, 
+##             plot.points = FALSE,
+##             auto.key = list(columns = 3))
+
+
+@ 
+
+
+<<fig=TRUE,echo=FALSE>>=
+plot(trellis.last.object())
+@ 
+
+
+
+
+\section*{Do this for all chromosomes}
+
+
+
+<<>>=
+
+
+peakdfByChr <- 
+    lapply(paste("chr", 1:19, sep = ""),
+           function(chrom) {
+               hmmsub <- hmmout[hmmout$chr == chrom, ]
+               peaksub <- peakset[peakset$chromosome == chrom, ]
+
+               hmmsub1 <- subset(hmmsub, decoded == dlev[1])
+               hmmsub2 <- subset(hmmsub, decoded == dlev[2])
+               hmmsub3 <- subset(hmmsub, decoded == dlev[3])
+               
+               inlow <- !is.na(findIntersections(peaksub, hmmsub1))
+               inmed <- !is.na(findIntersections(peaksub, hmmsub2))
+               inhigh <- !is.na(findIntersections(peaksub, hmmsub3))
+               
+               make.groups(low = peaksub$depth[inlow], 
+                           medium = peaksub$depth[inmed], 
+                           high = peaksub$depth[inhigh])
+           })
+
+peakdf <- do.call(rbind, peakdfByChr)
+
+qqmath(~log2(data), peakdf, groups = which, f.value = ppoints(500),
+        ylab = "log2(depth)", auto.key = list(columns = 3))
+
+
+@ 
+
+
+<<fig=TRUE,echo=FALSE>>=
+plot(trellis.last.object())
+@ 
+
+
+\newpage
+
+<<>>=
+qqmath(~log2(data), peakdf, groups = which, f.value = ppoints(500),
+       subset = data > 7, ylab = "log2(depth)",
+       auto.key = list(columns = 3))
+@ 
+
+
+<<fig=TRUE,echo=FALSE>>=
+plot(trellis.last.object())
+@ 
+
+
+
+
+
+
+\end{document}

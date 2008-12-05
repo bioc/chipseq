@@ -137,6 +137,8 @@ fm <- count.hmm(ref.locs, obs.locs,
                 initial.states = c(40, 50, 60),
                 niter = 10)
 
+write.hmm(fm, bins = fm$binlist, combine = TRUE, file = "hmmout_myotube.csv")
+
 fm <- update(fm, iterations = 70, verbose = FALSE)
 fm <- update(fm, iterations = 2, verbose = TRUE)
 
@@ -551,6 +553,7 @@ plot(trellis.last.object())
 
 <<>>=
 
+comparison <- "Myoblasts vs simulation"
 ref.locs <- combineLocs(simulatedReads[1:19])
 obs.locs <- do.call(combineLocs, myodMyoLocs[c("1", "3", "6")])
 
@@ -573,7 +576,7 @@ summary(fm)
 
 <<>>=
 
-xyplot(fm, decode = "viterbi", xlab = "Location (Mb)",
+xyplot(fm, decode = "viterbi", xlab = "Location (Mb)", sub = comparison,
        col = c('darkgrey', 'black'), ylim = c(0, 100),
        scales = list(x = list(tick.number = 20, axs = "r")),
        main = "Decoded path (Viterbi)", lty = 1, strip.left = TRUE)
@@ -592,7 +595,72 @@ plot(trellis.last.object())
 
 <<>>=
 
-barchart(fm, strip.left = TRUE, xlab = "Location (Mb)",
+barchart(fm, strip.left = TRUE, xlab = "Location (Mb)", sub = comparison,
+         scales = list(x = list(tick.number = 20)),
+         color = list(lightgreen = 1, pink = 3))
+
+
+@ 
+\begin{center}
+<<fig=TRUE,echo=FALSE>>=
+plot(trellis.last.object())
+@ 
+\end{center}
+
+
+
+
+\newpage
+
+\section*{Comparison between myotubes and simulation}
+
+<<>>=
+
+comparison <- "Myotubes vs simulation"
+ref.locs <- combineLocs(simulatedReads[1:19])
+obs.locs <- do.call(combineLocs, myodMyoLocs[c("2", "4", "7")])
+
+fm <-
+    count.hmm(ref.locs, obs.locs, 
+              target.hits = 60,
+              initial.states = c(50, 60, 70),
+              niter = 10)
+
+fm <- update(fm, iterations = 70, verbose = FALSE)
+fm <- update(fm, iterations = 2, verbose = TRUE)
+
+summary(fm)
+
+write.hmm(fm, bins = fm$binlist, combine = TRUE, file = "hmmout_myotube.csv")
+
+@ 
+
+
+
+\newpage
+
+<<>>=
+
+xyplot(fm, decode = "viterbi", xlab = "Location (Mb)", sub = comparison,
+       col = c('darkgrey', 'black'), ylim = c(0, 100),
+       scales = list(x = list(tick.number = 20, axs = "r")),
+       main = "Decoded path (Viterbi)", lty = 1, strip.left = TRUE)
+
+
+@ 
+\begin{center}
+<<fig=TRUE,echo=FALSE>>=
+plot(trellis.last.object())
+@ 
+\end{center}
+
+
+\newpage
+
+
+<<>>=
+
+barchart(fm, strip.left = TRUE, xlab = "Location (Mb)", sub = comparison,
          scales = list(x = list(tick.number = 20)),
          color = list(lightgreen = 1, pink = 3))
 
@@ -613,6 +681,7 @@ plot(trellis.last.object())
 
 <<>>=
 
+comparison <- "fibroblasts+MyoD vs simulation"
 ref.locs <- combineLocs(simulatedReads[1:19])
 obs.locs <- do.call(combineLocs, myodFibroLocs[c("2", "4", "7")])
 
@@ -635,7 +704,7 @@ summary(fm)
 
 <<>>=
 
-xyplot(fm, decode = "viterbi", xlab = "Location (Mb)",
+xyplot(fm, decode = "viterbi", xlab = "Location (Mb)", sub = comparison,
        col = c('darkgrey', 'black'), ylim = c(0, 100),
        scales = list(x = list(tick.number = 20, axs = "r")),
        main = "Decoded path (Viterbi)", lty = 1, strip.left = TRUE)
@@ -654,7 +723,7 @@ plot(trellis.last.object())
 
 <<>>=
 
-barchart(fm, strip.left = TRUE, xlab = "Location (Mb)",
+barchart(fm, strip.left = TRUE, xlab = "Location (Mb)", sub = comparison,
          scales = list(x = list(tick.number = 20)),
          color = list(lightgreen = 1, pink = 3))
 
