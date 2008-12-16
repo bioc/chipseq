@@ -43,7 +43,7 @@ genomic_regions <- function(genes, proximal = 500, distal = 10000) {
                upstream = upstream, downstream = downstream, gene = instream)
   }
   
-  do.call("rbind", as.list(by(genes, genes$chrom, genomic_regions_chrom)))
+  do.call(rbind, as.list(by(genes, genes$chrom, genomic_regions_chrom)))
 }
 
 genomic_exons <- function(genes) {
@@ -57,7 +57,7 @@ genomic_exons <- function(genes) {
                start = splitPos(sub_genes$exonStarts),
                end = splitPos(sub_genes$exonEnds))
   }
-  do.call("rbind", as.list(by(genes, genes$chrom, genomic_exons_chrom)))
+  do.call(rbind, as.list(by(genes, genes$chrom, genomic_exons_chrom)))
 }
 
 
