@@ -1,11 +1,29 @@
+##FIXME: exclude should be used, and the chromosomeFilter
+readReads <-
+    function(srcdir, lane, ...,
+             include = "chr[0-9]+$", type = "MAQMapShort",
+             simplify = TRUE, minScore=15)
+{
+    filt <-
+        compose(strandFilter(strandLevels=c("-", "+")),
+                chromosomeFilter(regex = include),
+                uniqueFilter(withSread = FALSE),
+                alignQualityFilter(minScore),
+                ...)
+    message(sprintf("reading data from lane %s [%s], using filter %s", lane, 
+         srcdir, name(filt)))
+    ans <- readAligned(srcdir, lane, type = type, filter = filt)
+    if (simplify) as.list(ans)
+    else ans
+}
 
-##Fixme: a lot of this functionality will become available in 
-##ReadAligned from the ShortRead package
+
 readAndClean <-
     function(maqDir, pattern, exclude="random", 
              dropDups = TRUE, minScore = 15,
              type = "MAQMap") 
 {
+    .Deprecated("readReads")
     s1 <- readAligned(maqDir, pattern = pattern, type = type)
     exChr = grep(exclude, s1@chromosome)
     s1 = s1[-exChr]
