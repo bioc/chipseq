@@ -23,12 +23,14 @@ diffPeakSummary <-
     peaks2 <- copyIRangesbyChr(comb.peaks, cov2)
 
     peakSummary <-
-        do.call(make.groups,
-                sapply(names(peaks1),
+        do.call(rbind,
+                lapply(names(peaks1),
                        function(chr) {
                            ans <-
-                               data.frame(start = start(peaks1[[chr]]),
-                                          end = end(peaks1[[chr]]))
+                               data.frame(chromosome = chr,
+                                          start = start(peaks1[[chr]]),
+                                          end = end(peaks1[[chr]]),
+                                          stringsAsFactors = FALSE)
                            if (is.list(viewSummary))
                            {
                                for (nm in names(viewSummary))
@@ -43,9 +45,9 @@ diffPeakSummary <-
                                ans[["summary2"]] <- viewSummary(peaks2[[chr]])
                            }
                            ans
-                       },
-                       simplify = FALSE))
-    names(peakSummary)[names(peakSummary) == "which"] <- "chromosome"
+                       }))
+    ## names(peakSummary)[names(peakSummary) == "which"] <- "chromosome"
+    rownames(peakSummary) <- NULL
     peakSummary
 }
 
