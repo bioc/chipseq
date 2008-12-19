@@ -3,7 +3,8 @@
 ## functions to identify "differential peaks". See ../inst/Scripts/poisson.R
 
 ## symmetric version
-
+## RG thinks it would be good to also have a diffSummary list that one
+## could specify which summaries of the differences are wanted
 diffPeakSummary <-
     function(ranges1, ranges2, chrom.lens,
              lower = 10, extend = 0,
