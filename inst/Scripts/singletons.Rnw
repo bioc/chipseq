@@ -21,6 +21,10 @@ library(simplehmm)
 ## library(hexbin)
 ## library(latticeExtra)
 
+library("BSgenome.Mmusculus.UCSC.mm9")
+mouse.seqlens <- seqlengths(Mmusculus)
+
+
 ## to get these, run ReadAndSaveData.R (on a machine which has the raw data)
 
 load("myodFibro.rda")
@@ -266,9 +270,58 @@ plot(trellis.last.object())
 \end{center}
 
 
+\newpage
+
+
+<<>>=
+
+## FIXME: have simpler interface
+write.hmm(fm, bins = fm$binlist, combine = TRUE, 
+          decoded = "viterbi",
+          file = "hmmout_tmp.csv")
+
+fm.decoded <- 
+    read.table("hmmout_tmp.csv", sep=",",
+               header = TRUE)
+
+
+fm.decoded.split <- split(fm.decoded, fm.decoded$chr)
+
+for (chrom in names(fm.decoded.split))
+{
+    print(chrom)
+    v <- with(fm.decoded.split[[chrom]],
+              Views(Mmusculus[[chrom]], start = start, end = end))
+    fm.decoded.split[[chrom]]$GC <- 
+        rowSums(alphabetFrequency(v, baseOnly = TRUE, freq = TRUE)[, c("G", "C")])
+}
+
+fm.decoded <- do.call(rbind, fm.decoded.split)
+
+qqmath(~GC, fm.decoded, groups = factor(decoded), f.value = ppoints(100),
+       auto.key = list(title="HMM state (myoblasts w.r.t. fibro+MyoD)"), 
+       type = c("p", "g"))
+
+
+## densityplot(~GC, fm.decoded, groups = factor(decoded), 
+##             plot.points = FALSE, auto.key = TRUE)
+
+
+@ 
+
+\begin{center}
+<<fig=TRUE,echo=FALSE>>=
+plot(trellis.last.object())
+@ 
+\end{center}
+
+
+
 
 
 \newpage
+
+
 
 \section*{Comparison of myotubes and myoblasts}
 
@@ -398,8 +451,6 @@ effective genome size.
 
 <<>>=
 
-library("BSgenome.Mmusculus.UCSC.mm9")
-mouse.seqlens <- seqlengths(Mmusculus)
 
 effective.lengths <-
     data.frame(official = mouse.seqlens[paste("chr", 1:19, sep = "")],
@@ -736,6 +787,49 @@ plot(trellis.last.object())
 \end{center}
 
 
+<<>>=
+
+## FIXME: have simpler interface
+write.hmm(fm, bins = fm$binlist, combine = TRUE, 
+          decoded = "viterbi",
+          file = "hmmout_fibrosim.csv")
+
+fm.decoded <- 
+    read.table("hmmout_fibrosim.csv", sep=",",
+               header = TRUE)
+
+
+fm.decoded.split <- split(fm.decoded, fm.decoded$chr)
+
+library(BSgenome.Mmusculus.UCSC.mm9)
+
+for (chrom in names(fm.decoded.split))
+{
+    print(chrom)
+    v <- with(fm.decoded.split[[chrom]],
+              Views(Mmusculus[[chrom]], start = start, end = end))
+    fm.decoded.split[[chrom]]$GC <- 
+        rowSums(alphabetFrequency(v, baseOnly = TRUE, freq = TRUE)[, c("G", "C")])
+}
+
+fm.decoded <- do.call(rbind, fm.decoded.split)
+
+qqmath(~GC, fm.decoded, groups = factor(decoded), f.value = ppoints(100),
+       auto.key = list(title="HMM state (fibro+MyoD rel. to simulation)"), 
+       type = c("p", "g"))
+
+
+## densityplot(~GC, fm.decoded, groups = factor(decoded), 
+##             plot.points = FALSE, auto.key = TRUE)
+
+
+@ 
+
+\begin{center}
+<<fig=TRUE,echo=FALSE>>=
+plot(trellis.last.object())
+@ 
+\end{center}
 
 
 
