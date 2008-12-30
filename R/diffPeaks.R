@@ -7,16 +7,27 @@
 ## could specify which summaries of the differences are wanted
 diffPeakSummary <-
     function(ranges1, ranges2, chrom.lens,
-             lower = 10, extend = 0,
+             lower = 10, extend = 0, islands = TRUE,
              viewSummary = list(sums = viewSums, maxs = viewMaxs))
 
     ## 'extend' is unused.  The intent is to extend the peaks by this
     ## amount before summarizing
 
 {
+    doSlice <- function(x, lower)
+    {
+        if (islands)
+        {
+            s <- slice(x, lower = 1)
+            s[viewMaxs(s) >= lower]
+        }
+        else 
+            slice(x, lower = lower)
+    }
+    
     combined <- combineLanes(list(ranges1, ranges2))
     comb.cov <- laneCoverage(combined, chrom.lens)
-    comb.peaks <- lapply(comb.cov, slice, lower = lower)
+    comb.peaks <- lapply(comb.cov, doSlice, lower = lower)
 
     cov1 <- laneCoverage(ranges1, chrom.lens)
     cov2 <- laneCoverage(ranges2, chrom.lens)
@@ -31,6 +42,7 @@ diffPeakSummary <-
                                data.frame(chromosome = chr,
                                           start = start(peaks1[[chr]]),
                                           end = end(peaks1[[chr]]),
+                                          viewMaxs(comb.peaks[[chr]]),
                                           stringsAsFactors = FALSE)
                            if (is.list(viewSummary))
                            {
