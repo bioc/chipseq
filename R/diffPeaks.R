@@ -42,7 +42,7 @@ diffPeakSummary <-
                                data.frame(chromosome = chr,
                                           start = start(peaks1[[chr]]),
                                           end = end(peaks1[[chr]]),
-                                          viewMaxs(comb.peaks[[chr]]),
+                                          comb.max = viewMaxs(comb.peaks[[chr]]),
                                           stringsAsFactors = FALSE)
                            if (is.list(viewSummary))
                            {
