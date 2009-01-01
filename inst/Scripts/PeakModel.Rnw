@@ -20,7 +20,7 @@
 
 
 \title{Modeling peak locations in ChIP-Seq data}
-\author{Deepayan Sarkar}
+%% \author{}
 
 
 \begin{document}
@@ -28,25 +28,107 @@
 
 \maketitle
 
+\noindent
 Our goal is to formulate a model for ``peaks'' in a ChIP-Seq
-experiment.  
+experiment.  Much of this is purely an intellectual exercise for now.
+\\
+
+\noindent
+The following features are desirable in a model:
+\begin{itemize}
+\item A background.  This need not be constant (could vary by GC
+  content, copy number, etc.)
+\item Peaks, at unknown locations, with varying enrichment.
+  Potentially, these peaks may be ``overlapping''; that is, two peaks
+  may be very close to each other (even actually overlapping, in the
+  sense that two overlapping binding sites may be active in different
+  cell subpopulations)
+\end{itemize}
+
+
+\noindent
+The things we need to model are
+\begin{itemize}
+\item the background
+\item locations of peaks
+\item varying enrichment
+\item distribution of fragment lengths
+\end{itemize}
+The data we have consists of location and orientation of one end of
+each read, for several million reads.
 
 
 
+\section{Proposed model}
+
+\begin{itemize}
+\item Location of peaks: possibilities are
+  \begin{itemize}
+  \item[(a)] Poisson point process with constant rate $\lambda$
+  \item[(b)] Known: e.g., all EBOX-s
+  \end{itemize}
+  Things are simplified if peak locations are known; the problem is
+  then to find those with high enrichment.
+\item Enrichment: No way to really know the distribution, but a
+  convenient choice may be the Gamma distribution, because then
+  coverage at (independent) peaks would be Negative Binomial (mixture
+  of Poisson-s with mean distributed as Gamma).  We should be able to
+  estimate the parameters of this Negative Binomial by truncating at a
+  certain peak height, assuming that all peaks above a certain height
+  are real.  This may not work if peaks are too close, as then we only
+  see the highest peak in an island.
+\item Fragment lengths: Normal seems as good as anything.
+\end{itemize}
+
+
+\noindent
+So, let $Z_1, \cdots, Z_K$ be the peak locations.  $p_k \sim
+\mathrm{Gamma}(\alpha, p)$ is the enrichment of peak $k$.  $p_0$ is
+the background enrichment (expected number of reads covering a random
+location).  Let the observed data be $(X_j, S_j), j = 1, \cdots, n$,
+where $X_j$ is the location (first sequenced base) and $S_j$ is the
+orientation (strand) of read $j$.  Let $L_j$ be the unknown length of
+read $j$.  Then,
+\[
+P\left((X_j, S_j) = (x, s) ~|~ Z_i \right) ~=~ P(L_j > |x-Z_j|)
+\]
+if $x$ is on the right side of $Z_i$, and $0$ otherwise.
+
+
+\section{Truncated Negative Binomial}
+
+\noindent
+The Gamma distribution with parameters shape $\kappa$ and scale
+$\theta$ has density
+\[
+f(x)= \frac{1}{ \theta^\kappa \Gamma(\kappa) } x^(\kappa-1) e^{-x/\theta}
+\]
+for $x >= 0, \kappa > 0$ and $\theta > 0$.  The negative binomial
+distribution with size $n$ and prob $p$ has density
+\[
+p(x) = \frac{\Gamma(x+n)}{ \Gamma(n) \Gamma(x+1) }  p^n (1-p)^x
+\]
+for $x = 0, 1, 2, ..., n > 0$ and $0 < p \leq 1$.  This represents the
+number of failures which occur in a sequence of Bernoulli trials
+before a target number of successes is reached.  It can also arise as
+a mixture of Poisson distributions with mean distributed as a Gamma
+distribution with scale parameter $\theta = (1 - p)/p$ and shape
+parameter $\kappa = n$.  In this model $p = 1 / (1+\theta)$, and the
+mean is $\kappa \theta = n (1 - p)/p$.
+\\
+
+\noindent
+An alternative parametrization (often used in ecology) is by the mean
+$\mu = \kappa \theta$ and the ``dispersion parameter'' $\sigma =
+\kappa$.  The variance is $\mu + \mu^2/\kappa$ in this
+parametrization, or $n (1-p)/p^2 = \kappa \theta (1 + \theta)$ in the
+earlier ones.
 
 
 
+<<echo=FALSE>>=
 
-
-
-
-<<eval=FALSE>>=
-
-
-
-## goal: model peak height distribution by negative binomial truncated
-## at some height
-
+library(stats4) ## for mle
 library(chipseq)
 library(latticeExtra)
 
@@ -73,9 +155,9 @@ negllik <- function(data, cutoff = 8)
 {
     data <- subset(data, depth >= cutoff)
     ## data = data.frame(depth = <peak height>, count = <number of peaks>) 
-    function(size, mu)
+    function(logsize, logmu)
     {
-        dfun <- dtnbinom(k = cutoff, size = size, mu = mu, log = TRUE)
+        dfun <- dtnbinom(k = cutoff, size = exp(logsize), mu = exp(logmu), log = TRUE)
         with(data,
              -sum(count * dfun(depth)))
     }
@@ -89,7 +171,7 @@ startest <- function(data)
     ex2 <- with(data, sum(depth^2 * count) / sum(count))
     varx <- ex2 - mu^2
     size <- (varx - mu) / mu^2
-    list(size = size, mu = mu)
+    list(logsize = log(size), logmu = log(mu))
 }
 
 
@@ -121,32 +203,6 @@ estimatePars <- function(data, cutoff = 8, ...)
     mle(minuslogl, start = startest(data), ...)
 }
 
-## estimatePars(depthdist.split$ctubes.chr6)
-
-## estimatePars(subset(combinedMyoDepth, lane == "cblasts"))
-
-## estimatePars(subset(combinedMyoDepth, lane == "ctubes"), cutoff = 5)@coef
-## estimatePars(subset(combinedMyoDepth, lane == "ctubes"), cutoff = 6)@coef
-## estimatePars(subset(combinedMyoDepth, lane == "ctubes"), cutoff = 7)@coef
-## estimatePars(subset(combinedMyoDepth, lane == "ctubes"), cutoff = 8)@coef
-## estimatePars(subset(combinedMyoDepth, lane == "ctubes"), cutoff = 9)@coef
-## estimatePars(subset(combinedMyoDepth, lane == "ctubes"), cutoff = 10)@coef
-## estimatePars(subset(combinedMyoDepth, lane == "ctubes"), cutoff = 11)@coef
-## estimatePars(subset(combinedMyoDepth, lane == "ctubes"), cutoff = 12)@coef
-## estimatePars(subset(combinedMyoDepth, lane == "ctubes"), cutoff = 13)@coef
-
-
-## estimatePars(subset(combinedMyoDepth, lane == "cblasts"), cutoff = 5)@coef
-## estimatePars(subset(combinedMyoDepth, lane == "cblasts"), cutoff = 6)@coef
-## estimatePars(subset(combinedMyoDepth, lane == "cblasts"), cutoff = 7)@coef
-## estimatePars(subset(combinedMyoDepth, lane == "cblasts"), cutoff = 8)@coef
-## estimatePars(subset(combinedMyoDepth, lane == "cblasts"), cutoff = 9)@coef
-## estimatePars(subset(combinedMyoDepth, lane == "cblasts"), cutoff = 10)@coef
-## estimatePars(subset(combinedMyoDepth, lane == "cblasts"), cutoff = 11)@coef
-## estimatePars(subset(combinedMyoDepth, lane == "cblasts"), cutoff = 12)@coef
-## estimatePars(subset(combinedMyoDepth, lane == "cblasts"), cutoff = 13)@coef
-
-
 
 collapseChr <- function(data)
 {
@@ -155,16 +211,22 @@ collapseChr <- function(data)
                count = as.numeric(tab))
 }
 
+@ 
+
+
+<<>>=
 
 mycutoff <- 10
 subdata <- collapseChr(subset(combinedMyoDepth, lane == "ctubes"))
 foo <- estimatePars(subdata, cutoff = mycutoff)
 
+summary(foo)
+exp(foo@coef)
 
 dfun <-
     dtnbinom(k = 10,
-             size = coef(foo)["size"],
-             mu = coef(foo)["mu"],
+             size = exp(coef(foo)["logsize"]),
+             mu = exp(coef(foo)["logmu"]),
              log = FALSE)
 
 rootogram(count ~ depth,
@@ -173,12 +235,12 @@ rootogram(count ~ depth,
           dfun = dfun,
           xlim = c(0, 100))
 
-
-
-
-
-
 @ 
+
+<<fig=TRUE,width=9,height=4,echo=FALSE>>=
+plot(trellis.last.object())
+@ 
+
 
 
 \end{document}
