@@ -242,6 +242,29 @@ plot(trellis.last.object())
 @ 
 
 
+Now we can now try to answer some interesting questions.  Choose a
+random peak $Z$.  Let its enrichment be $\lambda(Z) \sim
+\mathrm{Gamma}(\alpha, p)$.  The observed coverage at the peak is
+$C(Z) \sim Poisson(\lambda(Z))$.  For a given peak cutoff $k$, we
+detect $Z$ if $C(Z) \geq k$.
+
+
+For a given enrichment level $\lambda_0$, we are interested in
+$P(\lambda(Z) > \lambda_0)$ and
+\begin{eqnarray*}
+  P\( C(Z) \geq k  ~|~ \lambda(Z) \geq \lambda_0 \) & = &  
+  \frac{ P\( C(Z) \geq k ,  \lambda(Z) \geq \lambda_0 \) }{ P\( \lambda(Z) \geq \lambda_0 \) } \\
+\end{eqnarray*}
+where 
+\begin{eqnarray*}
+  P\( C(Z) \geq k , \lambda(Z) \geq \lambda_0 \) & = & \int 
+\end{eqnarray*}
+
+
+
+
+
+
 
 \end{document}
 
