@@ -22,16 +22,18 @@ readReads <-
     ## readAndClean(srcdir, lane, exclude = exclude, type = type, ...))
 }
 
-idFilter <- 
-    function (regex = character(0), fixed = FALSE, .name = "IdFilter") 
-{
-    stopifnot(length(regex) == 1)
-    srFilter(function(x) {
-        .idx <- logical(length(x))
-        .idx[grep(regex, as.character(id(x)), fixed=fixed)] <- TRUE
-        .idx
-    }, name = .name)
-}
+## In ShortRead now
+
+## idFilter <- 
+##     function (regex = character(0), fixed = FALSE, .name = "IdFilter") 
+## {
+##     stopifnot(length(regex) == 1)
+##     srFilter(function(x) {
+##         .idx <- logical(length(x))
+##         .idx[grep(regex, as.character(id(x)), fixed=fixed)] <- TRUE
+##         .idx
+##     }, name = .name)
+## }
 
 ## readFirstRead <-
 ##     function(srcdir = "/home/jdavison/ycao/01-09-2008/text", lane,
