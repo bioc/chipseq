@@ -35,12 +35,55 @@ combined54 <-
          h96 = combineLaneReads(solexa54[c("3","4")]))
 
 
-
 ## Step 3: Get ``peaks'' in combined data.
 
 ### DE islands/peaks
 
 extRanges54 <- lapply(combined54, extendReads)
+
+
+if (FALSE)  ## dump coverage
+{ 
+
+cov54 <- lapply(extRanges54, function(x) { 
+    sapply(names(x), 
+           function(chr) { 
+               message(chr)
+               coverage(x[[chr]], 1, mouse.chromlens[chr])
+           }, simplify = FALSE)
+    })
+
+cov2df <- function(x, chr = "") {
+    vals <- as.integer(x@values)
+    lens <- as.integer(x@lengths)
+    ends <- cumsum(lens)
+    starts <- c(1L, head(ends, -1) + 1L)
+    data.frame(chr = chr, start = starts, end = ends, coverage = vals, 
+               stringsAsFactors = FALSE)
+}
+
+h0cov <- 
+    do.call(rbind, 
+            sapply(names(cov54$h0), 
+                   function(chr) {
+                       message(chr)
+                       cov2df(cov54$h0[[chr]], chr = chr)
+                   }, simplify = FALSE))
+
+h96cov <- 
+    do.call(rbind, 
+            sapply(names(cov54$h96), 
+                   function(chr) {
+                       message(chr)
+                       cov2df(cov54$h96[[chr]], chr = chr)
+                   }, simplify = FALSE))
+
+write.csv(h0cov, row.names = FALSE, quote = FALSE, file = "h0cov.csv")
+write.csv(h96cov, row.names = FALSE, quote = FALSE, file = "h96cov.csv")
+
+}
+
+
 
 peakSummaryMethyl <-
     diffPeakSummary(extRanges54$h0, extRanges54$h96,
