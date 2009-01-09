@@ -12,11 +12,18 @@
 
 \usepackage{Sweave}
 
+
+\SweaveOpts{keep.source=TRUE,eps=FALSE,pdf=TRUE,width=9,height=11,prefix.string=figs/figs-peakmodel}
+\setkeys{Gin}{width=0.98\textwidth}
+
+
 \hypersetup{
   colorlinks=true,
   urlcolor=blue,
   citecolor=blue }
 
+\newcommand{\dee}[1]{\ensuremath{\mathrm{d}#1}}
+\newcommand{\ddee}[1]{\ensuremath{\frac{\mathrm{d}}{\mathrm{d}#1}}}
 
 
 \title{Modeling peak locations in ChIP-Seq data}
@@ -216,17 +223,17 @@ collapseChr <- function(data)
 
 <<>>=
 
-mycutoff <- 10
+my.cutoff <- 10
 subdata <- collapseChr(subset(combinedMyoDepth, lane == "ctubes"))
-foo <- estimatePars(subdata, cutoff = mycutoff)
+my.parest <- estimatePars(subdata, cutoff = my.cutoff)
 
-summary(foo)
-exp(foo@coef)
+summary(my.parest)
+exp(my.parest@coef)
 
 dfun <-
     dtnbinom(k = 10,
-             size = exp(coef(foo)["logsize"]),
-             mu = exp(coef(foo)["logmu"]),
+             size = exp(coef(my.parest)["logsize"]),
+             mu = exp(coef(my.parest)["logmu"]),
              log = FALSE)
 
 rootogram(count ~ depth,
@@ -235,6 +242,55 @@ rootogram(count ~ depth,
           dfun = dfun,
           xlim = c(0, 100))
 
+## ## try various
+
+## varyPar <- function(u, v)
+## {
+##     pars <- my.parest@coef + c(u, v) * sqrt(diag(my.parest@vcov))
+##     dfun <-
+##         dtnbinom(k = 10,
+##                  size = exp(pars["logsize"]),
+##                  mu = exp(pars["logmu"]),
+##                  log = FALSE)
+##     rootogram(count ~ depth,
+##               data = subdata,
+##               subset = depth >= 10,
+##               dfun = dfun,
+##               xlim = c(0, 100))
+## }
+
+
+@ 
+
+<<fig=TRUE,width=9,height=4,echo=FALSE>>=
+plot(trellis.last.object())
+@ 
+
+Actually, the likelihood profile is pretty weird.
+<<>>=
+
+est <- my.parest@coef
+est.sd <- sqrt(diag(my.parest@vcov))
+
+f <- 1
+
+g <- expand.grid(logsize = seq(est["logsize"] - f * est.sd["logsize"], 
+                               est["logsize"] + f * est.sd["logsize"], 
+                               length.out = 51),
+                 logmu = seq(est["logmu"] - f * est.sd["logmu"], 
+                             est["logmu"] + f * est.sd["logmu"], 
+                             length.out = 51),
+                 negllik = NA_real_)
+
+minuslogl <- negllik(data = subdata, cutoff = my.cutoff)
+
+for (i in seq_len(nrow(g))) {
+    g$negllik[i] <- minuslogl(g$logsize[i], g$logmu[i])
+}
+
+wireframe(scale(negllik) + scale(log(negllik)) ~ logsize + logmu, g, 
+          shade = TRUE, outer = TRUE, scales = list(relation = "free"), zlab = "")
+
 @ 
 
 <<fig=TRUE,width=9,height=4,echo=FALSE>>=
@@ -242,7 +298,7 @@ plot(trellis.last.object())
 @ 
 
 
-Now we can now try to answer some interesting questions.  Choose a
+We could now try to answer some interesting questions.  Choose a
 random peak $Z$.  Let its enrichment be $\lambda(Z) \sim
 \mathrm{Gamma}(\alpha, p)$.  The observed coverage at the peak is
 $C(Z) \sim Poisson(\lambda(Z))$.  For a given peak cutoff $k$, we
@@ -252,18 +308,190 @@ detect $Z$ if $C(Z) \geq k$.
 For a given enrichment level $\lambda_0$, we are interested in
 $P(\lambda(Z) > \lambda_0)$ and
 \begin{eqnarray*}
-  P\( C(Z) \geq k  ~|~ \lambda(Z) \geq \lambda_0 \) & = &  
-  \frac{ P\( C(Z) \geq k ,  \lambda(Z) \geq \lambda_0 \) }{ P\( \lambda(Z) \geq \lambda_0 \) } \\
+  P( C(Z) \geq k  ~|~ \lambda(Z) \geq \lambda_0 ) & = &
+  \frac{ P\left( C(Z) \geq k ,  \lambda(Z) \geq \lambda_0 \right) }{ P\left( \lambda(Z) \geq \lambda_0 \right) }
 \end{eqnarray*}
 where 
 \begin{eqnarray*}
-  P\( C(Z) \geq k , \lambda(Z) \geq \lambda_0 \) & = & \int 
+  P\left( C(Z) \geq k , \lambda(Z) \geq \lambda_0 \right) & = & \int_0^\infty P\left(  C(Z) \geq k , \lambda(Z) \geq \lambda_0 ~|~ \lambda(Z) = \lambda  \right) f(\lambda) \dee{\lambda} \\
+  & = & \int_{\lambda_0}^\infty P\left( Poi(\lambda) \geq k  \right) f(\lambda) \dee{\lambda}
 \end{eqnarray*}
+This doesn't have a closed-form solution (I think). But we can simulate:
+<<>>=
+
+par.mu <- exp(my.parest@coef["logmu"])
+par.size <- exp(my.parest@coef["logsize"]) ## Gamma shape
+par.theta <- par.mu / par.size             ## Gamma scale
+
+nsim <- 1e6
+enrich <- rgamma(nsim, shape = par.size, scale = par.theta)
+peakcov <- rpois(length(enrich), enrich)
+table(peakcov)
+
+@ 
+%
+Not very useful because too many low enrichment ``peaks''.  Not sure
+how to efficiently get truncated Gamma.
+
+
+<<eval=FALSE,echo=FALSE>>=
+## P(coverage >= cutoff | expected coverage)
+
+xyplot(ppois(q = 10, lambda = lambda, lower = FALSE) ~ lambda, 
+       data = list(lambda = seq(0, 25, length = 51)), type = "l")
+@ 
 
 
 
+\section{Likelihood model for single-peak islands}
 
 
+Assume that there is exactly one peak in a given region (perhaps an
+island, or a promoter).  Our goal is to develop a MLE for the peak
+location.  Parameters:
+\begin{itemize}
+\item $\theta$: peak location
+\item $p$: probability that a read is from the background (related to
+  enrichment?)
+\item $\mu, \sigma$: parameters of fragment length distribution
+\end{itemize}
+The data are $(X_i, S_i)$, where $X_i$ is the read start location, and
+$S_i$ is the strand for read $i$.  $X_i$ has a mixture density
+\[
+f(x | s) = p~f_{0}(x) ~+~ (1-p)~f_{1}(x|s)
+\]
+where $f_{0}$ is uniform over the region, and $f_{1}(x|s)$ is the
+strand-specific foreground density, 0 on one side of the peak, and
+high close to the peak on the other side.
+
+Let $L_i$ be the unknown length of read $i$.  For the strand with $X >
+\theta$, $X | L \sim U(\theta, \theta + L)$.  Let the density of $L$
+be $\psi$.  Then, for $x \geq \theta$,
+\begin{eqnarray*}
+P(X \leq x) & = & \int_0^\infty P(X \leq x ~|~ L = l) ~ \psi(l) ~ \dee{l} \\
+& = & \int_0^x \psi(l) ~ \dee{l} + \int_x^\infty \frac{x}{l} ~ \psi(l) ~ \dee{l}
+\end{eqnarray*}
+Some calculation shows that (assuming w.l.g. that $\theta=0$)
+\[
+f_{1}(x) = \ddee{x} P(X \leq x) = \int_x^\infty \frac{x}{l} ~ \psi(l) ~
+\dee{l} = E(1/L) - \int_0^x \frac{1}{l} ~ \psi(l) ~ \dee{l}
+\]
+If we model $L$ by the Gamma distribution, $f(x)$ is defined in terms
+of the partial Gamma function.  If $L$ is degenerate at $\mu$ (i.e.,
+$\sigma = 0)$, then
+\[
+f_{1}(x) = \frac{1}{\mu} - \frac{1}{\mu} I \{ x \geq \mu \} = \frac{1}{\mu} I \{ x \leq \mu \} 
+\]
+(i.e., $X \sim U(\theta, \theta + \mu)$).
+
+<<echo=FALSE,results=hide>>=
+
+rawData <- function(data = combinedMyo$ctubes, chr, start, end)
+{
+    data <- data[[chr]]
+    data <- lapply(data, function(x) x[x >= start & x <= end])
+    data
+}
+
+## sigma = 0 version 
+
+loglik <- function(theta, p, mu, sigma = 0, raw.data, width)
+{
+    if (p < 0 || p > 1 || mu < 0) return(-Inf)
+    f0 <- function(x) 1/width
+    f1.minus <- function(x) ifelse(x >= theta & x <= theta + mu, 1/mu, 0)
+    f1.plus <- function(x) ifelse(x <= theta & x >= theta - mu, 1/mu, 0)
+    sum(log(p * (f0(raw.data[["+"]])) + (1-p) * f1.plus(raw.data[["+"]]))) + 
+        sum(log(p * (f0(raw.data[["-"]])) + (1-p) * f1.minus(raw.data[["-"]])))
+}
+
+negllik.p.mu <- function(theta, sigma = 0, raw.data, width)
+{
+    function(p, mu)
+        -loglik(theta = theta, p = p, mu = mu, sigma = sigma, raw.data = raw.data, width = width)
+}
+
+doTheta <- function(theta = 83300000, raw.data = rd, width = w)
+{
+    lfun <- negllik.p.mu(theta = theta, raw.data = raw.data, width = width)
+    m <- mle(lfun, start = list(p = 0.5, mu = 200))
+    c(M2LL = 2 * m@min, m@coef, sd = sqrt(diag(m@vcov)))
+}
+
+doRegion <- function(data = combinedMyo$ctubes, chr, start, end, plot = interactive(), by = 5)
+{
+    rd <- rawData(data = combinedMyo$ctubes, chr = chr, start = start, end = end)
+    w <- end - start
+    ## if (plot) plot(stripplot(which ~ data, do.call(make.groups, rd), jitter = TRUE))
+    doTheta <- function(theta)
+    {
+        lfun <- negllik.p.mu(theta = theta, raw.data = rd, width = w)
+        m <- try(mle(lfun, start = list(p = 0.5, mu = 200)), silent = TRUE)
+        if (inherits(m, "try-error")) rep(NA_real_, 5) 
+        else c(M2LL = 2 * m@min, m@coef, sd = sqrt(diag(m@vcov)))
+    }
+    i <- seq(start, end, by = by)
+    ans <- 
+        sapply(i, 
+               function(theta) {
+                   if (interactive()) message(theta)
+                   doTheta(theta)
+               })
+    ans <- as.data.frame(t(ans))
+    names(ans) <- c("M2LL", "p", "mu", "sd.p", "sd.mu")
+    ans$theta <- i
+    ans$plus <- density(rd[["+"]], from = start, to = end, n = length(i))$y
+    ans$minus <- density(rd[["-"]], from = start, to = end, n = length(i))$y
+    if (plot)
+    {
+        plot(xyplot(M2LL + p + mu + plus + minus ~ theta, data = ans, type = "l", outer = TRUE, 
+                    scales = list(y = list(relation = "free", rot = 0)), strip = FALSE, strip.left = TRUE, 
+                    ylab = "", layout = c(1, 5)))
+    }
+    invisible(ans)
+}
+
+
+## Some high peaks:
+##       chromosome     start       end comb.max
+## 30938      chr15  83299674  83300455      505
+## 37239      chr17  31927395  31928306      519
+## 41970      chr18  78063806  78064390      524
+## 42317      chr19   3923319   3924497      507
+## 48815       chr2 102776952 102777617      567
+## 65025       chr5 121038253 121038858      561
+## 80780       chr8 125374395 125375194      619
+
+## rd <- rawData(data = combinedMyo$ctubes, chr = "chr15", start = 83299674, end = 83300455)
+## w <- 83300455 - 83299674
+## stripplot(which ~ data, do.call(make.groups, rd), jitter = TRUE)
+@ 
+
+Here are a couple of examples, done with $\sigma = 0$.
+
+\newpage
+
+<<>>=
+doRegion(data = combinedMyo$ctubes, 
+         chr = "chr17", start = 31927395, end = 31928306,
+         plot = TRUE)
+@ 
+
+<<fig=TRUE,width=9,height=10,echo=FALSE>>=
+plot(trellis.last.object())
+@ 
+
+\newpage
+
+<<>>=
+doRegion(data = combinedMyo$ctubes, 
+         chr = "chr2", start = 102776952, end =  102777617,
+         plot = TRUE)
+@ 
+
+<<fig=TRUE,width=9,height=10,echo=FALSE>>=
+plot(trellis.last.object())
+@ 
 
 
 \end{document}

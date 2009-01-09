@@ -180,7 +180,7 @@ foo <- subset(peakSummaryMethyl, abs(rstandard) > 2.5)
 splom(foo[c("fitted", "rstandard", "rstudent")])
 
 
-write.csv(foo[, 1:3], row.names = FALSE, file = "methyl_DE.csv")
+write.csv(foo, row.names = FALSE, file = "methyl_DE.csv", quote = FALSE)
 
 
 
