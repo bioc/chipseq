@@ -1,13 +1,14 @@
 
+## First 54-cycle read
 
-
-## code related to the paper
-
-## regression: ``DE peaks''
-
-## Note: Zizhen suggested a permutation test, which we should try out
-## (haven't yet)
-
+## lane1: C2C12 0h DNA methylation ChIP (rep1)
+## lane2: C2C12 0h DNA methylation ChIP (rep 2)
+## lane3: C2C12 96h DNA methylation ChIP (rep 1)
+## lane4: C2C12 96h DNA methylation ChIP (rep 2)
+## lane5: phiX
+## lane6: Rhabdomyosarcoma(RD) 24h Myod ChIP -- RD is a human muscle tumor with defects in muscle differentiation program
+## lane7: primary mouse myotubes 72h Myod ChIP (Antibody: 6975)
+## lane8: primary mouse myotubes 72h Myod ChIP (Antibody: 6196)
 
 library(chipseq)
 library(lattice)
@@ -19,6 +20,9 @@ load("solexa54.rda")
 
 library(BSgenome.Mmusculus.UCSC.mm9)
 mouse.chromlens <- seqlengths(Mmusculus)
+
+library(BSgenome.Hsapiens.UCSC.hg18)
+human.chromlens <- seqlengths(Hsapiens)
 
 ## function to compute GC content
 
@@ -32,7 +36,9 @@ gcContent <- function(isochore = isochore.df,
 
 combined54 <- 
     list(h0 = combineLaneReads(solexa54[c("1","2")]),
-         h96 = combineLaneReads(solexa54[c("3","4")]))
+         h96 = combineLaneReads(solexa54[c("3","4")]),
+         RD = solexa54[["6"]],
+         ctubes = combineLaneReads(solexa54[c("7","8")]))
 
 
 ## Step 3: Get ``peaks'' in combined data.
@@ -45,15 +51,26 @@ extRanges54 <- lapply(combined54, extendReads)
 if (FALSE)  ## dump coverage
 { 
 
-cov54 <- lapply(extRanges54, function(x) { 
-    sapply(names(x), 
-           function(chr) { 
-               message(chr)
-               coverage(x[[chr]], 1, mouse.chromlens[chr])
-           }, simplify = FALSE)
-    })
+cov54 <-
+    c(lapply(extRanges54[-3], # mouse
+             function(x) { 
+                 sapply(names(x), 
+                        function(chr) { 
+                            message(chr)
+                            coverage(x[[chr]], 1, mouse.chromlens[chr])
+                        }, simplify = FALSE)
+             }),
+      lapply(extRanges54[3], # human
+             function(x) { 
+                 sapply(names(x), 
+                        function(chr) { 
+                            message(chr)
+                            coverage(x[[chr]], 1, human.chromlens[chr])
+                        }, simplify = FALSE)
+             }))
 
-cov2df <- function(x, chr = "") {
+cov2dfChr <- function(x, chr = "")
+{
     vals <- as.integer(x@values)
     lens <- as.integer(x@lengths)
     ends <- cumsum(lens)
@@ -62,24 +79,40 @@ cov2df <- function(x, chr = "") {
                stringsAsFactors = FALSE)
 }
 
-h0cov <- 
+cov2df <- function(x)
+{
     do.call(rbind, 
-            sapply(names(cov54$h0), 
+            sapply(names(x), 
                    function(chr) {
                        message(chr)
-                       cov2df(cov54$h0[[chr]], chr = chr)
+                       cov2dfChr(x[[chr]], chr = chr)
                    }, simplify = FALSE))
+}
 
-h96cov <- 
-    do.call(rbind, 
-            sapply(names(cov54$h96), 
-                   function(chr) {
-                       message(chr)
-                       cov2df(cov54$h96[[chr]], chr = chr)
-                   }, simplify = FALSE))
+covdf54 <- lapply(cov54, cov2df)
 
-write.csv(h0cov, row.names = FALSE, quote = FALSE, file = "h0cov.csv")
-write.csv(h96cov, row.names = FALSE, quote = FALSE, file = "h96cov.csv")
+## h96cov <- 
+##     do.call(rbind, 
+##             sapply(names(cov54$h96), 
+##                    function(chr) {
+##                        message(chr)
+##                        cov2df(cov54$h96[[chr]], chr = chr)
+##                    }, simplify = FALSE))
+
+## RDcov <- 
+##     do.call(rbind, 
+##             sapply(names(cov54$RD), 
+##                    function(chr) {
+##                        message(chr)
+##                        cov2df(cov54$RD[[chr]], chr = chr)
+##                    }, simplify = FALSE))
+
+
+write.csv(covdf54$h0, row.names = FALSE, quote = FALSE, file = "h0cov.csv")
+write.csv(covdf54$h96, row.names = FALSE, quote = FALSE, file = "h96cov.csv")
+write.csv(covdf54$RD, row.names = FALSE, quote = FALSE, file = "RDcov.csv")
+write.csv(covdf54$ctubes, row.names = FALSE, quote = FALSE, file = "ctubes54cov.csv")
+
 
 }
 
@@ -110,12 +143,12 @@ with(peakSummaryMethyl,
 ## get contxt information so that we can identify promoter peaks
 
 data(geneMouse)
-gregions <- genomic_regions(genes = geneMouse, proximal = 500)
+gregions <- genomic_regions(genes = geneMouse, proximal = 2000)
 gregions <- subset(gregions, chrom %in% paste("chr", 1:19, sep = ""))
 gregions$chrom <- gregions$chrom[drop = TRUE]
 
-gpromoters <- gregions[c("chrom", "promoter.start", "promoter.end")]
-names(gpromoters) <- c("chr", "start", "end")
+gpromoters <- gregions[c("chrom", "promoter.start", "promoter.end", "gene")]
+names(gpromoters) <- c("chr", "start", "end", "gene")
 
 
 
@@ -142,6 +175,7 @@ updatePeakSummary <- function(x, promoters = gpromoters)
         ## In promoter?
         oo <- overlap.index(promoter.split[[chr]], x.split[[chr]])
         x.split[[chr]]$promoter <- !is.na(oo)
+        x.split[[chr]]$promoter.gene <- ifelse(is.na(oo), "", as.character(promoter.split[[chr]]$gene[oo]))
     }
     ans <- do.call(rbind, x.split)
     rownames(ans) <- NULL
@@ -159,7 +193,8 @@ updatePeakSummary <- function(x, promoters = gpromoters)
 peakSummaryMethyl <- updatePeakSummary(peakSummaryMethyl)
 peakSummaryMethyl <- na.omit(peakSummaryMethyl)
 
-fmx.control <- lm(diffs ~ 1 + promoter + peakGC, peakSummaryMethyl)
+## fmx.control <- lm(diffs ~ 1 + promoter + peakGC, peakSummaryMethyl)
+fmx.control <- lm(diffs ~ 1 + peakGC, peakSummaryMethyl)
 anova(fmx.control)
 ## summary(fmx.control)
 
@@ -175,7 +210,23 @@ qqmath(~rstandard, peakSummaryMethyl, aspect = "iso",
        f.value = ppoints(1000),
        type = c("p", "g"))
 
-foo <- subset(peakSummaryMethyl, abs(rstandard) > 2.5) 
+if (FALSE)
+{
+
+    x11(type = "Xlib")
+    qqmath(~rstandard | chromosome, peakSummaryMethyl)
+
+    require(mosaiq)
+
+    mosaiq.qqmath(x = rstandard, margin.vars = ~ factor(chromosome),
+                  data = peakSummaryMethyl, pch = ".",
+                  antialias = FALSE)
+
+}
+
+
+
+foo <- subset(peakSummaryMethyl, abs(rstandard) > 2.5)
 
 splom(foo[c("fitted", "rstandard", "rstudent")])
 

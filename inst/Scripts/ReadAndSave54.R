@@ -36,9 +36,9 @@ readReads <-
 ## lane7: primary mouse myotubes 72h Myod ChIP (Antibody: 6975)
 ## lane8: primary mouse myotubes 72h Myod ChIP (Antibody: 6196)
 
-pat.lanes <- sprintf("s_%g", 1:8)
+pat.lanes <- sprintf("s_%g.map", 1:8)
 names(pat.lanes) <- as.character(1:8)
-pat.lanes <- pat.lanes[-c(5, 6, 7, 8)] # just 5 eventually, but 6 and 7 haven't finished yet
+pat.lanes <- pat.lanes[-c(5)] 
 
 solexa54 <-
     lapply(pat.lanes,
