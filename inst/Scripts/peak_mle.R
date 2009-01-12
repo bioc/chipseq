@@ -2,7 +2,7 @@
 
 library(stats4) ## for mle
 library(chipseq)
-## library(latticeExtra)
+library(lattice)
 
 
 rawData <- function(data, chr, start, end)
@@ -143,7 +143,7 @@ doRow <- function(peakSet, i = 1, data, ...)
 pdf("chr14_peak_mle.pdf", width = 7, height = 9)
 
 chr14.summary <- 
-    lapply(head(seq_len(nrow(peaks$chr14))),
+    lapply(seq_len(nrow(peaks$chr14)),
            function(i) {
                message(i, "/", nrow(peaks$chr14))
                doRow(peaks$chr14, i, data = ctubes, plot = TRUE)
@@ -155,5 +155,7 @@ dev.off()
 chr14.summary <- do.call(rbind, chr14.summary)
 save(chr14.summary, file = "chr14.summary.rda")
 
+
+xyplot(p ~ mu, chr14.summary)
 
 
