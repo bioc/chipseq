@@ -9,7 +9,10 @@ A set of genomic coordinate data for gene transcripts, and related
 annotations, for M. musculus. Coordinates are relative to the mm9 build.
 All coordinates are in nucleotides from the 5' end of the positive
 \code{"+"} strand. In the below, \dQuote{gene} is synonymous with
-\dQuote{spliced transcript}.
+\dQuote{spliced transcript}, so each row corresponds to a transcript
+variant with a particular TSS, TES, and exon configuration. A single
+coding start (\code{cdsStart}) and end (\code{cdsEnd}) are
+predicted for each gene/transcript.
 }
 \usage{data(geneMouse)}
 \format{
