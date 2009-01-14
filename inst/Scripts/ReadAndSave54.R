@@ -47,6 +47,9 @@ solexa54 <-
                          type = "MAQMapShort")
            })
 
+
+sapply(solexa54, function(x) sum(sapply(x, function(u) sum(sapply(u, length)))))
+
 save(solexa54, file = "solexa54.rda")
 rm(solexa54)
 gc()
@@ -66,7 +69,7 @@ readOne <-
     filt <-
         compose(strandFilter(strandLevels=c("-", "+")),
                 chromosomeFilter(regex = "chr[0-9]+$"),
-                ## uniqueFilter(withSread = FALSE),
+                uniqueFilter(withSread = FALSE),
                 ##  alignQualityFilter(10),
                 ...)
     message(sprintf("reading data from lane %s [%s], using filter %s", lane, srcdir, name(filt)))
@@ -75,6 +78,17 @@ readOne <-
     else ans
 }
 
-foo <- readOne(srcdir = "/home/jdavison/ycao/29-12-2008/binary",
-               lane = "s_8",
-               type = "MAQMapShort", simplify = FALSE)
+lane2 <- readOne(srcdir = "/home/jdavison/ycao/29-12-2008/binary",
+                 lane = "s_2",
+                 type = "MAQMapShort", simplify = FALSE)
+lane6 <- readOne(srcdir = "/home/jdavison/ycao/29-12-2008/binary",
+                 lane = "s_6",
+                 type = "MAQMapShort", simplify = FALSE)
+lane8 <- readOne(srcdir = "/home/jdavison/ycao/29-12-2008/binary",
+                 lane = "s_8",
+                 type = "MAQMapShort", simplify = FALSE)
+
+barchart(table(quality(alignQuality(lane2))))
+barchart(table(quality(alignQuality(lane6))))
+barchart(table(quality(alignQuality(lane8))))
+
