@@ -34,12 +34,14 @@ combinedLanes <-
 
 
 
+
+
 ## some measure of similarity.  Works on data from a single
 ## chromosome, in the form of a list("+" = ..., "-" = ...)
 
 
 ## latest attempt: measure goodness by number of bases covered after
-## shifting.  Best match would have this be low.
+## shifting.  For the best mean shift, this would be low.
 
 
 computeCovered <-
@@ -56,7 +58,113 @@ computeCovered <-
 }
 
 
+simdf <-
+    expand.grid(shift = seq(from = 0, to = 150, by = 5),
+                chr = factor(sprintf("chr%s", 1:19), levels = sprintf("chr%s", 1:19)),
+                sample = factor(c("cfibromyod", "cblasts", "ctubes"), levels = c("cfibromyod", "cblasts", "ctubes")),
+                sim = NA_real_,
+                KEEP.OUT.ATTRS = FALSE)
 
+for (i in seq_len(nrow(simdf))[1:10])
+{
+    with(simdf, message(chr[i], "\t", shift[i], "\t", sample[i]))
+    simdf$sim[i] <-
+        computeCovered(combinedLanes[[as.character(simdf$sample[i])]],
+                       chr = as.character(simdf$chr[i]),
+                       shift = simdf$shift[i])
+}
+
+
+
+## A slightly different and more useful question is: how much should
+## be extend.  This needs some way to evaluate an extension.  Here's
+## one idea: for a given extension, take covpos + covneg, and
+## pmax(covpos, covneg).  The difference in their sum() (area under
+## coverage) is a measure of overlap.  
+
+
+
+computeOverlap <-
+    function(x, chr, seqLen = 100,
+             chrlens = seqlengths(Mmusculus))
+{
+    xchr <- x[[chr]]
+    n <- chrlens[chr]
+    covpos <- coverage(extendReads(xchr, readLen = 35, seqLen = seqLen, strand = "+"), 1L, n)
+    covneg <- coverage(extendReads(xchr, readLen = 35, seqLen = seqLen, strand = "-"), 1L, n)
+    cov <- covpos + covneg
+    c(total = sum(cov), diff = sum(cov - pmax(covpos, covneg)))
+}
+
+
+simdf$total <- NA_real_
+simdf$diff <- NA_real_
+
+for (i in seq_len(nrow(simdf))[1:10])
+{
+    with(simdf, message(chr[i], "\t", shift[i], "\t", sample[i]))
+    ansi <-
+        computeOverlap(combinedLanes[[as.character(simdf$sample[i])]],
+                       chr = as.character(simdf$chr[i]),
+                       seqLen = 35L + simdf$shift[i])
+    simdf$total[i] <- ansi["total"]
+    simdf$diff[i] <- ansi["diff"]
+}
+
+frag.size <- simdf
+
+save(frag.size, file = "frag.size.rda")
+
+
+
+
+
+pdf("strand-shift.pdf", width = 11, height = 8)
+
+xyplot(sim ~ (shift+35) | chr, simdf, type = "o",
+       subset = (sample == "cfibromyod"),
+       scales = list(y = list(relation = "free", draw = FALSE)),
+       panel = function(...) {
+           panel.abline(v = 140, col = "grey", lwd = 3)
+           panel.xyplot(...)
+       })
+
+xyplot(sim ~ (shift+35) | chr, simdf, type = "o",
+       subset = (sample == "cblasts"),
+       scales = list(y = list(relation = "free", draw = FALSE)),
+       panel = function(...) {
+           panel.abline(v = 90, col = "grey", lwd = 3)
+           panel.xyplot(...)
+       })
+
+xyplot((diff/total) ~ (shift + 35) | chr, simdf, 
+       subset = (sample == "cfibromyod"),
+       ## scales = list(y = list(relation = "free", draw = FALSE)),
+       type = c("l", "g"))
+
+
+xyplot((diff) ~ (shift + 35) | chr, simdf, 
+       subset = (sample == "cfibromyod"),
+       scales = list(y = list(relation = "free", draw = FALSE)),
+       type = c("l", "g"),
+       prepanel = function(x, y, ...) {
+           prepanel.default.xyplot(x[-1], diff(y), ...)
+       },
+       panel = function(x, y, ...) {
+           panel.xyplot(x[-1], diff(y), ...)
+       })
+
+
+
+
+dev.off()
+
+
+
+
+stop("End of file")
+
+## older experiments
 
 
 sum.xrle <- function(x)
@@ -111,13 +219,6 @@ computeSimilarity <-
     similarity(covpos, covneg)
 }
 
-simdf <-
-    expand.grid(shift = seq(from = 0, to = 150, by = 5),
-                chr = factor(sprintf("chr%s", 1:19), levels = sprintf("chr%s", 1:19)),
-                sample = factor(c("cfibromyod", "cblasts", "ctubes"), levels = c("cfibromyod", "cblasts", "ctubes")),
-                sim = NA_real_,
-                KEEP.OUT.ATTRS = FALSE)
-
 ## for (i in seq_len(nrow(simdf)))
 ## {
 ##     with(simdf, message(chr[i], "\t", shift[i], "\t", sample[i]))
@@ -128,17 +229,6 @@ simdf <-
 ##                           similarity = similarity.corr)
 ## }
 
-for (i in seq_len(nrow(simdf)))
-{
-    with(simdf, message(chr[i], "\t", shift[i], "\t", sample[i]))
-    simdf$sim[i] <-
-        computeCovered(combinedLanes[[as.character(simdf$sample[i])]],
-                       chr = as.character(simdf$chr[i]),
-                       shift = simdf$shift[i])
-}
-
-library(latticeExtra)
-
 xyp <-
     xyplot(sim ~ shift | chr + sample, simdf, type = "o",
            subset = (sample == "cfibromyod"),
@@ -147,21 +237,6 @@ xyp <-
                panel.xyplot(...)
            })
 
-xyplot(sim ~ shift | chr, simdf, type = "o",
-       subset = (sample == "cfibromyod"),
-       scales = list(relation = "free", draw = FALSE),
-       panel = function(...) {
-           panel.abline(v = 105, col = "grey", lwd = 3)
-           panel.xyplot(...)
-       })
-
-
-pdf("strand-shift.pdf", width = 11, height = 8)
-useOuterStrips(xyp[1:5, ])
-useOuterStrips(xyp[6:10, ])
-useOuterStrips(xyp[11:15, ])
-useOuterStrips(xyp[16:19, ])
-dev.off()
 
 
 
