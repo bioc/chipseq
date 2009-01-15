@@ -2,6 +2,7 @@
 \Rdversion{1.1}
 \alias{genomic_regions}
 \alias{genomic_exons}
+\alias{genomic_introns}
 \title{
 Functions that compute genomic regions of interest. 
 }
@@ -13,6 +14,7 @@ upstream regions etc, from the genomic locations provided in data like
 \usage{
 genomic_regions(genes, proximal = 500, distal = 10000, offset = 1)
 genomic_exons(genes)
+genomic_introns(genes)
 }
 \arguments{
   \item{genes}{
@@ -32,10 +34,14 @@ i.e. enhancer/silencer regions.
 }
 \details{
 Fairly simply addtions/subtractions are made.
+The assumption made for introns is that there must be more than one
+exon, and that the introns are between the end of one exon and before
+the start of the next exon.
 }
 \value{
 For \code{genomic_regions} a data.frame with all components computed.
 For \code{genomic_exons} a data.frame with one row per exon.
+For \code{genomic_introns} a data.frame with one row per intron.
 }
 \author{
 M. Lawrence.
