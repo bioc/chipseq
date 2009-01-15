@@ -47,11 +47,11 @@ genomic_regions <- function(genes, proximal = 500, distal = 10000) {
 }
 
 genomic_exons <- function(genes) {
+  splitPos <- function(pos) {
+    as.integer(unlist(strsplit(as.character(pos), ",")))
+  }
   genomic_exons_chrom <- function(sub_genes) {
     ## [exon:start, exon:end]
-    splitPos <- function(pos) {
-      as.integer(unlist(strsplit(as.character(pos), ",")))
-    }
     data.frame(chrom = sub_genes$chrom[1],
                gene = rep(sub_genes$name, sub_genes$exonCount),
                start = splitPos(sub_genes$exonStarts),
@@ -61,6 +61,37 @@ genomic_exons <- function(genes) {
 }
 
 
+## RG thinks that there is always one more exon than intron
+## and that the first intron comes after the first exon
+##
+genomic_introns <- function(genes) {
+  ##a couple of helper functions - defined here so we
+  ##don't instantiate every time throught he loop
+  splitEnd <- function(pos) {
+     sps = strsplit(as.character(pos), ",")
+     lp = lapply(sps, function(x) x[-length(x)])
+     as.integer(unlist(lp))
+  }
+  splitStart <- function(pos) {
+      sps = strsplit(as.character(pos), ",")
+      lp = lapply(sps, function(x) x[-1])
+      as.integer(unlist(lp))
+  }
+  genomic_introns_chrom <- function(sub_genes) {
+    ## introns are defined by [exon:end, exon:start]
+    sub_genes = sub_genes[sub_genes$exonCount > 1,]
+    starts = splitEnd(sub_genes$exonEnds)
+    ends = splitStart(sub_genes$exonStarts)
+    if( nrow(sub_genes) > 0 )
+        chrom = sub_genes$chrom[1] else
+        chrom = character()
+    data.frame(chrom = chrom,
+               gene = rep(sub_genes$name, sub_genes$exonCount-1),
+               start = starts,
+               end = ends)
+  }
+  do.call(rbind, as.list(by(genes, genes$chrom, genomic_introns_chrom)))
+}
 
 countHits <- function(subject, query)
 {
