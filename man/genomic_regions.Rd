@@ -17,20 +17,17 @@ genomic_exons(genes)
 genomic_introns(genes)
 }
 \arguments{
-  \item{genes}{
-     A data.frame like that provided by \code{geneMouse}.
-}
+  \item{genes}{ A data.frame like that provided by \code{geneMouse}.}
   \item{proximal}{
   The number of bases on either side of TSS and 3'-end for
-  the promoter and end region, respectively.
-}
+  the promoter and end region, respectively.}
   \item{distal}{
 The number of bases on either side for upstream/downstream,
 i.e. enhancer/silencer regions.
 }
   \item{offset}{ An offset to allow for a gap (positive or negative) 
  between the region defined by \code{proximal} and that defined by 
-\code{distal}.
+\code{distal}.}
 }
 \details{
 Fairly simply addtions/subtractions are made.
