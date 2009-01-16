@@ -9,7 +9,7 @@ library(BSgenome.Mmusculus.UCSC.mm9)
 
 load("myodMyo.rda")
 load("myodFibro.rda")
-
+load("solexa54.rda")
 
 gsample <- function(x, ...)
 {
@@ -30,7 +30,10 @@ combinedLanes <-
     list(cblasts = combineLaneReads(myodMyo[c("1","3","6")]),
          ctubes = combineLaneReads(myodMyo[c("2","4","7")]),
          cfibro = combineLaneReads(myodFibro[c("1","3","6")]),
-         cfibromyod = combineLaneReads(myodFibro[c("2","4","7")]))
+         cfibromyod = combineLaneReads(myodFibro[c("2","4","7")]),
+         methyl0 = combineLaneReads(solexa54[c("1","2")]),
+         methyl96 = combineLaneReads(solexa54[c("3","4")]),
+         realtube = combineLaneReads(solexa54[c("7","8")]))
 
 
 
@@ -59,9 +62,9 @@ computeCovered <-
 
 
 simdf <-
-    expand.grid(shift = seq(from = 0, to = 150, by = 5),
+    expand.grid(shift = seq(from = 0, to = 200, by = 5),
                 chr = factor(sprintf("chr%s", 1:19), levels = sprintf("chr%s", 1:19)),
-                sample = factor(c("cfibromyod", "cblasts", "ctubes"), levels = c("cfibromyod", "cblasts", "ctubes")),
+                sample = factor(rev(names(combinedLanes)), levels = rev(names(combinedLanes))),
                 sim = NA_real_,
                 KEEP.OUT.ATTRS = FALSE)
 
@@ -106,7 +109,7 @@ for (i in seq_len(nrow(simdf)))
     ansi <-
         computeOverlap(combinedLanes[[as.character(simdf$sample[i])]],
                        chr = as.character(simdf$chr[i]),
-                       seqLen = 75L + simdf$shift[i])
+                       seqLen = 35L + simdf$shift[i])
     simdf$total[i] <- ansi["total"]
     simdf$diff[i] <- ansi["diff"]
 }
@@ -117,44 +120,9 @@ save(frag.size, file = "frag.size.rda")
 
 
 
-
-
-pdf("strand-shift.pdf", width = 11, height = 8)
-
-xyplot(sim ~ (shift+35) | chr, frag.size, type = "o",
-       subset = (sample == "cfibromyod"), main = "Combined fibro+MyoD", 
-       scales = list(y = list(relation = "free", draw = FALSE)),
-       panel = function(...) {
-           panel.abline(v = 140, col = "grey", lwd = 3)
-           panel.xyplot(...)
-       })
-
-xyplot(sim ~ (shift+35) | chr, frag.size, type = "o",
-       subset = (sample == "cblasts"), main = "Combined Myoblasts", 
-       scales = list(y = list(relation = "free", draw = FALSE)),
-       panel = function(...) {
-           panel.abline(v = 90, col = "grey", lwd = 3)
-           panel.xyplot(...)
-       })
-
-
-xyplot(sim ~ (shift+35) | chr, frag.size, type = "o",
-       subset = (sample == "ctubes"), main = "Combined Myotubes", 
-       scales = list(y = list(relation = "free", draw = FALSE)),
-       panel = function(...) {
-           panel.abline(v = 90, col = "grey", lwd = 3)
-           panel.xyplot(...)
-       })
-
-
-
-
-
-
-
 diff0Plot <- function(which = "cfibromyod")
 {
-    xyplot(diff/total ~ (shift + 75) | chr, frag.size, 
+    xyplot(diff/total ~ (shift + 35) | chr, frag.size, 
            subset = (sample == which), main = which, 
            scales = list(y = list(relation = "free", draw = FALSE)),
            type = c("l", "g"),
@@ -164,7 +132,7 @@ diff0Plot <- function(which = "cfibromyod")
 
 diff1Plot <- function(which = "cfibromyod")
 {
-    xyplot(diff ~ (shift + 75) | chr, frag.size, 
+    xyplot(diff ~ (shift + 35) | chr, frag.size, 
            subset = (sample == which), main = which, 
            ## scales = list(y = list(relation = "free", draw = FALSE)),
            type = c("l", "g"),
@@ -181,7 +149,7 @@ diff1Plot <- function(which = "cfibromyod")
 
 diff2Plot <- function(which = "cfibromyod")
 {
-    xyplot(diff ~ (shift + 75) | chr, frag.size, 
+    xyplot(diff ~ (shift + 35) | chr, frag.size, 
            subset = (sample == which), main = which, 
            scales = list(y = list(relation = "free", draw = FALSE)),
            type = c("l", "g"),
@@ -197,17 +165,55 @@ diff2Plot <- function(which = "cfibromyod")
 }
 
 
+coveredPlot <- function(which = "cfibromyod")
+{
+    xyplot(sim ~ (shift+35) | chr, frag.size, type = "o",
+           subset = (sample == which), main = which, 
+           scales = list(y = list(relation = "free", draw = FALSE)),
+           xlab = "Estimated mean fragment size",
+           ylab = "Second derivative of Difference",
+           panel = function(...) {
+               panel.abline(v = 140, col = "grey", lwd = 3)
+               panel.xyplot(...)
+           })
+}
+
+
+
+pdf("strand-shift.pdf", width = 11, height = 8)
+
+
+coveredPlot("cfibromyod")
+coveredPlot("cblasts")
+coveredPlot("ctubes")
+coveredPlot("cfibro")
+coveredPlot("methyl0")
+coveredPlot("methyl96")
+coveredPlot("realtube")
+
 diff0Plot("cfibromyod")
 diff0Plot("cblasts")
 diff0Plot("ctubes")
+diff0Plot("cfibro")
+diff0Plot("methyl0")
+diff0Plot("methyl96")
+diff0Plot("realtube")
 
 diff1Plot("cfibromyod")
 diff1Plot("cblasts")
 diff1Plot("ctubes")
+diff1Plot("cfibro")
+diff1Plot("methyl0")
+diff1Plot("methyl96")
+diff1Plot("realtube")
 
 diff2Plot("cfibromyod")
 diff2Plot("cblasts")
 diff2Plot("ctubes")
+diff2Plot("cfibro")
+diff2Plot("methyl0")
+diff2Plot("methyl96")
+diff2Plot("realtube")
 
 
 dev.off()
