@@ -65,7 +65,7 @@ simdf <-
                 sim = NA_real_,
                 KEEP.OUT.ATTRS = FALSE)
 
-for (i in seq_len(nrow(simdf))[1:10])
+for (i in seq_len(nrow(simdf)))
 {
     with(simdf, message(chr[i], "\t", shift[i], "\t", sample[i]))
     simdf$sim[i] <-
@@ -100,13 +100,13 @@ computeOverlap <-
 simdf$total <- NA_real_
 simdf$diff <- NA_real_
 
-for (i in seq_len(nrow(simdf))[1:10])
+for (i in seq_len(nrow(simdf)))
 {
     with(simdf, message(chr[i], "\t", shift[i], "\t", sample[i]))
     ansi <-
         computeOverlap(combinedLanes[[as.character(simdf$sample[i])]],
                        chr = as.character(simdf$chr[i]),
-                       seqLen = 35L + simdf$shift[i])
+                       seqLen = 75L + simdf$shift[i])
     simdf$total[i] <- ansi["total"]
     simdf$diff[i] <- ansi["diff"]
 }
@@ -121,40 +121,93 @@ save(frag.size, file = "frag.size.rda")
 
 pdf("strand-shift.pdf", width = 11, height = 8)
 
-xyplot(sim ~ (shift+35) | chr, simdf, type = "o",
-       subset = (sample == "cfibromyod"),
+xyplot(sim ~ (shift+35) | chr, frag.size, type = "o",
+       subset = (sample == "cfibromyod"), main = "Combined fibro+MyoD", 
        scales = list(y = list(relation = "free", draw = FALSE)),
        panel = function(...) {
            panel.abline(v = 140, col = "grey", lwd = 3)
            panel.xyplot(...)
        })
 
-xyplot(sim ~ (shift+35) | chr, simdf, type = "o",
-       subset = (sample == "cblasts"),
+xyplot(sim ~ (shift+35) | chr, frag.size, type = "o",
+       subset = (sample == "cblasts"), main = "Combined Myoblasts", 
        scales = list(y = list(relation = "free", draw = FALSE)),
        panel = function(...) {
            panel.abline(v = 90, col = "grey", lwd = 3)
            panel.xyplot(...)
        })
 
-xyplot((diff/total) ~ (shift + 35) | chr, simdf, 
-       subset = (sample == "cfibromyod"),
-       ## scales = list(y = list(relation = "free", draw = FALSE)),
-       type = c("l", "g"))
 
-
-xyplot((diff) ~ (shift + 35) | chr, simdf, 
-       subset = (sample == "cfibromyod"),
+xyplot(sim ~ (shift+35) | chr, frag.size, type = "o",
+       subset = (sample == "ctubes"), main = "Combined Myotubes", 
        scales = list(y = list(relation = "free", draw = FALSE)),
-       type = c("l", "g"),
-       prepanel = function(x, y, ...) {
-           prepanel.default.xyplot(x[-1], diff(y), ...)
-       },
-       panel = function(x, y, ...) {
-           panel.xyplot(x[-1], diff(y), ...)
+       panel = function(...) {
+           panel.abline(v = 90, col = "grey", lwd = 3)
+           panel.xyplot(...)
        })
 
 
+
+
+
+
+
+diff0Plot <- function(which = "cfibromyod")
+{
+    xyplot(diff/total ~ (shift + 75) | chr, frag.size, 
+           subset = (sample == which), main = which, 
+           scales = list(y = list(relation = "free", draw = FALSE)),
+           type = c("l", "g"),
+           xlab = "Amount of extension (bases)",
+           ylab = "Difference between total and pairwise max coverage / Total")
+}
+
+diff1Plot <- function(which = "cfibromyod")
+{
+    xyplot(diff ~ (shift + 75) | chr, frag.size, 
+           subset = (sample == which), main = which, 
+           ## scales = list(y = list(relation = "free", draw = FALSE)),
+           type = c("l", "g"),
+           xlab = "Amount of extension (bases)",
+           ylab = "First derivative of Difference",
+           prepanel = function(x, y, ...) {
+               prepanel.default.xyplot(head(x, -1), diff(y), ...)
+           },
+           panel = function(x, y, ...) {
+               panel.xyplot(head(x, -1), diff(y), ...)
+               panel.abline(h = 0)
+           })
+}
+
+diff2Plot <- function(which = "cfibromyod")
+{
+    xyplot(diff ~ (shift + 75) | chr, frag.size, 
+           subset = (sample == which), main = which, 
+           scales = list(y = list(relation = "free", draw = FALSE)),
+           type = c("l", "g"),
+           xlab = "Amount of extension (bases)",
+           ylab = "Second derivative of Difference",
+           prepanel = function(x, y, ...) {
+               prepanel.default.xyplot(head(x, -2), diff(diff(y)), ...)
+           },
+           panel = function(x, y, ...) {
+               panel.xyplot(head(x, -2), diff(diff(y)), ...)
+               panel.abline(h = 0)
+           })
+}
+
+
+diff0Plot("cfibromyod")
+diff0Plot("cblasts")
+diff0Plot("ctubes")
+
+diff1Plot("cfibromyod")
+diff1Plot("cblasts")
+diff1Plot("ctubes")
+
+diff2Plot("cfibromyod")
+diff2Plot("cblasts")
+diff2Plot("ctubes")
 
 
 dev.off()
@@ -163,6 +216,75 @@ dev.off()
 
 
 stop("End of file")
+
+
+## A demo of this
+
+frag.mu <- 150
+frag.sd <- 5
+
+peak.locs <- c(0, 50, 350)
+nreads <- 150
+strand <- sample(c(-1, 1), nreads, replace = TRUE)
+peak <- sample(peak.locs, nreads, replace = TRUE)
+
+x <- round(peak - strand * runif(nreads, min = 0, pmax(0, rnorm(nreads, mean = frag.mu, sd = frag.sd)))) - ifelse(strand > 0, 0, 35)
+
+stripplot(factor(strand) ~ x, jitter = TRUE,
+          panel = function(...) {
+              panel.abline(v = peak.locs)
+              panel.stripplot(...)
+          })
+
+reads <- split(x, strand)
+names(reads) <- c("-", "+")
+
+
+
+plotOverlap <- function(seqLen = 100, main = as.character(seqLen), ...)
+{
+    rng <- as.integer(range(reads)) + c(-300L, 300L)
+    cov.pos <- coverage(extendReads(reads, readLen = 35, seqLen = seqLen, strand = "+"), rng[1], rng[2])
+    cov.neg <- coverage(extendReads(reads, readLen = 35, seqLen = seqLen, strand = "-"), rng[1], rng[2])
+    cov.total <- cov.pos + cov.neg
+    cov.max <- pmax(cov.pos, cov.neg)
+    df <- data.frame(coverage = c(as.numeric(cov.total), as.numeric(cov.max)),
+                     location = seq(from = rng[1], to = rng[2]),
+                     which = gl(2, length(cov.max), labels = c("total", "pmax")))
+    if (require(mosaiq))
+    {
+        print(mosaiq.xyplot(coverage ~ location, data = df, groups = which,
+                            type = "l", main = main, ...))
+    }
+    c(total = sum(cov.total), diff = sum(cov.total) - sum(cov.max), depth = max(cov.total))
+}
+
+foo <- data.frame(seqlen = seq(10, 400, by = 5))
+foo <- cbind(foo, t(sapply(foo$seqlen, plotOverlap)))
+
+xyplot(diff + total + (diff/total) + depth ~ seqlen, foo,
+       outer = TRUE, scales = list(y = list(relation = "free", rot = 0)),
+       panel = function(...) {
+           panel.xyplot(...)
+           panel.abline(v = frag.mu + c(-2, 0, 2) * frag.sd)
+       },
+       type = c("l", "g"), as.table = TRUE, layout = c(1, 4))
+
+xyplot(diff(diff) ~ seqlen[-1], foo,
+       panel = function(...) {
+           panel.xyplot(...)
+           panel.abline(v = frag.mu + c(-2, 0, 2) * frag.sd)
+       },
+       type = c("l", "g"))
+
+
+xyplot(diff(diff(diff)) ~ seqlen[-(1:2)], foo,
+       panel = function(...) {
+           panel.xyplot(...)
+       },
+       type = c("l", "g"))
+
+
 
 ## older experiments
 

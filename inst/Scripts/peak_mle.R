@@ -5,9 +5,13 @@ library(chipseq)
 library(lattice)
 
 
+readLen <- 35L ## recorded negative strand locs are shifted by this amount
+
+
 rawData <- function(data, chr, start, end)
 {
     data <- data[[chr]]
+    data[["-"]] <- data[["-"]] + readLen
     data <- lapply(data, function(x) x[x >= start & x <= end])
     data
 }
