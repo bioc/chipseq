@@ -36,8 +36,8 @@ unmaskedMatchPWM <- function(pwm, subject, min.score = "80%") {
     matchPWM(pwm = pwm, subject = subject, min.score = min.score)
 }
 bsParams <- new("BSParams", X = Mmusculus, FUN = unmaskedMatchPWM, simplify = FALSE)
-ctcfForwardMatches <- bsapply(bsParams, pwm = ctcfForwardPWM, min.score = "90%")
-ctcfReverseMatches <- bsapply(bsParams, pwm = ctcfReversePWM, min.score = "90%")
+ctcfForwardMatches <- bsapply(bsParams, pwm = ctcfForwardPWM, min.score = "80%")
+ctcfReverseMatches <- bsapply(bsParams, pwm = ctcfReversePWM, min.score = "80%")
 
 # Summarize the output
 # Counts
