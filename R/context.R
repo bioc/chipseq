@@ -147,7 +147,7 @@ contextDistributionByChr <- function(chr, peaks, gregions)
 
 contextDistribution <-
     function(peaks, gregions,
-             chroms = levels(peaks$chromosome),
+             chroms = unique(as.character(peaks$chromosome)),
              ...)
 {
     ans <-
