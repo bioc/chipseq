@@ -5,15 +5,19 @@
 ## symmetric version
 ## RG thinks it would be good to also have a diffSummary list that one
 ## could specify which summaries of the differences are wanted
+
 diffPeakSummary <-
     function(ranges1, ranges2, chrom.lens,
-             lower = 10, extend = 0, islands = TRUE,
+             lower = 10, extend = 0, islands = FALSE,
              viewSummary = list(sums = viewSums, maxs = viewMaxs))
 
     ## 'extend' is unused.  The intent is to extend the peaks by this
     ## amount before summarizing
 
 {
+    if (!is(ranges1, "list")) ranges1 <- as(ranges1, "list")
+    if (!is(ranges2, "list")) ranges2 <- as(ranges2, "list")
+
     doSlice <- function(x, lower)
     {
         if (islands)
@@ -38,6 +42,7 @@ diffPeakSummary <-
         do.call(rbind,
                 lapply(names(peaks1),
                        function(chr) {
+                           if (length(peaks1[[chr]]) == 0) return(NULL)
                            ans <-
                                data.frame(chromosome = chr,
                                           start = start(peaks1[[chr]]),
@@ -76,6 +81,9 @@ diffPeakSummaryRef <-
     ## amount before summarizing
 
 {
+    if (!is(obs.ranges, "list")) obs.ranges <- as(obs.ranges, "list")
+    if (!is(ref.ranges, "list")) ref.ranges <- as(ref.ranges, "list")
+
     obs.cov <- laneCoverage(obs.ranges, chrom.lens)
     ref.cov <- laneCoverage(ref.ranges, chrom.lens)
     ref.peaks <- lapply(ref.cov, slice, lower = lower) # extend=extend (FIXME: unused)

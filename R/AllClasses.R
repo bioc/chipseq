@@ -63,6 +63,30 @@ setMethod("gdApply",
               else new.elements
           })
 
+setAs("GenomeData", "data.frame",
+      function(from) {
+          ans <- 
+              do.call(rbind, 
+                      sapply(names(from),
+                             function(chr) {
+                                 cbind(as(from[[chr]], "data.frame"), chromosome = chr)
+                             }, simplify = FALSE))
+          row.names(ans) <- NULL
+          ans
+      })
+
+setAs("GenomeDataList", "data.frame",
+      function(from) {
+          ans <- 
+              do.call(rbind, 
+                      sapply(names(from),
+                             function(sample) {
+                                 cbind(as(from[[sample]], "data.frame"), sample = sample)
+                             }, simplify = FALSE))
+          row.names(ans) <- NULL
+          ans
+      })
+
 
 
 
