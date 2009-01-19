@@ -10,6 +10,7 @@ library(BSgenome.Mmusculus.UCSC.mm9)
 load("myodMyo.rda")
 load("myodFibro.rda")
 load("solexa54.rda")
+load("ctcf.rda")
 
 gsample <- function(x, ...)
 {
@@ -27,13 +28,16 @@ combineLaneReads <- function(laneList, chromList = names(laneList[[1]])) {
 }
 
 combinedLanes <- 
-    list(cblasts = combineLaneReads(myodMyo[c("1","3","6")]),
+    list(controlmyo = combineLaneReads(myodMyo[c("8")]),
+         controlfibro = combineLaneReads(myodFibro[c("8")]),
+         cblasts = combineLaneReads(myodMyo[c("1","3","6")]),
          ctubes = combineLaneReads(myodMyo[c("2","4","7")]),
          cfibro = combineLaneReads(myodFibro[c("1","3","6")]),
          cfibromyod = combineLaneReads(myodFibro[c("2","4","7")]),
          methyl0 = combineLaneReads(solexa54[c("1","2")]),
          methyl96 = combineLaneReads(solexa54[c("3","4")]),
-         realtube = combineLaneReads(solexa54[c("7","8")]))
+         realtube = combineLaneReads(solexa54[c("7","8")]),
+         ctcf = combineLaneReads(ctcf[c("1", "2", "3")]))
 
 
 
@@ -61,6 +65,44 @@ computeCovered <-
 }
 
 
+computeCoveredChr <-
+    function(x, chr, shift = seq(0, 10), 
+             chrlens = seqlengths(Mmusculus))
+{
+    max.shift <- max(shift)
+    xchr <- x[[chr]]
+    n <- chrlens[chr]
+    cov.pos <- coverage(extendReads(xchr, readLen = 35, seqLen = 35, strand = "+"), 1, n) > 0
+    cov.neg <- coverage(extendReads(xchr, readLen = 35, seqLen = 35, strand = "-"), 1, n) > 0
+    total <- sum((cov.pos + cov.neg) > 0)
+    sapply(shift, function(s) {
+        cat("\r", s, "/", max.shift)
+        sum(subseq(cov.pos, start = 1L, end = n - s) +
+            subseq(cov.neg, start = s + 1L, end = n) > 0)
+    }) / total
+}
+
+## computeCoveredChr(combinedLanes$cblasts, "chr3")
+
+covdf <-
+    expand.grid(chr = factor(sprintf("chr%s", 1:19), levels = sprintf("chr%s", 1:19)),
+                sample = factor(rev(names(combinedLanes)), levels = rev(names(combinedLanes))),
+                KEEP.OUT.ATTRS = FALSE)
+
+shifts <- 0:300
+cov.list <- vector(mode = "list", length = nrow(covdf))
+
+for (i in seq_len(nrow(covdf)))
+{
+    with(covdf, message(chr[i], "\t", sample[i]))
+    cov.list[[i]] <-
+        computeCoveredChr(combinedLanes[[as.character(covdf$sample[i])]],
+                          chr = as.character(covdf$chr[i]),
+                          shift = shifts)
+}
+
+save(covdf, cov.list, file = "shift_coverage.rda")
+
 simdf <-
     expand.grid(shift = seq(from = 0, to = 200, by = 5),
                 chr = factor(sprintf("chr%s", 1:19), levels = sprintf("chr%s", 1:19)),
@@ -68,14 +110,14 @@ simdf <-
                 sim = NA_real_,
                 KEEP.OUT.ATTRS = FALSE)
 
-for (i in seq_len(nrow(simdf)))
-{
-    with(simdf, message(chr[i], "\t", shift[i], "\t", sample[i]))
-    simdf$sim[i] <-
-        computeCovered(combinedLanes[[as.character(simdf$sample[i])]],
-                       chr = as.character(simdf$chr[i]),
-                       shift = simdf$shift[i])
-}
+## for (i in seq_len(nrow(simdf)))
+## {
+##     with(simdf, message(chr[i], "\t", shift[i], "\t", sample[i]))
+##     simdf$sim[i] <-
+##         computeCovered(combinedLanes[[as.character(simdf$sample[i])]],
+##                        chr = as.character(simdf$chr[i]),
+##                        shift = simdf$shift[i])
+## }
 
 
 

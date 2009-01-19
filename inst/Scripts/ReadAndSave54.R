@@ -55,6 +55,24 @@ rm(solexa54)
 gc()
 
 
+## also read CTCF data
+
+pat.lanes <- c("SRR001985.map", "SRR001986.map", "SRR001987.map")
+names(pat.lanes) <- as.character(1:3)
+
+ctcf <-
+    lapply(pat.lanes,
+           function(s) {
+               readReads(srcdir = "/home/jdavison/externalData/ES_CTCF/maps", lane = s,
+                         type = "MAQMapShort")
+           })
+
+sapply(ctcf, function(x) sum(sapply(x, function(u) sum(sapply(u, length)))))
+
+save(ctcf, file = "ctcf.rda")
+
+
+
 
 sessionInfo()
 
