@@ -51,20 +51,6 @@ combinedLanes <-
 ## shifting.  For the best mean shift, this would be low.
 
 
-computeCovered <-
-    function(x, chr, shift = 0, 
-             chrlens = seqlengths(Mmusculus))
-{
-    xchr <- x[[chr]]
-    xchr[["-"]] <- xchr[["-"]] - shift
-    n <- chrlens[chr]
-    cov <- coverage(extendReads(xchr, readLen = 35, seqLen = 35),
-                    1, n)
-    s <- slice(cov, lower = 1)
-    sum(as.numeric(width(s)))
-}
-
-
 computeCoveredChr <-
     function(x, chr, shift = seq(0, 10), 
              chrlens = seqlengths(Mmusculus))
@@ -103,13 +89,93 @@ for (i in seq_len(nrow(covdf)))
 
 save(covdf, cov.list, file = "shift_coverage.rda")
 
-simdf <-
-    expand.grid(shift = seq(from = 0, to = 200, by = 5),
-                chr = factor(sprintf("chr%s", 1:19), levels = sprintf("chr%s", 1:19)),
-                sample = factor(rev(names(combinedLanes)), levels = rev(names(combinedLanes))),
-                sim = NA_real_,
+covdf$mu.est <- sapply(cov.list, function(x) (seq_along(x)[which.min(x)] -1L)) + 35L
+sort(with(covdf, tapply(mu.est, sample, median)))
+stripplot(reorder(sample, mu.est) ~ mu.est, jitter = TRUE, data = covdf)
+
+stripplot(reorder(sample, mu.est) ~ mu.est, jitter = TRUE, data = covdf,
+          type = "a", groups = chr)
+
+## check to see if chromosome difference is consistent
+
+splom(do.call(cbind, with(covdf, split(mu.est + runif(length(mu.est)), sample))),
+      pscales = 0)
+
+## plot the curves
+
+covdf$index <- seq_len(nrow(covdf))
+
+xyplot(mu.est ~ index | reorder(sample, mu.est), groups = chr,
+       data = covdf, curves = cov.list,
+       type = c("p", "g"),
+       prepanel = function(x, y, curves, ...) {
+           crv <- unlist(curves[x])
+           list(xlim = range(shifts) + 35,
+                ylim = range(crv))
+       },
+       panel = panel.superpose,
+       panel.groups = function(x, y, curves, ...) {
+           crv <- curves[[x]]
+           panel.lines(shifts + 35, crv)
+       })
+
+
+
+## FIXME: what do we see in paired-end data?  Two sets: one as
+## reported by the paired-end alignments, and the other by this
+## method. Our method first:
+
+
+load("pairedReads.rda")
+
+paired.covdf <-
+    expand.grid(chr = factor(sprintf("chr%s", 1:19), levels = sprintf("chr%s", 1:19)),
+                sample = factor(names(pairedReads), levels = names(pairedReads)),
                 KEEP.OUT.ATTRS = FALSE)
 
+shifts <- 0:300
+paired.cov.list <- vector(mode = "list", length = nrow(covdf))
+
+for (i in seq_len(nrow(covdf)))
+{
+    with(paired.covdf, message(chr[i], "\t", sample[i]))
+    paired.cov.list[[i]] <-
+        computeCoveredChr(pairedReads[[as.character(paired.covdf$sample[i])]],
+                          chr = as.character(paired.covdf$chr[i]),
+                          shift = shifts)
+}
+
+save(paired.covdf, paired.cov.list, file = "paired_shift_coverage.rda")
+
+
+
+
+## next: reproduce Park et al paper calculations.  Seems like they
+## compute correlation between strand-specific densities after
+## shifting.
+
+
+
+
+
+
+## older approach: shift then compute coverage
+
+## computeCovered <-
+##     function(x, chr, shift = 0, 
+##              chrlens = seqlengths(Mmusculus))
+## {
+##     xchr <- x[[chr]]
+##     xchr[["-"]] <- xchr[["-"]] - shift
+##     n <- chrlens[chr]
+##     cov <- coverage(extendReads(xchr, readLen = 35, seqLen = 35),
+##                     1, n)
+##     s <- slice(cov, lower = 1)
+##     sum(as.numeric(width(s)))
+## }
+
+
+       
 ## for (i in seq_len(nrow(simdf)))
 ## {
 ##     with(simdf, message(chr[i], "\t", shift[i], "\t", sample[i]))
@@ -140,6 +206,13 @@ computeOverlap <-
     cov <- covpos + covneg
     c(total = sum(cov), diff = sum(cov - pmax(covpos, covneg)))
 }
+
+simdf <-
+    expand.grid(shift = seq(from = 0, to = 200, by = 5),
+                chr = factor(sprintf("chr%s", 1:19), levels = sprintf("chr%s", 1:19)),
+                sample = factor(rev(names(combinedLanes)), levels = rev(names(combinedLanes))),
+                sim = NA_real_,
+                KEEP.OUT.ATTRS = FALSE)
 
 
 simdf$total <- NA_real_

@@ -159,7 +159,6 @@ dev.off()
 chr14.summary <- do.call(rbind, chr14.summary)
 save(chr14.summary, file = "chr14.summary.rda")
 
-
 xyplot(p ~ mu, chr14.summary)
 
 
