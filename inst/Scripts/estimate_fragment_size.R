@@ -147,6 +147,9 @@ for (i in seq_len(nrow(covdf)))
 
 save(paired.covdf, paired.cov.list, file = "paired_shift_coverage.rda")
 
+paired.covdf$mu.est <- sapply(paired.cov.list, function(x) (seq_along(x)[which.min(x)] -1L)) + 35L
+sort(with(paired.covdf, tapply(mu.est, sample, median)))
+stripplot(reorder(sample, mu.est) ~ mu.est, jitter = TRUE, data = paired.covdf)
 
 
 
