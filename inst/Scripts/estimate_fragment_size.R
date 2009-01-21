@@ -93,10 +93,11 @@ covdf$mu.est <- sapply(cov.list, function(x) (seq_along(x)[which.min(x)] -1L)) +
 sort(with(covdf, tapply(mu.est, sample, median)))
 stripplot(reorder(sample, mu.est) ~ mu.est, jitter = TRUE, data = covdf)
 
+## any systematic chromosome effect?  No.
+
 stripplot(reorder(sample, mu.est) ~ mu.est, jitter = TRUE, data = covdf,
           type = "a", groups = chr)
-
-## check to see if chromosome difference is consistent
+anova(lm(mu.est ~ sample + chr, data = covdf))
 
 splom(do.call(cbind, with(covdf, split(mu.est + runif(length(mu.est)), sample))),
       pscales = 0)
@@ -151,6 +152,29 @@ paired.covdf$mu.est <- sapply(paired.cov.list, function(x) (seq_along(x)[which.m
 sort(with(paired.covdf, tapply(mu.est, sample, median)))
 stripplot(reorder(sample, mu.est) ~ mu.est, jitter = TRUE, data = paired.covdf)
 
+## any systematic chromosome effect?  No.
+
+stripplot(reorder(sample, mu.est) ~ mu.est, jitter = TRUE, data = paired.covdf,
+          type = "a", groups = chr)
+anova(lm(mu.est ~ sample + chr, data = paired.covdf))
+
+## plot curves
+
+paired.covdf$index <- seq_len(nrow(paired.covdf))
+
+xyplot(mu.est ~ index | reorder(sample, mu.est), groups = chr,
+       data = paired.covdf, curves = paired.cov.list,
+       type = c("p", "g"),
+       prepanel = function(x, y, curves, ...) {
+           crv <- unlist(curves[x])
+           list(xlim = range(shifts) + 35,
+                ylim = range(crv))
+       },
+       panel = panel.superpose,
+       panel.groups = function(x, y, curves, ...) {
+           crv <- curves[[x]]
+           panel.lines(shifts + 35, crv)
+       })
 
 
 ## next: reproduce Park et al paper calculations.  Seems like they

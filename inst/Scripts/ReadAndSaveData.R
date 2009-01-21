@@ -53,10 +53,6 @@ readReads <-
 ##         as.list(s2)
 ## }
 
-pat.lanes <- sprintf("s_%g", 1:8)
-names(pat.lanes) <- as.character(1:8)
-pat.lanes <- pat.lanes[-5]
-
 ## paired end reads
 
 ## lane1: mouse fibroblasts expressing Myod, 3 antibodies combined
@@ -67,6 +63,11 @@ pat.lanes <- pat.lanes[-5]
 ## lane6: human fibroblast expressing Myod, antibody 6196
 ## lane7: human fibroblast controls, 3 antibodies combined
 ## lane8: human fibroblast expressing Myod, 3 antibodies combined
+
+
+pat.lanes <- sprintf("s_%g", 1:8)
+names(pat.lanes) <- as.character(1:8)
+pat.lanes <- pat.lanes[-5]
 
 pairedReads <-
     lapply(pat.lanes,
@@ -79,6 +80,46 @@ pairedReads <-
 save(pairedReads, file = "pairedReads.rda")
 rm(pairedReads)
 gc()
+
+
+
+
+
+
+pairedFragmentLength <-
+    function(srcdir, lane)
+{
+    filt <-
+        compose(strandFilter(strandLevels=c("-", "+")),
+                chromosomeFilter(regex = "chr[0-9]+$"),
+                uniqueFilter(withSread = FALSE),
+                alignQualityFilter(15))
+    message(sprintf("reading data from lane %s [%s], using filter %s", lane, srcdir, name(filt)))
+    ans <- readAligned(srcdir, lane, type = "MAQMapview", filter = filt)
+
+    ids <- as.character(id(ans))
+    match2 <- grep("/2", ids)
+    match.names <- gsub("/2", "/1", ids[match2])
+    match1 <- match(match.names, ids)
+    smry <- 
+        data.frame(strand1 = strand(ans)[match1],
+                   chrom1 = chromosome(ans)[match1],
+                   position1 = position(ans)[match1],
+                   strand2 = strand(ans)[match2],
+                   chrom2 = chromosome(ans)[match2],
+                   position2 = position(ans)[match2])
+    ## add 35?
+    bwplot(paste(chrom1, chrom2, sep=":") ~ abs(position1 - position2),  smry,
+           subset = (chrom1 == chrom2) & abs(position1 - position2) < 500)
+}
+
+
+
+readReads(srcdir = "/home/jdavison/ycao/01-09-2008/text", lane = s,
+                         ,
+
+
+
 
 
 ## myoD_myo
