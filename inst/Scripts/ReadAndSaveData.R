@@ -83,10 +83,11 @@ gc()
 
 
 
+pat.lanes <- sprintf("s_%g", 1:8)
+names(pat.lanes) <- as.character(1:8)
+pat.lanes <- pat.lanes[-5]
 
-
-
-pairedFragmentLength <-
+pairedFragmentSummary <-
     function(srcdir, lane)
 {
     filt <-
@@ -108,15 +109,41 @@ pairedFragmentLength <-
                    strand2 = strand(ans)[match2],
                    chrom2 = chromosome(ans)[match2],
                    position2 = position(ans)[match2])
-    ## add 35?
-    bwplot(paste(chrom1, chrom2, sep=":") ~ abs(position1 - position2),  smry,
-           subset = (chrom1 == chrom2) & abs(position1 - position2) < 500)
+    smry <- subset(smry, (chrom1 == chrom2) & (strand1 != strand2))
+    smry$length <-
+        with(smry, 
+             35L + ifelse(strand1 == "-", position1 - position2, position2 - position1))
+                   
+##     ## add 35?
+##     bwplot(chrom1 ~ length, smry, xlim = c(-500, 500))
+##     summary(smry$length)
+
+    smry
 }
 
+pairedFragmentLengths <-
+    lapply(pat.lanes,
+           function(s) {
+               pairedFragmentSummary(srcdir = "/home/jdavison/ycao/01-09-2008/text", lane = s)
+           })
+
+save(pairedFragmentLengths, file = "pairedFragmentLengths.rda")
+rm(pairedFragmentLengths)
+gc()
 
 
-readReads(srcdir = "/home/jdavison/ycao/01-09-2008/text", lane = s,
-                         ,
+paired.frag.size <- 
+    do.call(lattice::make.groups, 
+            lapply(pairedFragmentLengths,
+                   function(x) {
+                       m <- with(x, tapply(length, chrom1, median))
+                       data.frame(chrom = names(m),
+                                  mu.est = as.numeric(m))
+                   }))
+
+stripplot(reorder(which, mu.est) ~ mu.est, paired.frag.size,
+          jitter = TRUE)
+
 
 
 
