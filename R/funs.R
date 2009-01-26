@@ -13,7 +13,7 @@ readReads <-
     message(sprintf("reading data from lane %s [%s], using filter %s", lane, 
          srcdir, name(filt)))
     ans <- readAligned(srcdir, lane, type = type, filter = filt)
-    if (simplify) as.list(ans)
+    if (simplify) as(ans, "GenomeData")
     else ans
 }
 
@@ -48,50 +48,21 @@ readAndClean <-
 
 setMethod("as.list", "AlignedRead",
           function(x, ...) {
+              readStart <- ifelse(x@strand == "-",
+                                  x@position + width(x) - 1L,
+                                  x@position)
               alignLocs <-
-                  split(data.frame(position = x@position, strand = x@strand),
+                  split(data.frame(position = readStart, strand = x@strand),
                         x@chromosome[drop=TRUE])
               lapply(alignLocs,
                      function(df) with(df, split(position, strand))[c("-", "+")])
           })
 
-setAs("AlignedRead", "AlignedList",
+setAs("AlignedRead", "GenomeData",
       function(from) {
-          new("AlignedList",
-              lapply(as.list(from),
-                     function(x) new("GenomeList", x)))
+          new("GenomeData",
+              as.list(from))
       })
-
-
-setMethod("show", "AlignedList",
-          function(object) {
-              lanes <- names(object)
-              nreads <- sapply(object, function(x) length(unlist(x, use.names = FALSE)))
-              chromosomes <- unique(unlist(lapply(object, names)))
-              strands <- unique(unlist(lapply(object, function(x) lapply(x, names))))
-              cat(sprintf("'%s' with %d lanes:\n",
-                          class(object), length(object)))
-              ## print(cbind(nreads = nreads))
-              print(nreads)
-              cat("\nChromosomes: ")
-              cat(chromosomes, fill = TRUE, sep = ", ")
-              cat("\nStrands: ")
-              cat(strands, fill = TRUE, sep = ", ")
-              invisible()
-          })
-
-setMethod("show", "GenomeList",
-          function(object) {
-              chromosomes <- names(object)
-              child.class <- unique(sapply(object, class))
-              cat(sprintf("%s '%s' with %d chromosomes:\n",
-                          object@genome,
-                          class(object),
-                          length(object)))
-              cat("\nClass of children: ")
-              cat(child.class, fill = TRUE, sep = ", ")
-              invisible()
-          })
 
 
 splitbyChr <- function(x) {
@@ -101,11 +72,14 @@ splitbyChr <- function(x) {
 
 ## take input MAQ mapped reads and grow them appropriately.
 ## FIXME: how should we support list version? methods?
-extendReads <- function(reads, readLen=35, seqLen=200,
-                        strand = c("+", "-"))
+
+extendReads <- function(reads, seqLen=200, strand = c("+", "-"))
 {
-    if (is(reads, "AlignedRead")) 
+    if (is(reads, "GenomeDataList") || is(reads, "GenomeData"))
+        gdApply(reads, extendReads, seqLen = seqLen, strand = strand)
+    else if (is(reads, "AlignedRead")) 
     {
+        readLen <- width(reads)
         s1 <- splitbyChr(reads)
         chrs <- unique(gsub("\\+|-", "", names(s1)))
         byCIR <- vector("list", length=length(chrs))
@@ -122,31 +96,20 @@ extendReads <- function(reads, readLen=35, seqLen=200,
             byCIR
         }
         byCIR
-        ## or, extendReads(as.list(reads), readLen=readLen, seqLen=seqLen)
+        ## or, extendReads(as.list(reads), seqLen=seqLen)
     }
     else if (is.list(reads)) 
     {
         if (all(c("+", "-") %in% names(reads))) 
         {
             reads <- reads[strand]
-            IRanges(start = c(reads[["+"]], reads[["-"]] - seqLen + readLen),
-                    end = c(reads[["+"]] + seqLen - 1, reads[["-"]] + readLen - 1))
+            IRanges(start = c(reads[["+"]], reads[["-"]] - seqLen + 1L),
+                    end = c(reads[["+"]] + seqLen - 1L, reads[["-"]]))
             ## width = seqLen) # error when start=numeric(0)
         }
-        else lapply(reads, extendReads, readLen = readLen, seqLen = seqLen, strand = strand)
     }
     else stop("Invalid value for 'reads'")
 }
-
-## alias, remove later
-growSeqs <- function(...) extendReads(...)
-
-## IRanges(start = c(x[["+"]], x[["-"]] - seqLen + readLen),
-##         end = c(x[["+"]] + seqLen - 1, x[["-"]] + readLen - 1),
-##         width = seqLen)
-
-
-
 
 
 ## FIXME: make this a merge() method?
