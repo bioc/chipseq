@@ -59,7 +59,7 @@ setMethod("gdApply",
               cls <- lapply(new.elements, class)
               ucl <- unique(unlist(cls))
               if (length(ucl) == 1)
-                  GenomeData(new.elements, organism = organism(X))
+                  GenomeData(new.elements, organism = X@organism)
               else new.elements
           })
 

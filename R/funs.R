@@ -129,8 +129,8 @@ combineLaneReads <- function(laneList, chromList = names(laneList[[1]])) {
     names(chromList) = chromList ##to get the return value named
     lapply(chromList,
            function(chr) {
-               list("+" = unlist(lapply(laneList, function(x) x[[chr]][["+"]])),
-                    "-" = unlist(lapply(laneList, function(x) x[[chr]][["-"]])))
+               list("+" = unlist(lapply(laneList, function(x) x[[chr]][["+"]]), use.names = FALSE),
+                    "-" = unlist(lapply(laneList, function(x) x[[chr]][["-"]]), use.names = FALSE))
            })
 }
 
