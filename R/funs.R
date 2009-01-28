@@ -127,11 +127,11 @@ merge <- function(IR, maxgap)
 
 combineLaneReads <- function(laneList, chromList = names(laneList[[1]])) {
     names(chromList) = chromList ##to get the return value named
-    lapply(chromList,
-           function(chr) {
-               list("+" = unlist(lapply(laneList, function(x) x[[chr]][["+"]]), use.names = FALSE),
-                    "-" = unlist(lapply(laneList, function(x) x[[chr]][["-"]]), use.names = FALSE))
-           })
+    GenomeData(lapply(chromList,
+                      function(chr) {
+                          list("+" = unlist(lapply(laneList, function(x) x[[chr]][["+"]]), use.names = FALSE),
+                               "-" = unlist(lapply(laneList, function(x) x[[chr]][["-"]]), use.names = FALSE))
+                      }))
 }
 
 ##take two or more lanes and combine the data
