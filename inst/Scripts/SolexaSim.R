@@ -1,18 +1,17 @@
 
- library(chipseq)
-            
- library("BSgenome.Mmusculus.UCSC.mm9")
+library(chipseq)
+library("BSgenome.Mmusculus.UCSC.mm9")
 
- data(abc)
- qs = seqQScores(abc)
+data(abc)
+qs = seqQScores(abc)
 
- schr =  names(Mmusculus)[1:21]
+schr =  names(Mmusculus)[1:21]
 
- simv = rep(1000, length(schr))
+simv = rep(1000, length(schr))
 
- names(simv) = schr
+names(simv) = schr
 
- sims = simulateReads(simv, Mmusculus, 35, qs)
+set.seed(123)
+sims = simulateReads(simv, Mmusculus, 35, qs)
 
- printSim(sims, file="sim.out")
-
+printSim(sims, file="sim.out")
