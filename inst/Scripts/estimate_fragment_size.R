@@ -4,13 +4,15 @@
 
 
 library(chipseq)
+library(chipseqData)
+
 
 library(BSgenome.Mmusculus.UCSC.mm9)
 
-load("myodMyo.rda")
-load("myodFibro.rda")
-load("solexa54.rda")
-load("ctcf.rda")
+data("myodMyo")
+data("myodFibro")
+data("solexa54")
+data("ctcf")
 
 gsample <- function(x, ...)
 {
@@ -39,6 +41,8 @@ combinedLanes <-
          realtube = combineLaneReads(solexa54[c("7","8")]),
          ctcf = combineLaneReads(ctcf[c("1", "2", "3")]))
 
+combinedLanes <- 
+    list(ctcf = combineLaneReads(ctcf[c("1", "2", "3")]))
 
 
 
@@ -58,8 +62,8 @@ computeCoveredChr <-
     max.shift <- max(shift)
     xchr <- x[[chr]]
     n <- chrlens[chr]
-    cov.pos <- coverage(extendReads(xchr, readLen = 35, seqLen = 35, strand = "+"), 1, n) > 0
-    cov.neg <- coverage(extendReads(xchr, readLen = 35, seqLen = 35, strand = "-"), 1, n) > 0
+    cov.pos <- coverage(extendReads(xchr, seqLen = 35, strand = "+"), 1, n) > 0
+    cov.neg <- coverage(extendReads(xchr, seqLen = 35, strand = "-"), 1, n) > 0
     total <- sum((cov.pos + cov.neg) > 0)
     sapply(shift, function(s) {
         cat("\r", s, "/", max.shift)
