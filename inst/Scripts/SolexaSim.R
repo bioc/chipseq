@@ -7,11 +7,11 @@ qs = seqQScores(abc)
 
 schr =  names(Mmusculus)[1:21]
 
-simv = rep(1000, length(schr))
+simv = as.integer(0.02 * seqlengths(Mmusculus)[schr])
 
 names(simv) = schr
 
 set.seed(123)
-sims = simulateReads(simv, Mmusculus, 35, qs)
+sims24 = simulateReads(simv, Mmusculus, 24, qs[,3:26])
 
-printSim(sims, file="sim.fastq")
+printSim(sims24, file="sim24.fastq")

@@ -64,7 +64,8 @@ simulateReads <- function(num, genome, readLen, qualityScores, verbose=FALSE) {
         SimQ = sapply(Char2Row,
                       function(x) {
 		                  r = as.integer(unlist(strsplit(x, "")))
-                          return(qualityScores[matrix(c(r, 1:35), nc=2)])
+                          return(qualityScores[matrix(c(r, seq_len(length(r))),
+                                                      nc=2)])
                       })
         ans[[i]] = list(chromosome = chr,
                         start = myreads,
