@@ -14,4 +14,4 @@ names(simv) = schr
 set.seed(123)
 sims = simulateReads(simv, Mmusculus, 35, qs)
 
-printSim(sims, file="sim.out")
+printSim(sims, file="sim.fastq")
