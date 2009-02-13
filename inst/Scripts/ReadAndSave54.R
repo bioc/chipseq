@@ -63,8 +63,8 @@ names(pat.lanes) <- as.character(seq_len(length(pat.lanes)))
 ctcf <-
   GenomeDataList(lapply(pat.lanes,
       function(s) {
-          readReads(srcdir = "/home/jdavison/externalData/ES_CTCF/bases3-26/maq/maps", lane = s,
-                    type = "MAQMapShort")
+          readReads(srcdir = "/home/jdavison/externalData/ES_CTCF/bases3-26/maq/maps",
+                    lane = s, type = "MAQMapShort", minScore = 1)
       }))
 
 unlist(lapply(ctcf, function(x) sum(unlist(lapply(x, lapply, length)))))
@@ -81,7 +81,7 @@ gfp <-
   GenomeDataList(lapply(pat.lanes,
       function(s) {
           readReads(srcdir = "/home/jdavison/externalData/ES_CTCF/bases3-26/maq/GFP_background/maps",
-                    lane = s, type = "MAQMapShort")
+                    lane = s, type = "MAQMapShort", minScore = 1)
       }))
 
 unlist(lapply(gfp, function(x) sum(unlist(lapply(x, lapply, length)))))

@@ -12,6 +12,10 @@ simv = as.integer(0.02 * seqlengths(Mmusculus)[schr])
 names(simv) = schr
 
 set.seed(123)
-sims24 = simulateReads(simv, Mmusculus, 24, qs[,3:26])
 
-printSim(sims24, file="sim24.fastq")
+N = 1000
+for (i in seq_len(length(N))) {
+    cat("Iteration", i, "\n")
+    sims24 = simulateReads(simv/N, Mmusculus, 24, qs[,3:26])
+    printSim(sims24, file = paste("sim24_", i, ".fastq", sep = ""))
+}
