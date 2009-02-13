@@ -55,27 +55,43 @@ rm(solexa54)
 gc()
 
 
-## also read CTCF data
+## also read 24-mer CTCF & CFP data
 
 pat.lanes <- c("SRR001985.map", "SRR001986.map", "SRR001987.map")
-names(pat.lanes) <- as.character(1:3)
+names(pat.lanes) <- as.character(seq_len(length(pat.lanes)))
 
 ctcf <-
-    lapply(pat.lanes,
-           function(s) {
-               readReads(srcdir = "/home/jdavison/externalData/ES_CTCF/maps", lane = s,
-                         type = "MAQMapShort")
-           })
+  GenomeDataList(lapply(pat.lanes,
+      function(s) {
+          readReads(srcdir = "/home/jdavison/externalData/ES_CTCF/bases3-26/maq/maps", lane = s,
+                    type = "MAQMapShort")
+      }))
 
-sapply(ctcf, function(x) sum(sapply(x, function(u) sum(sapply(u, length)))))
+unlist(lapply(ctcf, function(x) sum(unlist(lapply(x, lapply, length)))))
 
 save(ctcf, file = "ctcf.rda")
+rm(ctcf)
+gc()
 
 
+pat.lanes <- c("SRR001996.map", "SRR001997.map", "SRR001998.map", "SRR001999.map")
+names(pat.lanes) <- as.character(seq_len(length(pat.lanes)))
+
+gfp <-
+  GenomeDataList(lapply(pat.lanes,
+      function(s) {
+          readReads(srcdir = "/home/jdavison/externalData/ES_CTCF/bases3-26/maq/GFP_background/maps",
+                    lane = s, type = "MAQMapShort")
+      }))
+
+unlist(lapply(gfp, function(x) sum(unlist(lapply(x, lapply, length)))))
+
+save(gfp, file = "gfp.rda")
+rm(gfp)
+gc()
 
 
 sessionInfo()
-
 
 
 
