@@ -61,13 +61,11 @@ simulateReads <- function(size, genome, readLength, qualityScores,
         simReads =
           as.character(Views(seq, IRanges(start=starts, width=readLength)))
         if(verbose) cat(".")
-        alphabet =
-          structure(seq_len(nrow(qualityScores)), names=rownames(qualityScores))
-        simQ =
-          apply(matrix(
-                qualityScores[cbind(alphabet[unlist(strsplit(simReads, ""))],
-                                    rep.int(seq_len(readLength), size[i]))],
-                       nrow=readLength), 2, paste, collapse="")
+        simChars = do.call(rbind.data.frame, strsplit(simReads, ""))
+        simQ = do.call(paste,
+                       c(lapply(seq_len(readLength), function(i)
+                                qualityScores[as.character(simChars[[i]]), i]),
+                         sep=""))
         if(verbose) cat(".done\n")
         return(list(sread = simReads, quality = simQ,
                     id = paste(chr, starts, sep = ",")))
