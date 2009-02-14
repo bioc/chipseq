@@ -1,4 +1,3 @@
-
 library(chipseq)
 library("BSgenome.Mmusculus.UCSC.mm9")
 
@@ -13,9 +12,9 @@ names(simv) = schr
 
 set.seed(123)
 
-N = 1000
+N = 100
 for (i in seq_len(length(N))) {
     cat("Iteration", i, "\n")
     sims24 = simulateReads(simv/N, Mmusculus, 24, qs[,3:26])
-    printSim(sims24, file = paste("sim24_", i, ".fastq", sep = ""))
+    writeFastq(sims24, file = paste("sim24_", i, ".fastq", sep = ""))
 }

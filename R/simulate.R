@@ -36,64 +36,48 @@ seqQScores <- function(inScores) {
     x2
 }
 
-##assume num is a named vector, names correspond to chromosomes
-## values are the number of reads to simulate from that chromosome
+## assume size is a named vector with names correspond to chromosomes
+## whose values are the number of reads to simulate from that chromosome,
 ## genome is the name of a genome, eg Mmusculus, assume BSgenome
 ## is loaded, 
-## readLen is the length of the reads
+## readLength is the length of the reads
 ## qualityScores is a matrix of 5 (ACGTN) by number of cycles
-simulateReads <- function(num, genome, readLen, qualityScores, verbose=FALSE) {
-    ##now we sample 
-    if(ncol(qualityScores) != readLen )
-        stop("need qualityScores for each position")
+## replace is a logical for sampling with replacement
+simulateReads <- function(size, genome, readLength, qualityScores,
+                          replace=FALSE, verbose=FALSE) {
+    if(ncol(qualityScores) != readLength)
+        stop("ncol(qualityScores) != readLength")
 
-    ans = vector("list", length=length(num))
-    prop = all(num < 1)
-    names(ans) = names(num)
-    for(i in 1:length(num)){
-        chr = names(num)[i]
+    if(all(size < 1))
+        size = size * seqlengths(genome)[names(size)]
+    simValues =
+      lapply(seq_len(length(size)), function(i) {
+        if(verbose) cat("Iteration: ", i, " ", sep="")
+        chr = names(size)[i]
         seq = unmasked(genome[[chr]])
-        nc = nchar(seq) - readLen ##don't run over the end
-        ##set either proportions or numbers
-        if(prop) myreads = sample(1:nc, num[i]*nc) else
-            myreads = sample(1:nc, num[i])	
-        myV = Views(seq, start=myreads, end = myreads+(readLen - 1))
-        SimChars = as.character(myV)
-        Char2Row = sapply(SimChars,
-                          function(x) chartr("ACGTN", "12345", x))
-        SimQ = sapply(Char2Row,
-                      function(x) {
-		                  r = as.integer(unlist(strsplit(x, "")))
-                          return(qualityScores[matrix(c(r, seq_len(length(r))),
-                                                      nc=2)])
-                      })
-        ans[[i]] = list(chromosome = chr,
-                        start = myreads,
-                        seqs = SimChars,
-                        quality = apply(SimQ, 2, paste, 
-                                        sep="", collapse=""))
-        if(verbose) print(paste("iteration", i))
-    }
-    return(ans)
-}
-
-printSim <- function(x, filename="SimOut.txt") {
-    #we need to turn the data into a fastQ format
-
-    head = "@RGsim"
-    head2 = "+RGsim"
-
-    for(seqs in x) {
-        numChars = length(seqs$seqs)
-        ans = character(length=4*numChars)
-        ans[seq(1, by=4, length.out=numChars)] =
-          paste(head, ":", seqs$chr, ",", seqs$start, sep="")
-        ans[seq(2, by=4, length.out=numChars)] = seqs$seqs
-        ans[seq(3, by=4, length.out=numChars)] =
-          paste(head2, ":", seqs$chr, ",", seqs$start, sep="")
-        ans[seq(4, by=4, length.out=numChars)] = seqs$quality
-
-        cat(ans, file=filename, sep="\n", append=TRUE)
-    }
-    return(filename)
+        chrlen = seqlengths(genome)[[chr]] - readLength
+        starts = sample(chrlen, size[i], replace=replace)
+        if(verbose) cat(".")
+        simReads =
+          as.character(Views(seq, IRanges(start=starts, width=readLength)))
+        if(verbose) cat(".")
+        alphabet = paste(rownames(qualityScores), collapse="")
+        index = paste(seq_len(nrow(qualityScores)), collapse="")
+        simQ =
+          sapply(sapply(simReads, function(x) chartr(alphabet, index, x),
+                        USE.NAMES=FALSE),
+                 function(x) {
+                     r = as.integer(unlist(strsplit(x, "")))
+                     return(paste(qualityScores[cbind(r, seq_len(length(r)))],
+                                  collapse=""))
+                 }, USE.NAMES=FALSE)
+        if(verbose) cat(".done\n")
+        return(list(sread = simReads, quality = simQ,
+                    id = paste(chr, starts, sep = ",")))
+    })
+    return(ShortReadQ(sread =
+                      DNAStringSet(unlist(lapply(simValues, "[[", "sread"))),
+                      quality =
+                      SFastqQuality(unlist(lapply(simValues, "[[", "quality"))),
+                      id = BStringSet(unlist(lapply(simValues, "[[", "id")))))
 }
