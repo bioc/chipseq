@@ -64,8 +64,7 @@ simulateReads <- function(size, genome, readLength, qualityScores,
         alphabet = paste(rownames(qualityScores), collapse="")
         index = paste(seq_len(nrow(qualityScores)), collapse="")
         simQ =
-          sapply(sapply(simReads, function(x) chartr(alphabet, index, x),
-                        USE.NAMES=FALSE),
+          sapply(chartr(alphabet, index, simReads),
                  function(x) {
                      r = as.integer(unlist(strsplit(x, "")))
                      return(paste(qualityScores[cbind(r, seq_len(length(r)))],
