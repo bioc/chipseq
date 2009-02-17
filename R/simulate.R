@@ -55,9 +55,9 @@ simulateReads <- function(size, genome, readLength, qualityScores,
         if(verbose) cat("Iteration: ", i, " ", sep="")
         chr = names(size)[i]
         seq = unmasked(genome[[chr]])
+        if(verbose) cat(".")
         chrlen = seqlengths(genome)[[chr]] - readLength
         starts = sample(chrlen, size[i], replace=replace)
-        if(verbose) cat(".")
         simReads =
           as.character(Views(seq, IRanges(start=starts, width=readLength)))
         if(verbose) cat(".")
