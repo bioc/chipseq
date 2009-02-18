@@ -1,9 +1,9 @@
-# Load required libraries
-library("Biostrings")
+## Load required libraries
+library("chipseq")
 library("BSgenome.Mmusculus.UCSC.mm9")
 
-# Create forward and reverse Position Weight Matrices for CTCF binding
-ctcfForwardPWM <-
+## create Position Weight Matrix for CTCF binding
+ctcfPWM <-
   t(rbind(c(0.22, 0.24, 0.33, 0.22),
           c(0.06, 0.35, 0.21, 0.37),
           c(0.20, 0.19, 0.41, 0.19),
@@ -24,26 +24,79 @@ ctcfForwardPWM <-
           c(0.04, 0.52, 0.41, 0.03),
           c(0.15, 0.38, 0.14, 0.34),
           c(0.31, 0.28, 0.33, 0.08)))
-rownames(ctcfForwardPWM) <- c("A", "C", "G", "T")
-ctcfForwardPWM <- 100 * ctcfForwardPWM
+rownames(ctcfPWM) <- c("A", "C", "G", "T")
+ctcfPWM <- 100 * ctcfPWM
 
-ctcfReversePWM <- ctcfForwardPWM[c("T", "G", "C", "A"), ncol(ctcfForwardPWM):1]
-rownames(ctcfReversePWM) <- c("A", "C", "G", "T")
+## match CTCF binding to mouse genome (takes 8 - 10 minutes)
+matchPWMList <- function(pwm, subject, min.score = "80%") {
+    revPWM <- pwm[c("T", "G", "C", "A"), ncol(pwm):1]
+    rownames(revPWM) <- c("A", "C", "G", "T")
 
-# Match CTCF binding to mouse genome (takes 8 - 10 minutes)
-unmaskedMatchPWM <- function(pwm, subject, min.score = "80%") {
     active(masks(subject)) <- FALSE
-    matchPWM(pwm = pwm, subject = subject, min.score = min.score)
+    list("+" = start(matchPWM(pwm = pwm, subject = subject, min.score = min.score)),
+         "-" = end(matchPWM(pwm = revPWM, subject = subject, min.score = min.score)))
 }
-bsParams <- new("BSParams", X = Mmusculus, FUN = unmaskedMatchPWM, simplify = FALSE)
-ctcfForwardMatches <- bsapply(bsParams, pwm = ctcfForwardPWM, min.score = "80%")
-ctcfReverseMatches <- bsapply(bsParams, pwm = ctcfReversePWM, min.score = "80%")
+bsParams <-
+  new("BSParams", X = Mmusculus, FUN = matchPWMList,
+      exclude = c("X","Y","M","random"), simplify = FALSE)
+ctcfPWMMatches <- GenomeData(bsapply(bsParams, pwm = ctcfPWM, min.score = "85%"))
+ctcfPWMRanges <- extendReads(ctcfPWMMatches, seqLen = 20)
+ctcfPWMScores <-
+  lapply(structure(names(ctcfPWMMatches), names = names(ctcfPWMMatches)),
+         function(i) {
+             revPWM <- ctcfPWM[c("T", "G", "C", "A"), ncol(ctcfPWM):1]
+             rownames(revPWM) <- c("A", "C", "G", "T")
+             subject <- unmasked(Mmusculus[[i]])
+             scores <-
+               c(PWMscore(pwm = ctcfPWM, subject = subject,
+                          start = ctcfPWMMatches[[i]][["+"]]),
+                 PWMscore(pwm =  revPWM, subject = subject,
+                          start = ctcfPWMMatches[[i]][["-"]] - ncol(ctcfPWM) + 1L))
+             scores[order(c(ctcfPWMMatches[[i]][["+"]],
+                            ctcfPWMMatches[[i]][["-"]] - ncol(ctcfPWM) + 1L))]
+         })
+do.call(rbind, lapply(ctcfPWMMatches, sapply, length))
+do.call(c, lapply(ctcfPWMRanges, length))
 
-# Summarize the output
-# Counts
-sapply(ctcfForwardMatches, length)
-sapply(ctcfReverseMatches, length)
+ctcfPWMStringSet <-
+  lapply(structure(names(ctcfPWMMatches), names = names(ctcfPWMMatches)),
+         function(i) {
+             subject <- unmasked(Mmusculus[[i]])
+             strings <-
+               c(as.character(Views(subject,
+                   IRanges(start = ctcfPWMMatches[[i]][["+"]], width = 20))),
+                 as.character(reverseComplement(DNAStringSet(as.character(Views(subject,
+                   IRanges(end = ctcfPWMMatches[[i]][["-"]], width = 20)))))))
+             DNAStringSet(strings[order(c(ctcfPWMMatches[[i]][["+"]],
+                                          ctcfPWMMatches[[i]][["-"]] - ncol(ctcfPWM) + 1L))])
+         })
+fragmentLength <- 140L
+readLength <- 24L
+ctcfPWMPotentialReads <-
+  DNAStringSet(sort(unique(unlist(
+    lapply(structure(names(ctcfPWMMatches), names = names(ctcfPWMMatches)),
+           function(i) {
+               subject <- unmasked(Mmusculus[[i]])
+               c(as.character(Views(subject,
+                   IRanges(start = unlist(lapply(ctcfPWMMatches[[i]][["+"]],
+                                   function(j)
+                                   (j - (fragmentLength - 1L)):(j + (20L - readLength)))),
+                           width = readLength))),
+                 as.character(reverseComplement(DNAStringSet(as.character(Views(subject,
+                   IRanges(end = unlist(lapply(ctcfPWMMatches[[i]][["-"]],
+                                 function(j)
+                                 (j + (20L - readLength) + (fragmentLength - 1L)):j)),
+                           width = readLength)))))))
+           })))))
 
-# Consensus matrices from the matches
-lapply(ctcfForwardMatches, consensusMatrix, baseOnly = TRUE)
-lapply(ctcfReverseMatches, consensusMatrix, baseOnly = TRUE)
+data(abc)
+qualityScores <- seqQScores(abc)[,3:26]
+ctcfPWMPotentialReadQuality <-
+  SFastqQuality(BStringSet(do.call(paste,
+    c(lapply(seq_len(readLength), function(i)
+             qualityScores[as.character(narrow(ctcfPWMPotentialReads, i, i)), i]),
+      sep=""))))
+
+writeFastq(ShortReadQ(sread = ctcfPWMPotentialReads,
+                      quality = ctcfPWMPotentialReadQuality),
+           file = "ctcfPWMPotentialReads.fastq")

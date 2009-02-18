@@ -55,41 +55,6 @@ rm(solexa54)
 gc()
 
 
-## also read 24-mer CTCF & CFP data
-
-pat.lanes <- c("SRR001985.map", "SRR001986.map", "SRR001987.map")
-names(pat.lanes) <- as.character(seq_len(length(pat.lanes)))
-
-ctcf <-
-  GenomeDataList(lapply(pat.lanes,
-      function(s) {
-          readReads(srcdir = "/home/jdavison/externalData/ES_CTCF/bases3-26/maq/maps",
-                    lane = s, type = "MAQMapShort", minScore = 1)
-      }))
-
-unlist(lapply(ctcf, function(x) sum(unlist(lapply(x, lapply, length)))))
-
-save(ctcf, file = "ctcf.rda")
-rm(ctcf)
-gc()
-
-
-pat.lanes <- c("SRR001996.map", "SRR001997.map", "SRR001998.map", "SRR001999.map")
-names(pat.lanes) <- as.character(seq_len(length(pat.lanes)))
-
-gfp <-
-  GenomeDataList(lapply(pat.lanes,
-      function(s) {
-          readReads(srcdir = "/home/jdavison/externalData/ES_CTCF/bases3-26/maq/GFP_background/maps",
-                    lane = s, type = "MAQMapShort", minScore = 1)
-      }))
-
-unlist(lapply(gfp, function(x) sum(unlist(lapply(x, lapply, length)))))
-
-save(gfp, file = "gfp.rda")
-rm(gfp)
-gc()
-
 
 sessionInfo()
 
@@ -125,4 +90,3 @@ lane8 <- readOne(srcdir = "/home/jdavison/ycao/29-12-2008/binary",
 barchart(table(quality(alignQuality(lane2))))
 barchart(table(quality(alignQuality(lane6))))
 barchart(table(quality(alignQuality(lane8))))
-
