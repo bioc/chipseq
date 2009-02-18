@@ -52,27 +52,25 @@ simulateReads <- function(size, genome, readLength, qualityScores,
         size = size * seqlengths(genome)[names(size)]
     simValues =
       lapply(seq_len(length(size)), function(i) {
-        if(verbose) cat("Iteration: ", i, " ", sep="")
-        chr = names(size)[i]
-        seq = unmasked(genome[[chr]])
-        if(verbose) cat(".")
-        chrlen = seqlengths(genome)[[chr]] - readLength
-        starts = sample(chrlen, size[i], replace=replace)
-        simReads =
-          as.character(Views(seq, IRanges(start=starts, width=readLength)))
-        if(verbose) cat(".")
-        simChars = do.call(rbind, strsplit(simReads, ""))
-        simQ = do.call(paste,
-                       c(lapply(seq_len(readLength), function(i)
-                                qualityScores[simChars[,i], i]),
-                         sep=""))
-        if(verbose) cat(".done\n")
-        return(list(sread = simReads, quality = simQ,
-                    id = paste(chr, starts, sep = ",")))
-    })
-    return(ShortReadQ(sread =
-                      DNAStringSet(unlist(lapply(simValues, "[[", "sread"))),
-                      quality =
-                      SFastqQuality(unlist(lapply(simValues, "[[", "quality"))),
+          if(verbose) cat("Iteration: ", i, " ", sep="")
+          chr = names(size)[i]
+          seq = unmasked(genome[[chr]])
+          if(verbose) cat(".")
+          chrlen = seqlengths(genome)[[chr]] - readLength
+          starts = sample(chrlen, size[i], replace=replace)
+          if(verbose) cat(".")
+          simReads =
+            as.character(Views(seq, IRanges(start=starts, width=readLength)))
+          if(verbose) cat(".done\n")
+          return(list(sread = simReads, id = paste(chr, starts, sep = ",")))
+      })
+    simReads = unlist(lapply(simValues, "[[", "sread"))
+    simQ =
+      do.call(paste,
+              c(lapply(seq_len(readLength), function(i)
+                       qualityScores[substring(simReads, i, i), i]),
+                sep=""))
+    return(ShortReadQ(sread = DNAStringSet(simReads), 
+                      quality = SFastqQuality(BStringSet(simQ)),
                       id = BStringSet(unlist(lapply(simValues, "[[", "id")))))
 }
