@@ -5,6 +5,7 @@ plotPeak <-
 plotCoverage <-
     function(peaks1, peaks2 = NULL, i = 1,
              xlab = "Position", ylab = "Coverage",
+             opposite = TRUE, ## if FALSE, plot both on same side
              ...) 
 {
     pos1 <- seq(start(peaks1[i]), end(peaks1[i]))
@@ -19,7 +20,7 @@ plotCoverage <-
     else 
     {
         pos2 <- seq(start(peaks2[i]), end(peaks2[i]))
-        cov2 <- -as.integer(peaks2[[i]])
+        cov2 <- (if (opposite) -1 else 1) * as.integer(peaks2[[i]])
         pos2 <- c(head(pos2, 1), pos2, tail(pos2, 1))
         cov2 <- c(0, cov2, 0)
     }
