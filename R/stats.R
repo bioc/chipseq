@@ -1,18 +1,12 @@
-basesCovered <- function(x, shift = seq(0, 500, 5), seqLen = 35)
+basesCovered <- function(x, shift = seq(0, 500, 5), seqLen = 35, verbose = FALSE)
 {
     maxShift <- max(shift)
     rng <- range(unlist(x)) + c(-1, 1) * maxShift
     cov.pos <- coverage(extendReads(x, seqLen = seqLen, strand = "+"), rng[1], rng[2]) > 0
     cov.neg <- coverage(extendReads(x, seqLen = seqLen, strand = "-"), rng[1], rng[2]) > 0
     n <- diff(rng) + 1L
-    ans <-
-      sapply(shift,
-             function(s) {
-                 cat("\r", s, "/", maxShift)
-                 sum(subseq(cov.pos, start = 1L, end = n - s) |
-                     subseq(cov.neg, start = s + 1L, end = n))
-             })
-    cat("\n")
+    ans <- shiftApply(shift, cov.pos, cov.neg, function(x, y) sum(x | y),
+                      verbose = verbose)
     data.frame(mu = seqLen + shift, covered = ans / ans[1])
 }
 
