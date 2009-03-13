@@ -7,7 +7,7 @@
 ##   the promoter and end region, respectively.
 ## 'distal' is the number of bases on either side for upstream/downstream,
 ##   i.e. enhancer/silencer regions.
-genomic_regions <- function(genes, proximal = 500, distal = 10000) {
+genomic_regions <- function(genes, proximal = 500L, distal = 10000L) {
 
   genomic_regions_chrom <- function(sub_genes) {
     gc()
@@ -18,10 +18,10 @@ genomic_regions <- function(genes, proximal = 500, distal = 10000) {
     ends <- ifelse(sub_genes$strand == "+", sub_genes$txEnd, sub_genes$txStart)
     proximal <- ifelse(sub_genes$strand == "+", proximal, -proximal)
     distal <- ifelse(sub_genes$strand == "+", distal, -distal)
-    offset <- ifelse(sub_genes$strand == "+", 1, -1)
+    offset <- ifelse(sub_genes$strand == "+", 1L, -1L)
 
-    rangebind <- function(x, y) cbind(start = pmin(x,y), end = pmax(x,y))
-    
+    rangebind <- function(x, y) cbind(start = pmin.int(x,y), end = pmax.int(x,y))
+
     ## [start-proximal,start+proximal]    
     promoter <- rangebind(as.integer(starts - proximal),
                           as.integer(starts + proximal))
@@ -37,12 +37,13 @@ genomic_regions <- function(genes, proximal = 500, distal = 10000) {
     ## [start, end]
     instream <- cbind(start = as.integer(sub_genes$txStart),
                       end = as.integer(sub_genes$txEnd))
-    
+
     data.frame(chrom = sub_genes$chrom, gene = sub_genes$name,
                promoter = promoter, threeprime = threeprime,
-               upstream = upstream, downstream = downstream, gene = instream)
+               upstream = upstream, downstream = downstream,
+               gene = instream)
   }
-  
+
   do.call(rbind, as.list(by(genes, genes$chrom, genomic_regions_chrom)))
 }
 
