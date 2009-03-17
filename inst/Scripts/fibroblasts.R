@@ -49,7 +49,9 @@ ereads <- gdApply(all.reads,
                       sort(extendReads(x, seqLen = seqLen))
                   })
 
-## lengths
+
+
+## number of reads and number of peaks
 
 do.call(cbind, lapply(ereads[1:2], function(x) unlist(lapply(x, length)) / 1e3))
 
@@ -215,6 +217,35 @@ if (FALSE)
 ##                stringsAsFactors = FALSE)
 ## }
 
+
+
+## number of reads and number of peaks for three myotube lanes
+
+
+
+
+
+ereads <- gdApply(myodMyo[c("2", "4", "7")],
+                  function(x, seqLen = 200) {
+                      sort(extendReads(x, seqLen = seqLen))
+                  })
+
+nreads <- do.call(cbind, lapply(ereads, function(x) unlist(lapply(x, length)) / 1e3))
+
+countPeaks <- function(x, lower = c(10))
+{
+    cov <- coverage(x, 1, max(end(x)) + 500) 
+    sapply(lower, function(i) length(slice(cov, lower = i)))
+}
+
+npeaks <- do.call(cbind, lapply(ereads, function(x) unlist(lapply(x, countPeaks, lower = 10))))
+
+colnames(nreads) <- colnames(npeaks) <- c("myotube.7311", "myotube.6975", "myotube.6196")
+
+nreads
+npeaks
+apply(nreads, 2, sum)
+apply(npeaks, 2, sum)
 
 
 
