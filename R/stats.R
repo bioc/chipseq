@@ -16,10 +16,14 @@ densityCorr <- function(x, shift = seq(0, 500, 5), ...)
     nShift <- length(shift)
     maxShift <- max(shift)
     rng <- range(unlist(x)) + c(-1, 1) * maxShift
-    d1 <- density(x$"+", from = rng[1], to = rng[2],
-                  n = round(diff(rng) / 2), ...)
-    d2 <- density(x$"-", from = rng[1], to = rng[2] + maxShift,
-                  n = round((diff(rng) + maxShift) / 2), ...)
+    dotArgs <- list(...)
+    if ("n" %in% names(dotArgs)) {
+        n <- dotArgs[["n"]]
+    } else {
+        n <- min(65536, round(diff(rng) / 2))
+    }
+    d1 <- density(x$"+", from = rng[1], to = rng[2], n = n, ...)
+    d2 <- density(x$"-", from = rng[1], to = rng[2] + maxShift, n = n, ...)
     d2Shifted <- approx(d2, xout = as.vector(outer(d1$x, shift, FUN = "+")))
     d2Y <- matrix(d2Shifted$y, ncol = nShift)
     data.frame(mu = shift, corr = as.vector(cor(d1$y, d2Y)))
