@@ -7,7 +7,9 @@ data with height larger than \code{lower} and then uses those regions
 to compute summary statistics for each of the sets separately.
 }
 \usage{
-diffPeakSummary(ranges1, ranges2, chrom.lens, lower = 10, extend = 0, viewSummary = list(sums = viewSums, maxs = viewMaxs))
+diffPeakSummary(ranges1, ranges2, chrom.lens, lower = 10, extend = 0,
+                islands = FALSE, peak.fun = NULL,
+                viewSummary = list(sums = viewSums, maxs = viewMaxs))
 }
 \arguments{
   \item{ranges1}{ First set of reads (as IRanges).}
@@ -16,6 +18,9 @@ diffPeakSummary(ranges1, ranges2, chrom.lens, lower = 10, extend = 0, viewSummar
   \item{lower}{ The height used to declare a peak in the combined samples. }
   \item{extend}{ Currently unused. The intent is to extend peaks by this
     amount before summarizing. }
+  \item{islands}{ Logical indicating whether or not to use islands
+    (coverage > 0) as peaks. }
+  \item{peak.fun}{ Function use to use to find peaks. }
   \item{viewSummary}{ A list of the per peak summaries. }
 }
 \details{

@@ -4,6 +4,10 @@
 \title{
   Applies a function to elements of a GenomeData
 }
+\description{
+  Returns a list of values obtained by applying a function to elements
+  of a GenomeData or GenomeDataList object.
+}
 \usage{
 gdApply(X, FUN, ...)
 }

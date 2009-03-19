@@ -12,7 +12,7 @@ upstream regions etc, from the genomic locations provided in data like
 \code{geneMouse}.
 }
 \usage{
-genomic_regions(genes, proximal = 500, distal = 10000, offset = 1)
+genomic_regions(genes, proximal = 500, distal = 10000)
 genomic_exons(genes)
 genomic_introns(genes)
 }
@@ -25,9 +25,6 @@ genomic_introns(genes)
 The number of bases on either side for upstream/downstream,
 i.e. enhancer/silencer regions.
 }
-  \item{offset}{ An offset to allow for a gap (positive or negative) 
- between the region defined by \code{proximal} and that defined by 
-\code{distal}.}
 }
 \details{
 Fairly simply addtions/subtractions are made.

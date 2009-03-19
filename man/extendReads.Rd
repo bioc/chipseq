@@ -7,15 +7,13 @@ fragment there are situations where extending it to the approximate length
 of the fragment can be useful.
 }
 \usage{
-extendReads(reads, readLen = 35, seqLen = 200, strand = c("+", "-"))
+extendReads(reads, seqLen = 200, strand = c("+", "-"))
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
   \item{reads}{ Either an \code{AlignedReads} object or a \code{list} of
        \code{AlignedReads} objects (or a \code{list} with aligned reads
       for each strand.) }
-  \item{readLen}{ The length of the reads, assumed to be the same for all
-   reads. }
   \item{seqLen}{ The desired length of the final sequence, assumed to be
    the same for all reads. }
   \item{strand}{ Which strand \code{+} or \code{-} the read is aligned to. }
