@@ -210,15 +210,14 @@ islandSummary <- function(x, ntperread = 200L)
 }
 
 ## take some sort of a view and copy it to a new vector
-copyIRanges <- function(IR1, newX)
-    Views(newX, start=start(IR1), end=end(IR1))
+copyIRanges <- function(IR1, newX) Views(newX, IR1)
 
 copyIRangesbyChr <- function(IR1, newX) {
     nms = names(IR1)
     ans = vector("list", length=length(nms))
     names(ans) = nms
     for(i in nms)
-        ans[[i]] = copyIRanges(IR1[[i]], newX[[i]])
+        ans[[i]] = Views(newX[[i]], IR1[[i]])
     ans
 }
 
