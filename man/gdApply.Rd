@@ -1,6 +1,9 @@
 \name{gdApply}
 \Rdversion{1.1}
 \alias{gdApply}
+\alias{gdApply,GenomeData,function-method}
+\alias{gdApply,GenomeDataList,function-method}
+
 \title{
   Applies a function to elements of a GenomeData
 }
