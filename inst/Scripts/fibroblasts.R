@@ -21,6 +21,80 @@ data(solexa54)
 data(myodMyo)
 data(myodFibro)
 
+
+
+## digression: are three antibodies more or less similar?
+
+if (FALSE)
+{
+
+    library(BSgenome.Mmusculus.UCSC.mm9)
+    
+    data(myodMyo)
+    all.reads <- GenomeDataList(c(as.list(myodMyo), 
+                                  list(ctubes = combineLaneReads(myodMyo[c("2", "4", "7")]),
+                                       cblasts = combineLaneReads(myodMyo[c("1", "3", "6")]))))
+    names(all.reads)[1:7] <- c("blast_1", "tube_1", "blast_2", "tube_2", "blast_3", "tube_3", "preimmune")
+    ereads <- gdApply(all.reads,
+                      function(x, seqLen = 200) {
+                          sort(extendReads(x, seqLen = seqLen))
+                      })
+
+
+    
+    peakProfile <- function(ref = ereads$tube_1, combined = ereads$ctubes,
+                            chr = "chr1", chrlens = seqlengths(Mmusculus), ...)
+    {
+        ## take random subsets of 'combined' of size 'length(ref)',
+        ## and compute number of peaks as function of cutoff.
+        ## Provides null reference for same thing in 'ref'.
+
+        ref.chr <- ref[[chr]]
+        comb.chr <- combined[[chr]]
+        nref <- length(ref.chr)
+        ncomb <- length(comb.chr)
+        cutoffs <- 5:20
+        npeaks <-
+            replicate(10,
+                  {
+                      cat(".")
+                      sub <- comb.chr[sort(sample.int(ncomb, nref))]
+                      cov <- coverage(sub, 1, chrlens[chr])
+                      data.frame(cutoff = cutoffs,
+                                 npeaks = sapply(cutoffs, function(lower) length(slice(cov, lower = lower))),
+                                 type = "simulation")
+                  }, simplify = FALSE)
+        npeaks.ref <- {
+            cov <- coverage(ref.chr, 1, chrlens[chr])
+            data.frame(cutoff = cutoffs,
+                       npeaks = sapply(cutoffs, function(lower) length(slice(cov, lower = lower))),
+                       type = "observed")
+        }
+        npeaks.df <- do.call(rbind, c(npeaks, list(npeaks.ref)))
+        stripplot(factor(cutoff) ~ npeaks, npeaks.df, jitter = TRUE,
+                  groups = type, pch = c(1, 16),
+                  ...)
+    }
+    
+    
+    peakProfile(ref = ereads$tube_1, combined = ereads$ctubes, chr = "chr5",
+                scales = list(x = list(log = 2)))
+    peakProfile(ref = ereads$tube_2, combined = ereads$ctubes, chr = "chr5")
+    peakProfile(ref = ereads$tube_3, combined = ereads$ctubes, chr = "chr5")
+
+
+
+
+}
+
+
+
+
+
+
+
+
+
 ## promoter information
 
 data(geneMouse)
@@ -42,14 +116,15 @@ all.reads <- GenomeDataList(list(realMouse.6975 = solexa54[["7"]],
                                  realMouse.6196 = solexa54[["8"]],
                                  ctubes = combineLaneReads(myodMyo[c("2", "4", "7")]),
                                  cfibromyod = combineLaneReads(myodFibro[c("2", "4", "7")]),
-                                 combined = combined))
+                                 combined = combined,
+                                 cfibro = combineLaneReads(myodFibro[c("1", "3", "6")]),
+                                 preimmune = myodMyo[["8"]]))
+
 
 ereads <- gdApply(all.reads,
                   function(x, seqLen = 200) {
                       sort(extendReads(x, seqLen = seqLen))
                   })
-
-
 
 ## number of reads and number of peaks
 
@@ -127,20 +202,27 @@ xyplot(proportion ~ cutoff | promoter, fibroPeakSummary.6$props, type = c("g", "
        main = "fibroblasts+MyoD peaks, depth >= 6")
 
 
-fibroPeakSummary.10 <- summarizeData(ereads, peak.ref = "cfibromyod", peak.cutoff = 10,
+fibroPeakSummary.12 <- summarizeData(ereads, peak.ref = "cfibromyod", peak.cutoff = 12,
+                                     include = setdiff(names(ereads), c("combined")))
+fibroPeakSummary.20 <- summarizeData(ereads, peak.ref = "cfibromyod", peak.cutoff = 20,
                                      include = setdiff(names(ereads), c("combined")))
 
-ctubePeakSummary.10 <- summarizeData(ereads, peak.ref = "ctubes", peak.cutoff = 10,
+ctubePeakSummary.12 <- summarizeData(ereads, peak.ref = "ctubes", peak.cutoff = 10,
                                      include = setdiff(names(ereads), c("combined")))
 
 
 
 png("sample_comparison_%03d.png", width = 600, height = 400)
 
-xyplot(proportion ~ cutoff | promoter, fibroPeakSummary.10$props, type = c("g", "o"), 
+xyplot(proportion ~ cutoff | promoter, fibroPeakSummary.12$props, type = c("g", "o"), 
        groups = sample, auto.key = list(lines = TRUE, points = FALSE, columns = 2),
        ylab = "Proportion of peaks with number of overlapping reads >= cutoff ",
-       main = "fibroblasts+MyoD peaks, depth >= 10")
+       main = "fibroblasts+MyoD peaks, depth >= 12")
+
+xyplot(proportion ~ cutoff | promoter, fibroPeakSummary.20$props, type = c("g", "o"), 
+       groups = sample, auto.key = list(lines = TRUE, points = FALSE, columns = 2),
+       ylab = "Proportion of peaks with number of overlapping reads >= cutoff ",
+       main = "fibroblasts+MyoD peaks, depth >= 20")
 
 ## xyplot(counts ~ cutoff | promoter, fibroPeakSummary.10$props, type = c("g", "o"), 
 ##        groups = sample, auto.key = list(lines = TRUE, points = FALSE, columns = 2),
@@ -148,7 +230,7 @@ xyplot(proportion ~ cutoff | promoter, fibroPeakSummary.10$props, type = c("g", 
 ##        main = "fibroblasts+MyoD peaks, depth >= 10")
 
 
-xyplot(proportion ~ cutoff | promoter, ctubePeakSummary.10$props, type = c("g", "o"), 
+xyplot(proportion ~ cutoff | promoter, ctubePeakSummary.12$props, type = c("g", "o"), 
        groups = sample, auto.key = list(lines = TRUE, points = FALSE, columns = 2),
        ylab = "Proportion of peaks with number of overlapping reads >= cutoff ",
        main = "Myotube peaks, depth >= 10")
