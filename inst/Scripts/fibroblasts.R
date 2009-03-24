@@ -144,8 +144,9 @@ do.call(cbind, lapply(ereads[1:2], function(x) unlist(lapply(x, countPeaks, lowe
 ## 
 
 
-summarizeData <- function(edata, peak.ref, peak.cutoff = 6, ref = peak.ref, ref.cutoff = peak.cutoff,
-                          include = names(edata))
+summarizeData <-
+    function(edata, peak.ref, peak.cutoff = 6, ref = peak.ref, ref.cutoff = peak.cutoff,
+             include = names(edata))
 {
     peaks <-
         gdApply(edata[[peak.ref]],
@@ -190,7 +191,9 @@ summarizeData <- function(edata, peak.ref, peak.cutoff = 6, ref = peak.ref, ref.
                    stringsAsFactors = FALSE)
     }
     props <- do.call(rbind, lapply(1:15, computeRates))
-    list(peakSummary = peakSummary.df, props = props)
+    list(peakSummary = peakSummary.df, props = props,
+         peak.cutoff = peak.cutoff, peak.ref = peak.ref,
+         include = include)
 }
 
 fibroPeakSummary.6 <- summarizeData(ereads, peak.ref = "cfibromyod", peak.cutoff = 6,

@@ -1,0 +1,426 @@
+\documentclass{article}
+\title{Are the different antibodies largely equivalent?}
+
+\usepackage[text={178mm,230mm},centering]{geometry}
+\usepackage{Sweave}
+
+\SweaveOpts{keep.source=TRUE,eps=FALSE,pdf=TRUE,width=9,height=10,prefix.string=figs/figs-islands}
+\setkeys{Gin}{width=0.98\textwidth}
+
+\begin{document}
+
+\maketitle
+
+\raggedright
+
+<<setup,echo=FALSE,results=hide>>=
+
+
+library(lattice)
+library(chipseq)
+library(chipseqData)
+library(BSgenome.Mmusculus.UCSC.mm9)
+
+data(solexa54)
+data(myodMyo)
+data(myodFibro)
+
+set.seed(20081008)
+
+
+## promoter information
+
+data(geneMouse)
+gregions <- genomic_regions(genes = geneMouse, proximal = 1000)
+gregions <- subset(gregions, chrom %in% paste("chr", 1:19, sep = ""))
+gregions$chrom <- gregions$chrom[drop = TRUE]
+
+gpromoters <- gregions[c("chrom", "promoter.start", "promoter.end")]
+names(gpromoters) <- c("chr", "start", "end")
+gpromoters.split <- split(gpromoters, gpromoters$chr)
+
+
+summarizeData <-
+    function(edata, peak.ref, peak.cutoff = 6, ref = peak.ref, ref.cutoff = peak.cutoff,
+             include = names(edata))
+{
+    peaks <-
+        gdApply(edata[[peak.ref]],
+                function(g, cutoff = peak.cutoff) {
+                    print(length(g))
+                    IntervalTree(slice(coverage(g, 1L, max(end(g)) + 100L), lower = cutoff))
+                })
+    ## accumulate per-peak information
+    peakSummary <-
+        sapply(names(peaks),
+               function(chr) {
+                   print(chr)
+                   chrpeaks <- peaks[[chr]]
+                   in.promoter <- !is.na(overlap(with(gpromoters.split[[chr]], IRanges(start, end)),
+                                                 chrpeaks, multiple = FALSE))
+                   countOverlapping <- function(x)
+                   {
+                       as.numeric(as.table(t(overlap(chrpeaks, edata[[x]][[chr]], multiple = TRUE))))
+                   }
+                   ans <- data.frame(start = start(chrpeaks),
+                                     end = end(chrpeaks),
+                                     promoter = in.promoter)
+                   for (nm in names(edata))
+                       ans[[nm]] <- countOverlapping(nm)
+                   ans
+               }, simplify = FALSE)
+    peakSummary.df <- do.call(make.groups, peakSummary)
+    rownames(peakSummary.df) <- NULL
+    computeRates <- function(cutoff = 5)
+    {
+        mytab <- function(x) table(factor(x, levels = c(FALSE, TRUE)))
+        dsub <- peakSummary.df ## [peakSummary.df[[ref]] >= ref.cutoff, ]
+        dsub.promoter <- subset(dsub, promoter)
+        props <- c(sapply(include, function(x) prop.table(mytab(dsub[[x]] >= cutoff))[2]),
+                   sapply(include, function(x) prop.table(mytab(dsub.promoter[[x]] >= cutoff))[2]))
+        counts <- c(sapply(include, function(x) mytab(dsub[[x]] >= cutoff)[2]),
+                    sapply(include, function(x) mytab(dsub.promoter[[x]] >= cutoff)[2]))
+        data.frame(cutoff = cutoff, ref = ref, ref.cutoff = ref.cutoff,
+                   promoter = rep(c("All", "Promoter"), each = length(include)),
+                   sample = rep(include, 2),
+                   proportion = props, counts = counts,
+                   stringsAsFactors = FALSE)
+    }
+    props <- do.call(rbind, lapply(1:15, computeRates))
+    list(peakSummary = peakSummary.df, props = props,
+         peak.cutoff = peak.cutoff, peak.ref = peak.ref,
+         include = include)
+}
+
+
+plotSamples <- function(ereads, peak.ref, peak.cutoff = 12, ...)
+{
+    foo <- 
+        summarizeData(ereads, peak.ref = peak.ref, peak.cutoff = peak.cutoff,
+                      include = names(ereads))
+    with(foo, 
+         xyplot(proportion ~ cutoff | promoter, data = props, type = c("g", "o"), 
+                groups = factor(sample, levels = include),
+                auto.key = list(lines = TRUE, points = FALSE, columns = 3),
+                xlab = "cutoff",
+                ylab = "Proportion of peaks with number of overlapping reads >= cutoff ",
+                main = sprintf("%s peaks, depth >= %g", peak.ref, peak.cutoff), ...))
+}
+
+
+
+
+
+
+
+## all.reads <- 
+##     GenomeDataList(list(ctubes = combineLaneReads(myodMyo[c("2", "4", "7")]),
+##                         cblasts = combineLaneReads(myodMyo[c("1", "3", "6")]),
+##                         cfibromyod = combineLaneReads(myodFibro[c("2", "4", "7")])))
+                        
+## ereads <- gdApply(all.reads,
+##                   function(x, seqLen = 200) {
+##                       sort(extendReads(x, seqLen = seqLen))
+##                   })
+
+## all.reads <- myodFibro[c(1, 3, 5, 2, 4, 6, 7)]
+## ereads <- gdApply(all.reads,
+##                   function(x, seqLen = 200) {
+##                       sort(extendReads(x, seqLen = seqLen))
+##                   })
+
+@ 
+
+
+
+<<eval=FALSE,echo=FALSE>>=
+
+## seemed interesting, but can't really say what caused a departure from the null 
+## (could be quality, could be different sets of peaks)
+
+
+peakProfile <- function(ereads, chr = "chr1", 
+                        chrlens = seqlengths(Mmusculus), 
+                        cutoffs = c(12, 20),
+                        nrep = 10L,
+                        ...)
+{
+    ## take random subsets of 'combined' of size 'length(ref)',
+    ## and compute number of peaks as function of cutoff.
+    ## Provides null reference for same thing in 'ref'.
+    refs <- lapply(ereads, "[[", chr)
+    comb <- sort(do.call(c, refs))
+    all.refs.df <- 
+        lapply(refs, function(ref.chr) {
+            nref <- length(ref.chr)
+            ncomb <- length(comb)
+            npeaks <-
+                replicate(nrep,
+                      {
+                          sub <- comb[sort(sample.int(ncomb, nref))]
+                          cov <- coverage(sub, 1, chrlens[chr])
+                          data.frame(cutoff = cutoffs,
+                                     npeaks = sapply(cutoffs, function(lower) length(slice(cov, lower = lower))),
+                                     type = "subsample")
+                      }, simplify = FALSE)
+            npeaks.ref <- {
+                cov <- coverage(ref.chr, 1, chrlens[chr])
+                data.frame(cutoff = cutoffs,
+                           npeaks = sapply(cutoffs, function(lower) length(slice(cov, lower = lower))),
+                           type = "observed")
+            }
+            do.call(rbind, c(npeaks, list(npeaks.ref)))
+        })
+    stripplot(reorder(which, npeaks) ~ npeaks | factor(sprintf("cutoff = %g", cutoff)), 
+              do.call(make.groups, all.refs.df), 
+              jitter = TRUE,
+              groups = type, pch = c(1, 16),
+              xlab = sprintf("Number of peaks (%s)", chr),
+              ...)
+}
+
+all.reads <- c(myodMyo)
+names(all.reads)[1:7] <- c("blast_1", "tube_1", "blast_2", "tube_2", "blast_3", "tube_3", "preimmune")
+ereads <- gdApply(all.reads,
+                  function(x, seqLen = 200) {
+                      sort(extendReads(x, seqLen = seqLen))
+                  })
+peakProfile(ereads[c(2, 4, 6)], chr = "chr5")
+
+
+
+@ 
+
+
+<<myodmyo>>=
+
+
+## all.reads <- myodFibro[c(1, 3, 5, 2, 4, 6, 7)]
+## names(all.reads)[1:7] <- 
+##     c("fibro_7311", "fibro_6975", "fibro_6196", 
+##       "fibromyod_7311", "fibromyod_6975", "fibromyod_6196", "beadonly")
+## ereads <- gdApply(all.reads,
+##                   function(x, seqLen = 200) {
+##                       sort(extendReads(x, seqLen = seqLen))
+##                   })
+
+## plot(plotSamples(ereads, peak.ref = "fibromyod_6196", peak.cutoff = 20,
+##                  par.settings = simpleTheme(col = c(2, 2, 2, 4, 4, 4, 3), 
+##                                             lty = 1:3, lwd = 2)))
+
+
+
+
+all.reads <- myodMyo[c(1, 3, 5, 2, 4, 6, 7)]
+names(all.reads)[1:7] <- 
+    c("blast_7311", "blast_6975", "blast_6196", 
+      "tube_7311", "tube_6975", "tube_6196", "preimmune")
+ereads <- gdApply(all.reads,
+                  function(x, seqLen = 200) {
+                      sort(extendReads(x, seqLen = seqLen))
+                  })
+
+@ 
+
+
+\newpage
+
+\begin{center}
+<<fig=TRUE,echo=FALSE,results=hide>>=
+plot(plotSamples(ereads, peak.ref = "blast_7311", peak.cutoff = 20,
+                 par.settings = simpleTheme(col = c(2, 2, 2, 4, 4, 4, 3), 
+                                            lty = 1:3, lwd = 2)))
+@ 
+\end{center}
+
+
+\newpage
+
+\begin{center}
+<<fig=TRUE,echo=FALSE,results=hide>>=
+plot(plotSamples(ereads, peak.ref = "blast_6975", peak.cutoff = 20,
+                 par.settings = simpleTheme(col = c(2, 2, 2, 4, 4, 4, 3), 
+                                            lty = 1:3, lwd = 2)))
+@ 
+\end{center}
+
+
+\newpage
+
+\begin{center}
+<<fig=TRUE,echo=FALSE,results=hide>>=
+plot(plotSamples(ereads, peak.ref = "blast_6196", peak.cutoff = 20,
+                 par.settings = simpleTheme(col = c(2, 2, 2, 4, 4, 4, 3), 
+                                            lty = 1:3, lwd = 2)))
+@ 
+\end{center}
+
+
+
+\newpage
+
+\begin{center}
+<<fig=TRUE,echo=FALSE,results=hide>>=
+plot(plotSamples(ereads, peak.ref = "tube_7311", peak.cutoff = 20,
+                 par.settings = simpleTheme(col = c(2, 2, 2, 4, 4, 4, 3), 
+                                            lty = 1:3, lwd = 2)))
+@ 
+\end{center}
+
+
+\newpage
+
+\begin{center}
+<<fig=TRUE,echo=FALSE,results=hide>>=
+plot(plotSamples(ereads, peak.ref = "tube_6975", peak.cutoff = 20,
+                 par.settings = simpleTheme(col = c(2, 2, 2, 4, 4, 4, 3), 
+                                            lty = 1:3, lwd = 2)))
+@ 
+\end{center}
+
+
+\newpage
+
+\begin{center}
+<<fig=TRUE,echo=FALSE,results=hide>>=
+plot(plotSamples(ereads, peak.ref = "tube_6196", peak.cutoff = 20,
+                 par.settings = simpleTheme(col = c(2, 2, 2, 4, 4, 4, 3), 
+                                            lty = 1:3, lwd = 2)))
+@ 
+\end{center}
+
+
+<<echo=FALSE>>=
+
+## Another (simple) idea: look at peaks in combined data, then compute 
+## correlation in number of overlapping reads
+
+
+
+
+overlapData <-
+    function(edata, peak.cutoff = 6, chromosomes = names(edata[[1]]),
+             chrlens = seqlengths(Mmusculus))
+{
+    pb <- txtProgressBar(1, length(chromosomes), style = 3)
+    pbi <<- 1
+    comb <- 
+        sapply(chromosomes, 
+               function(chr) 
+           {
+               setTxtProgressBar(pb, pbi)
+               pbi <<- pbi + 1
+               components <- lapply(edata, "[[", chr)
+               sort(do.call(c, components))
+           }, simplify = FALSE)
+    pbi <<- 1
+    peaks <-
+        sapply(chromosomes, 
+               function(chr) 
+           {
+               setTxtProgressBar(pb, pbi)
+               pbi <<- pbi + 1
+               IntervalTree(slice(coverage(comb[[chr]], 1L, chrlens[chr]), lower = peak.cutoff))
+           }, simplify = FALSE)
+    ## accumulate per-peak information
+    pbi <<- 1
+    peakSummary <-
+        sapply(names(peaks),
+               function(chr) {
+                   setTxtProgressBar(pb, pbi)
+                   pbi <<- pbi + 1
+                   ## print(chr)
+                   chrpeaks <- peaks[[chr]]
+                   in.promoter <- !is.na(overlap(with(gpromoters.split[[chr]], IRanges(start, end)),
+                                                 chrpeaks, multiple = FALSE))
+                   countOverlapping <- function(x)
+                   {
+                       as.numeric(as.table(t(overlap(chrpeaks, edata[[x]][[chr]], multiple = TRUE))))
+                   }
+                   ans <- data.frame(start = start(chrpeaks),
+                                     end = end(chrpeaks),
+                                     promoter = in.promoter)
+                   for (nm in names(edata))
+                       ans[[nm]] <- sqrt(countOverlapping(nm))
+                   ans
+               }, simplify = FALSE)
+    peakSummary.df <- do.call(make.groups, peakSummary)
+    rownames(peakSummary.df) <- NULL
+    ## compute correlations for subsamples
+    fake.edata <- function() 
+    {
+        x <- edata
+        for (chr in chromosomes)
+        {
+            lens <- cumsum(c(0, unlist(lapply(x, function(u) length(u[[chr]])))))
+            i <- sample.int(length(comb[[chr]]), length(comb[[chr]]))
+            for (k in seq_len(length(x))) 
+            {
+                x[[k]][[chr]] <- sort(comb[[chr]][i[ seq(lens[k]+1, lens[k+1]) ]])
+            }
+        }
+        x
+    }
+    corSummary <- function()
+    {
+        pbi <<- 1
+        fdata <- fake.edata()
+        sapply(names(peaks),
+               function(chr) {
+                   setTxtProgressBar(pb, pbi)
+                   pbi <<- pbi + 1
+                   ## generate fake dataset similar to edata
+                   chrpeaks <- peaks[[chr]]
+                   in.promoter <- !is.na(overlap(with(gpromoters.split[[chr]], IRanges(start, end)),
+                                                 chrpeaks, multiple = FALSE))
+                   countOverlapping <- function(x)
+                   {
+                       as.numeric(as.table(t(overlap(chrpeaks, fdata[[x]][[chr]], multiple = TRUE))))
+                   }
+                   ans <- data.frame(promoter = in.promoter)
+                   for (nm in names(fdata))
+                       ans[[nm]] <- sqrt(countOverlapping(nm))
+                   ans
+               }, simplify = FALSE)
+        peakSummary.df <- do.call(rbind, peakSummary)
+        print(list(all = cor(peakSummary.df[, names(edata)]),
+                   promoter = cor(peakSummary.df[peakSummary.df$promoter, names(edata)])))
+    }    
+    cors <- replicate(10, corSummary(), simplify = FALSE)
+    close(pb)
+    list(peakSummary = peakSummary.df, cors = cors)
+}
+
+
+
+
+foo <- overlapData(ereads[4:6], peak.cutoff = 12)
+
+
+
+
+
+## plotSamples <- function(ereads, peak.ref, peak.cutoff = 12, ...)
+## {
+##     foo <- 
+##         summarizeData(ereads, peak.ref = peak.ref, peak.cutoff = peak.cutoff,
+##                       include = names(ereads))
+##     with(foo, 
+##          xyplot(proportion ~ cutoff | promoter, data = props, type = c("g", "o"), 
+##                 groups = factor(sample, levels = include),
+##                 auto.key = list(lines = TRUE, points = FALSE, columns = 3),
+##                 xlab = "cutoff",
+##                 ylab = "Proportion of peaks with number of overlapping reads >= cutoff ",
+##                 main = sprintf("%s peaks, depth >= %g", peak.ref, peak.cutoff), ...))
+## }
+
+
+
+
+@ 
+
+
+
+
+
+\end{document}
