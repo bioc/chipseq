@@ -89,7 +89,7 @@ summarizeData <-
     props <- do.call(rbind, lapply(1:15, computeRates))
     list(peakSummary = peakSummary.df, props = props,
          peak.cutoff = peak.cutoff, peak.ref = peak.ref,
-         include = include)
+         include = include, nreads.ref = sum(unlist(lapply(edata[[peak.ref]], length))))
 }
 
 
@@ -104,7 +104,7 @@ plotSamples <- function(ereads, peak.ref, peak.cutoff = 12, ...)
                 auto.key = list(lines = TRUE, points = FALSE, columns = 3),
                 xlab = "cutoff",
                 ylab = "Proportion of peaks with number of overlapping reads >= cutoff ",
-                main = sprintf("%s peaks, depth >= %g", peak.ref, peak.cutoff), ...))
+                main = sprintf("%s peaks, depth >= %g [%d reads, %d peaks]", peak.ref, peak.cutoff, nreads.ref, nrow(peakSummary)), ...))
 }
 
 
@@ -192,7 +192,7 @@ peakProfile(ereads[c(2, 4, 6)], chr = "chr5")
 @ 
 
 
-<<myodmyo>>=
+<<myodmyo,echo=FALSE,results=hide>>=
 
 
 ## all.reads <- myodFibro[c(1, 3, 5, 2, 4, 6, 7)]
@@ -221,6 +221,78 @@ ereads <- gdApply(all.reads,
                   })
 
 @ 
+
+
+
+
+We try to address the question in two ways.  The first one is as
+follows:
+\begin{itemize}
+\item Choose one lane as the reference, and determine peaks (depth of
+  20 and 12 used here)
+\item For various other lanes, draw the folowing curve:
+  \begin{itemize}
+  \item For a given cutoff $k$, compute the proportion of peaks which
+    have at least $k$ overlapping reads.
+  \item Plot the proportion as a function of $k$.
+  \end{itemize}
+\end{itemize}
+The results are shown in pages 2-13.  For example, the first three
+plots use the three C2C12 myotube lanes as reference.  The first thing
+we see is that for the pre-immune control lane, the proportion drops
+to almost 0 for cutoffs beyond 5, which is reassuring.  In the second
+plot, using antibody 6975 as reference, we see that the other myotube
+lanes (as well as the other myoblast lanes) have fairly high overlap.
+This suggests that most peaks in myotube 6975 are also enriched in the
+other lanes.  Similarly, the plot for antibody 6196 suggests that most
+peaks there are also enriched in antibody 7311, but not in antibody
+6975.  The plot for antibody 7311 suggests that some peaks there
+missing from both the other antibodies, more so in 6975 than 6196.
+Together, these suggest that the set of 6975 peaks is a subset of 6196
+peaks, which is a further subset of 7311 peaks.
+\vspace{4mm}
+
+Myotubes seem generally more similar to each other than to the
+myoblasts.
+\vspace{4mm}
+
+The other approach is described later (page 14).
+
+
+
+
+\newpage
+
+\begin{center}
+<<fig=TRUE,echo=FALSE,results=hide>>=
+plot(plotSamples(ereads, peak.ref = "tube_7311", peak.cutoff = 20,
+                 par.settings = simpleTheme(col = c(2, 2, 2, 4, 4, 4, 3), 
+                                            lty = 1:3, lwd = 2)))
+@ 
+\end{center}
+
+
+\newpage
+
+\begin{center}
+<<fig=TRUE,echo=FALSE,results=hide>>=
+plot(plotSamples(ereads, peak.ref = "tube_6975", peak.cutoff = 20,
+                 par.settings = simpleTheme(col = c(2, 2, 2, 4, 4, 4, 3), 
+                                            lty = 1:3, lwd = 2)))
+@ 
+\end{center}
+
+
+\newpage
+
+\begin{center}
+<<fig=TRUE,echo=FALSE,results=hide>>=
+plot(plotSamples(ereads, peak.ref = "tube_6196", peak.cutoff = 20,
+                 par.settings = simpleTheme(col = c(2, 2, 2, 4, 4, 4, 3), 
+                                            lty = 1:3, lwd = 2)))
+@ 
+\end{center}
+
 
 
 \newpage
@@ -257,11 +329,13 @@ plot(plotSamples(ereads, peak.ref = "blast_6196", peak.cutoff = 20,
 
 
 
+%% now for depth 12
+
 \newpage
 
 \begin{center}
 <<fig=TRUE,echo=FALSE,results=hide>>=
-plot(plotSamples(ereads, peak.ref = "tube_7311", peak.cutoff = 20,
+plot(plotSamples(ereads, peak.ref = "tube_7311", peak.cutoff = 12,
                  par.settings = simpleTheme(col = c(2, 2, 2, 4, 4, 4, 3), 
                                             lty = 1:3, lwd = 2)))
 @ 
@@ -272,7 +346,7 @@ plot(plotSamples(ereads, peak.ref = "tube_7311", peak.cutoff = 20,
 
 \begin{center}
 <<fig=TRUE,echo=FALSE,results=hide>>=
-plot(plotSamples(ereads, peak.ref = "tube_6975", peak.cutoff = 20,
+plot(plotSamples(ereads, peak.ref = "tube_6975", peak.cutoff = 12,
                  par.settings = simpleTheme(col = c(2, 2, 2, 4, 4, 4, 3), 
                                             lty = 1:3, lwd = 2)))
 @ 
@@ -283,11 +357,49 @@ plot(plotSamples(ereads, peak.ref = "tube_6975", peak.cutoff = 20,
 
 \begin{center}
 <<fig=TRUE,echo=FALSE,results=hide>>=
-plot(plotSamples(ereads, peak.ref = "tube_6196", peak.cutoff = 20,
+plot(plotSamples(ereads, peak.ref = "tube_6196", peak.cutoff = 12,
                  par.settings = simpleTheme(col = c(2, 2, 2, 4, 4, 4, 3), 
                                             lty = 1:3, lwd = 2)))
 @ 
 \end{center}
+
+
+
+\newpage
+
+\begin{center}
+<<fig=TRUE,echo=FALSE,results=hide>>=
+plot(plotSamples(ereads, peak.ref = "blast_7311", peak.cutoff = 12,
+                 par.settings = simpleTheme(col = c(2, 2, 2, 4, 4, 4, 3), 
+                                            lty = 1:3, lwd = 2)))
+@ 
+\end{center}
+
+
+\newpage
+
+\begin{center}
+<<fig=TRUE,echo=FALSE,results=hide>>=
+plot(plotSamples(ereads, peak.ref = "blast_6975", peak.cutoff = 12,
+                 par.settings = simpleTheme(col = c(2, 2, 2, 4, 4, 4, 3), 
+                                            lty = 1:3, lwd = 2)))
+@ 
+\end{center}
+
+
+\newpage
+
+\begin{center}
+<<fig=TRUE,echo=FALSE,results=hide>>=
+plot(plotSamples(ereads, peak.ref = "blast_6196", peak.cutoff = 12,
+                 par.settings = simpleTheme(col = c(2, 2, 2, 4, 4, 4, 3), 
+                                            lty = 1:3, lwd = 2)))
+@ 
+\end{center}
+
+
+
+
 
 
 <<echo=FALSE>>=
@@ -365,60 +477,282 @@ overlapData <-
     {
         pbi <<- 1
         fdata <- fake.edata()
-        sapply(names(peaks),
-               function(chr) {
-                   setTxtProgressBar(pb, pbi)
-                   pbi <<- pbi + 1
-                   ## generate fake dataset similar to edata
-                   chrpeaks <- peaks[[chr]]
-                   in.promoter <- !is.na(overlap(with(gpromoters.split[[chr]], IRanges(start, end)),
-                                                 chrpeaks, multiple = FALSE))
-                   countOverlapping <- function(x)
-                   {
-                       as.numeric(as.table(t(overlap(chrpeaks, fdata[[x]][[chr]], multiple = TRUE))))
-                   }
-                   ans <- data.frame(promoter = in.promoter)
-                   for (nm in names(fdata))
-                       ans[[nm]] <- sqrt(countOverlapping(nm))
-                   ans
-               }, simplify = FALSE)
-        peakSummary.df <- do.call(rbind, peakSummary)
-        print(list(all = cor(peakSummary.df[, names(edata)]),
-                   promoter = cor(peakSummary.df[peakSummary.df$promoter, names(edata)])))
+        simPeakSummary <-
+            sapply(names(peaks),
+                   function(chr) {
+                       setTxtProgressBar(pb, pbi)
+                       pbi <<- pbi + 1
+                       ## generate fake dataset similar to edata
+                       chrpeaks <- peaks[[chr]]
+                       in.promoter <- !is.na(overlap(with(gpromoters.split[[chr]], IRanges(start, end)),
+                                                     chrpeaks, multiple = FALSE))
+                       countOverlapping <- function(x)
+                       {
+                           as.numeric(as.table(t(overlap(chrpeaks, fdata[[x]][[chr]], multiple = TRUE))))
+                       }
+                       ans <- data.frame(promoter = in.promoter)
+                       for (nm in names(fdata))
+                           ans[[nm]] <- sqrt(countOverlapping(nm))
+                       ans
+                   }, simplify = FALSE)
+        simPeakSummary.df <- do.call(rbind, simPeakSummary)
+        list(all = cor(simPeakSummary.df[, names(edata)]),
+             promoter = cor(simPeakSummary.df[simPeakSummary.df$promoter, names(edata)]))
     }    
     cors <- replicate(10, corSummary(), simplify = FALSE)
     close(pb)
-    list(peakSummary = peakSummary.df, cors = cors)
+    list(peakSummary = peakSummary.df, 
+         cors.obs = list(all = cor(peakSummary.df[, names(edata)]),
+                         promoter = cor(peakSummary.df[peakSummary.df$promoter, names(edata)])),
+         cors.null = cors, 
+         peak.cutoff = peak.cutoff)
 }
 
 
-
-
-foo <- overlapData(ereads[4:6], peak.cutoff = 12)
-
-
-
-
-
-## plotSamples <- function(ereads, peak.ref, peak.cutoff = 12, ...)
-## {
-##     foo <- 
-##         summarizeData(ereads, peak.ref = peak.ref, peak.cutoff = peak.cutoff,
-##                       include = names(ereads))
-##     with(foo, 
-##          xyplot(proportion ~ cutoff | promoter, data = props, type = c("g", "o"), 
-##                 groups = factor(sample, levels = include),
-##                 auto.key = list(lines = TRUE, points = FALSE, columns = 3),
-##                 xlab = "cutoff",
-##                 ylab = "Proportion of peaks with number of overlapping reads >= cutoff ",
-##                 main = sprintf("%s peaks, depth >= %g", peak.ref, peak.cutoff), ...))
-## }
-
-
+extract.cors <- function(x)
+{
+    cor.names <- 
+        with(x$cors.obs, 
+             outer(rownames(all), colnames(all), FUN = paste, sep = ":")[lower.tri(all)])
+    null.cors <- 
+        sapply(x$cors.null, 
+               function(u) {
+                   with(u, c(all[lower.tri(all)], promoter[lower.tri(promoter)]))
+               })
+    colnames(null.cors) <- sprintf("null_%g", seq_len(ncol(null.cors)))
+    obs.cors <- with(x$cors.obs, c(all[lower.tri(all)], promoter[lower.tri(promoter)]))
+    data.frame(cors = c(obs.cors, null.cors), 
+               sample = rep(c("observed", "subsampled"), c(length(obs.cors), length(null.cors))),
+               type = c(sprintf("all_%s", cor.names), sprintf("promoter_%s", cor.names)))
+}
 
 
 @ 
 
+
+
+\newpage
+
+
+One limitation of the first approach is that the results are affected
+by sample size; in particular, more reads would move the curves up,
+and it is not clear how their shapes would change.  This is not easy
+to address, but we provide a second method which is hopefully more
+robust to sample size changes.
+\vspace{4mm}
+
+The idea is as follows: When comparing several lanes, 
+\begin{itemize}
+\item Determine peaks in the combined data.
+\item For each peak, compute number of overlapping reads
+\item Compute pairwise correlations
+\end{itemize}
+The correlations are generally high, suggesting that there is
+substantial overlap in the peak sets.  To determine if the overlap is
+comparable to what we would expect under replication, we generate
+observations from a reference distribution as follows:
+\begin{itemize}
+\item Start with all reads in the combined data
+\item Randomly subsample reads and assign to each lane keeping the
+  total number of reads unchanged (do this on a per-chromosome basis).
+\item Compute correlations as above from this fake dataset.
+\item Repeat this several times (10 in the examples shown here).
+\end{itemize}
+We then plot the reference values and the actual observed value.  In
+summary, the observed correlations are usually smaller than what we
+woould expect if the lanes were exact replicates, but the differences
+are not big.  So, even though there are some differences in the sets
+of binding sites enriched in the different lanes, they are largely
+similar, and we are justified in combining data from the three
+antibodies.
+\vspace{4mm}
+
+Similar plots for the primary mouse myotubes are shown later (page 17
+onwards).
+
+
+
+\newpage
+
+<<echo=FALSE,results=hide>>=
+
+all.reads <- myodMyo[c(1, 3, 5, 2, 4, 6, 7)]
+names(all.reads)[1:7] <- 
+    c("blast_7311", "blast_6975", "blast_6196", 
+      "tube_7311", "tube_6975", "tube_6196", "preimmune")
+ereads <- gdApply(all.reads,
+                  function(x, seqLen = 200) {
+                      sort(extendReads(x, seqLen = seqLen))
+                  })
+foo <- overlapData(ereads[4:6], peak.cutoff = 20)
+
+
+@ 
+
+
+\begin{center}
+<<fig=TRUE,echo=FALSE,results=hide,height=5>>=
+plot(splom(~peakSummary[-c(1, 2, 3, ncol(foo$peakSummary))] | ifelse(peakSummary$promoter, "In promoter", "Not in promoter"),
+           data = foo, pch = ".", cex = 2, 
+           main = sprintf("Combined data, peaks of depth >= %g", foo$peak.cutoff),
+           xlab = "Scatter plot matrix of sqrt(number of overlapping reads)"))
+@ 
+<<fig=TRUE,echo=FALSE,results=hide,height=3>>=
+plot(stripplot(type ~ cors, data = extract.cors(foo), groups = sample, jitter = TRUE, pch = c(16, 1),
+               xlab = "Pairwise correlation of sqrt(number of overlapping reads), observed and subsampled",
+               main = sprintf("Combined data, peaks of depth >= %g", foo$peak.cutoff)))
+@ 
+\end{center}
+
+
+
+\newpage
+
+<<echo=FALSE,results=hide>>=
+foo <- overlapData(ereads[1:3], peak.cutoff = 20)
+@ 
+
+
+\begin{center}
+<<fig=TRUE,echo=FALSE,results=hide,height=5>>=
+plot(splom(~peakSummary[-c(1, 2, 3, ncol(foo$peakSummary))] | ifelse(peakSummary$promoter, "In promoter", "Not in promoter"),
+           data = foo, pch = ".", cex = 2, 
+           main = sprintf("Combined data, peaks of depth >= %g", foo$peak.cutoff),
+           xlab = "Scatter plot matrix of sqrt(number of overlapping reads)"))
+@ 
+<<fig=TRUE,echo=FALSE,results=hide,height=3>>=
+plot(stripplot(type ~ cors, data = extract.cors(foo), groups = sample, jitter = TRUE, pch = c(16, 1),
+               xlab = "Pairwise correlation of sqrt(number of overlapping reads), observed and subsampled",
+               main = sprintf("Combined data, peaks of depth >= %g", foo$peak.cutoff)))
+@ 
+\end{center}
+
+
+
+\newpage
+
+The next few pages give similar plots for the Primary mouse myotubes.
+The first two plots seem to say that 6196 peaks are a (small) subset
+of 6975 peaks.  However, note the very large difference in the number
+of peaks (even though the number of reads is comparable), suggesting
+some non-biological problem in the 6196 lane.
+
+
+\newpage
+
+
+<<echo=FALSE,results=hide>>=
+
+all.reads <- solexa54[c("7", "8")]
+names(all.reads) <- c("real_6975", "real_6196")
+ereads <- gdApply(all.reads,
+                  function(x, seqLen = 200) {
+                      sort(extendReads(x, seqLen = seqLen))
+                  })
+foo <- overlapData(ereads, peak.cutoff = 20)
+
+
+@ 
+
+\begin{center}
+<<fig=TRUE,echo=FALSE,results=hide>>=
+plot(plotSamples(ereads, peak.ref = names(ereads)[1], peak.cutoff = 20, ylim = extendrange(c(0, 1))))
+@ 
+\end{center}
+
+\newpage
+
+
+\begin{center}
+<<fig=TRUE,echo=FALSE,results=hide>>=
+plot(plotSamples(ereads, peak.ref = names(ereads)[2], peak.cutoff = 20, ylim = extendrange(c(0, 1))))
+@ 
+\end{center}
+
+\newpage
+
+\begin{center}
+<<fig=TRUE,echo=FALSE,results=hide,height=5>>=
+
+## xyplot(real_6975^2 ~ real_6196^2 | ifelse(promoter, "In promoter", "Not in promoter"),
+##        data = foo$peakSummary, pch = ".", cex = 2, 
+##        main = sprintf("Combined data, peaks of depth >= %g", foo$peak.cutoff),
+##        xlab = "Number of overlapping reads in real_6196",
+##        ylab = "Number of overlapping reads in real_6975", alpha = 0.5)
+
+## xtabs(~I(real_6975^2 >= 20) + I(real_6196^2 >= 20),
+##       data = foo$peakSummary)
+
+## library(geneplotter)
+## xyplot(real_6975^2 ~ real_6196^2 | ifelse(promoter, "In promoter", "Not in promoter"),
+##        data = foo$peakSummary, pch = ".", cex = 2, 
+##        panel = panel.smoothScatter,
+##        main = sprintf("Combined data, peaks of depth >= %g", foo$peak.cutoff),
+##        xlab = "Number of overlapping reads in real_6196",
+##        ylab = "Number of overlapping reads in real_6975")
+
+
+plot(splom(~peakSummary[-c(1, 2, 3, ncol(peakSummary))] | ifelse(peakSummary$promoter, "In promoter", "Not in promoter"),
+           data = foo, pch = ".", cex = 2, 
+           main = sprintf("Combined data, peaks of depth >= %g", foo$peak.cutoff),
+           xlab = "Scatter plot matrix of sqrt(number of overlapping reads)"))
+
+@ 
+<<fig=TRUE,echo=FALSE,results=hide,height=3>>=
+plot(stripplot(type ~ cors, data = extract.cors(foo), groups = sample, jitter = TRUE, pch = c(16, 1),
+               xlab = "Pairwise correlation of sqrt(number of overlapping reads), observed and subsampled",
+               main = sprintf("Combined data, peaks of depth >= %g", foo$peak.cutoff)))
+@ 
+\end{center}
+
+
+
+\newpage
+
+To address Yi's question: ``Could you compare the real 6196tube and
+real 6975tube to the 3 separate antibody lanes from C2 myotubes? The
+figures on pages 18-20 indicate that real 6196 peaks are a subset of
+real 6975 peaks. I am wondering if that is because real 6975 is just
+too much better than all other lanes we have run so far, or real 6196
+is not of high quality.''
+
+
+<<echo=FALSE,results=hide>>=
+
+all.reads <- c(myodMyo[c("2", "4", "7")], solexa54[c("7", "8")])
+names(all.reads) <- c("tube_7311", "tube_6975", "tube_6196", "real_6975", "real_6196")
+ereads <- gdApply(all.reads,
+                  function(x, seqLen = 200) {
+                      sort(extendReads(x, seqLen = seqLen))
+                  })
+
+@ 
+
+\newpage
+
+\begin{center}
+<<fig=TRUE,echo=FALSE,results=hide>>=
+plot(plotSamples(ereads, peak.ref = names(ereads)[1], peak.cutoff = 20, ylim = extendrange(c(0, 1))))
+@ 
+\end{center}
+
+
+\newpage
+
+\begin{center}
+<<fig=TRUE,echo=FALSE,results=hide>>=
+plot(plotSamples(ereads, peak.ref = names(ereads)[2], peak.cutoff = 20, ylim = extendrange(c(0, 1))))
+@ 
+\end{center}
+
+
+\newpage
+
+\begin{center}
+<<fig=TRUE,echo=FALSE,results=hide>>=
+plot(plotSamples(ereads, peak.ref = names(ereads)[3], peak.cutoff = 20, ylim = extendrange(c(0, 1))))
+@ 
+\end{center}
 
 
 
