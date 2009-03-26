@@ -1,4 +1,5 @@
 ##FIXME: exclude should be used, and the chromosomeFilter
+
 readReads <-
     function(srcdir, lane, ...,
              include = "chr[0-9]+$", type = "MAQMapShort",
@@ -17,22 +18,6 @@ readReads <-
     else ans
 }
 
-
-readAndClean <-
-    function(maqDir, pattern, exclude="random", 
-             dropDups = TRUE, minScore = 15,
-             type = "MAQMap") 
-{
-    .Deprecated("readReads")
-    s1 <- readAligned(maqDir, pattern = pattern, type = type)
-    exChr = grep(exclude, s1@chromosome)
-    s1 = s1[-exChr]
-    keep = (s1@alignQuality@quality >= minScore)
-    s2 = s1[keep]
-    if( dropDups )
-        return(s2[!srduplicated(sread(s2))])
-    s2
-}
 
 ## summarize an "AlignedRead" as a nested list; may be useful as an
 ## intermediate form for storage etc.  Return value is of the form:
@@ -60,18 +45,18 @@ setMethod("as.list", "AlignedRead",
 
 setAs("AlignedRead", "GenomeData",
       function(from) {
-          new("GenomeData",
-              as.list(from))
+          new("GenomeData", as.list(from))
       })
 
+
+
+
+## take aligned reads and grow them appropriately.  FIXME: how should
+## we support list version? methods?
 
 splitbyChr <- function(x) {
     split(x@position, paste(x@chromosome, x@strand, sep=""))
 }
-
-
-## take input MAQ mapped reads and grow them appropriately.
-## FIXME: how should we support list version? methods?
 
 extendReads <- function(reads, seqLen=200, strand = c("+", "-"))
 {
@@ -112,104 +97,11 @@ extendReads <- function(reads, seqLen=200, strand = c("+", "-"))
 }
 
 
-## FIXME: make this a merge() method?
-#take an IRanges object and merge all Ranges that
-#are less than maxgap apart.
-merge <- function(IR, maxgap)
-{
-  if(!(isNormal(IR))) stop("IR must be a normal IRanges object")
-  width(IR) = width(IR)+maxgap
-  reduce(IR) 
-}
 
-##take two or more lanes and combine the read positions.  FIXME: This
-##should be unified with combineLanes below
-
-combineLaneReads <- function(laneList, chromList = names(laneList[[1]])) {
-    names(chromList) = chromList ##to get the return value named
-    GenomeData(lapply(chromList,
-                      function(chr) {
-                          list("+" = unlist(lapply(laneList, function(x) x[[chr]][["+"]]), use.names = FALSE),
-                               "-" = unlist(lapply(laneList, function(x) x[[chr]][["-"]]), use.names = FALSE))
-                      }))
-}
-
-##take two or more lanes and combine the data
-combineLanes <- function(laneList, chromList = names(laneList[[1]])) {
-    names(chromList) = chromList ##to get the return value named
-    lapply(chromList, function(x) combineRanges(laneList, x))
-}
-
-##one might also want a one argument version, but for now, this seems
-##to be somewhat effective
-combineRanges <- function(rlist, byChr)
-{
-    IRanges(start = unlist(lapply(rlist, function(x) start(x[[byChr]])),
-                           use.names = FALSE),
-            end = unlist(lapply(rlist, function(x) end(x[[byChr]])),
-                         use.names = FALSE))
-}
-
-##subsampling two "lanes", so that on a per chromosome basis they have
-##the same number of reads; let's not do this if we are reasonably
-##close - when fudge
-laneSubsample <- function(lane1, lane2, fudge = 0.05)
-{
-    chromList = names(lane1) ##lane2 should have the same names
-    l1Len = sapply(lane1, length)
-    l2Len = sapply(lane2, length)
-    for(i in 1:length(l1Len) ) {
-        if(abs(l1Len[i]-l2Len[i])/l1Len[i] < fudge) next
-        if(l1Len[i] < l2Len[i])
-            lane2[[i]] = sample(lane2[[i]], l1Len[i])
-        if(l1Len[i] > l2Len[i])
-            lane1[[i]] = sample(lane1[[i]], l2Len[i])
-    }
-    return(list(lane1=lane1, lane2=lane2))
-}
+## take some sort of a view and copy it to a new vector.  FIXME: can
+## we improve the interface?
 
 
-laneCoverage <- function(lane, chromLens) {
-    sapply(names(lane),
-           function(chr) {
-               coverage(lane[[chr]], 1, chromLens[chr])
-           }, 
-           simplify = FALSE)
-}
-
-##takes a GenomeList as input, and returns one
-islands <- function(x) {
-           ans = lapply(x, slice, lower = 1)
-           if( is(x, "GenomeList") )
-              new("GenomeList", ans, genome = x@genome)
-           else ans
-}
-
-readsPerIsland <- function(lane, ntperread = 200L) 
-        lapply(lane,
-               function(x) viewSums(x) / ntperread)
-
-maxHeightPerIsland <- function(lane) lapply(lane, viewMaxs)
-
-islandSummary <- function(x, ntperread = 200L)
-{
-    a1 = sapply(names(x), function(chr) {
-        ans <- data.frame(start = start(x[[chr]]),
-                          end = end(x[[chr]]),
-                          width = width(x[[chr]]),
-                          clones = viewSums(x[[chr]])/ntperread,
-                          maxdepth = viewMaxs(x[[chr]]))
-        if (is.unsorted(ans$start))
-            stop("Starts not sorted! Check code.")
-        n <- nrow(ans)
-        ans$inter <- with(ans, c(NA, start[-1] - end[-n]))
-        ans },
-         simplify = FALSE)
-    names(a1) = names(x)
-    a1
-}
-
-## take some sort of a view and copy it to a new vector
 copyIRanges <- function(IR1, newX) Views(newX, IR1)
 
 copyIRangesbyChr <- function(IR1, newX) {
@@ -220,5 +112,72 @@ copyIRangesbyChr <- function(IR1, newX) {
         ans[[i]] = Views(newX[[i]], IR1[[i]])
     ans
 }
+
+
+
+
+
+## Subsampling two "lanes", so that on a per chromosome basis they
+## have the same number of reads; let's not do this if we are
+## reasonably close - when fudge
+
+laneSubsample <- function(lane1, lane2, fudge = 0.05)
+{
+    chromList = names(lane1) ##lane2 should have the same names
+    l1Len = unlist(lapply(lane1, length)) # sapply doesn't work for "GenomeData"
+    l2Len = unlist(sapply(lane2, length)) 
+    for(i in seq_len(length(l1Len)))
+    {
+        if(abs(l1Len[i]-l2Len[i])/l1Len[i] < fudge) next
+        if(l1Len[i] < l2Len[i])
+            lane2[[i]] <- sample(lane2[[i]], l1Len[i])
+        if(l1Len[i] > l2Len[i])
+            lane1[[i]] <- sample(lane1[[i]], l2Len[i])
+    }
+    GenomeDataList(list(lane1=lane1, lane2=lane2))
+}
+
+
+
+
+## Take an IRanges object and merge all Ranges that are less than
+## maxgap apart.  FIXME: make this a merge() method?
+
+merge <- function(IR, maxgap)
+{
+    if (!(isNormal(IR))) stop("IR must be a normal IRanges object")
+    width(IR) <- width(IR) + maxgap
+    reduce(IR) 
+}
+
+## Take two or more lanes and combine the read positions.  FIXME: This
+## should be unified with combineLanes below (which works on extended
+## reads)
+
+combineLaneReads <- function(laneList, chromList = names(laneList[[1]])) {
+    names(chromList) = chromList ##to get the return value named
+    GenomeData(lapply(chromList,
+                      function(chr) {
+                          list("+" = unlist(lapply(laneList, function(x) x[[chr]][["+"]]), use.names = FALSE),
+                               "-" = unlist(lapply(laneList, function(x) x[[chr]][["-"]]), use.names = FALSE))
+                      }))
+}
+
+## Take two or more lanes worth of extended reads and combine.
+
+combineLanes <- function(laneList, chromList = names(laneList[[1]]))
+{
+    combineRanges <- function(rlist, byChr)
+    {
+        IRanges(start = unlist(lapply(rlist, function(x) start(x[[byChr]])),
+                               use.names = FALSE),
+                end = unlist(lapply(rlist, function(x) end(x[[byChr]])),
+                             use.names = FALSE))
+    }
+    names(chromList) = chromList ##to get the return value named
+    lapply(chromList, function(x) combineRanges(laneList, x))
+}
+
+
 
 
