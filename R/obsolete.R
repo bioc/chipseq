@@ -151,13 +151,5 @@ if (FALSE)
         a1
     }
     
-    laneCoverage <- function(lane, chromLens) {
-        sapply(names(lane),
-               function(chr) {
-                   coverage(lane[[chr]], 1, chromLens[chr])
-               }, 
-               simplify = FALSE)
-    }
-
     
 }

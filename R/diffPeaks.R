@@ -6,6 +6,16 @@
 ## RG thinks it would be good to also have a diffSummary list that one
 ## could specify which summaries of the differences are wanted
 
+
+laneCoverage <- function(lane, chromLens) {
+    sapply(names(lane),
+           function(chr) {
+               coverage(lane[[chr]], 1, chromLens[chr])
+           }, 
+           simplify = FALSE)
+}
+
+
 diffPeakSummary <-
     function(ranges1, ranges2, chrom.lens,
              lower = 10, extend = 0, islands = FALSE,
