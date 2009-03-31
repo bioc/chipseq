@@ -21,6 +21,13 @@ library(chipseqData)
 library(BSgenome.Mmusculus.UCSC.mm9)
 library(geneplotter)
 
+
+library(robustbase)
+fcorrelation <- function(x) { covMcd(x, cor = TRUE)$cor }
+## OR: fcorrelation <- cor
+
+
+
 data(solexa54)
 data(myodMyo)
 data(myodFibro)
@@ -496,14 +503,14 @@ overlapData <-
                        ans
                    }, simplify = FALSE)
         simPeakSummary.df <- do.call(rbind, simPeakSummary)
-        list(all = cor(simPeakSummary.df[, names(edata)]),
-             promoter = cor(simPeakSummary.df[simPeakSummary.df$promoter, names(edata)]))
+        list(all = fcorrelation(simPeakSummary.df[, names(edata)]),
+             promoter = fcorrelation(simPeakSummary.df[simPeakSummary.df$promoter, names(edata)]))
     }    
     cors <- replicate(10, corSummary(), simplify = FALSE)
     close(pb)
     list(peakSummary = peakSummary.df, 
-         cors.obs = list(all = cor(peakSummary.df[, names(edata)]),
-                         promoter = cor(peakSummary.df[peakSummary.df$promoter, names(edata)])),
+         cors.obs = list(all = fcorrelation(peakSummary.df[, names(edata)]),
+                         promoter = fcorrelation(peakSummary.df[peakSummary.df$promoter, names(edata)])),
          cors.null = cors, 
          peak.cutoff = peak.cutoff)
 }
@@ -762,7 +769,7 @@ plot(plotSamples(ereads, peak.ref = names(ereads)[3], peak.cutoff = 20, ylim = e
 
 \newpage
 
-(Not directly relevant) 
+(Not directly relevant) Comparison of Fibroblast+MyoD with myotubes
 
 
 <<echo=FALSE,results=hide>>=
