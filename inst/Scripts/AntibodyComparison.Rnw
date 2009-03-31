@@ -776,8 +776,9 @@ plot(plotSamples(ereads, peak.ref = names(ereads)[3], peak.cutoff = 20, ylim = e
 
 all.reads <- 
     GenomeDataList(list(ctubes = combineLaneReads(myodMyo[c("2", "4", "7")]),
-                        cfibromyod = combineLaneReads(myodFibro[c("2", "4", "7")]),
-                        primary_6975 = solexa54[["7"]]))
+                        cfibromyod = combineLaneReads(myodFibro[c("2", "4", "7")])))
+
+                        ## primary_6975 = solexa54[["7"]]))
 ereads <- gdApply(all.reads,
                   function(x, seqLen = 200) {
                       sort(extendReads(x, seqLen = seqLen))
