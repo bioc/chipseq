@@ -15,11 +15,11 @@
 
 <<setup,echo=FALSE,results=hide>>=
 
-
 library(lattice)
 library(chipseq)
 library(chipseqData)
 library(BSgenome.Mmusculus.UCSC.mm9)
+library(geneplotter)
 
 data(solexa54)
 data(myodMyo)
@@ -669,6 +669,8 @@ plot(plotSamples(ereads, peak.ref = names(ereads)[2], peak.cutoff = 20, ylim = e
 @ 
 \end{center}
 
+
+
 \newpage
 
 \begin{center}
@@ -753,6 +755,54 @@ plot(plotSamples(ereads, peak.ref = names(ereads)[2], peak.cutoff = 20, ylim = e
 plot(plotSamples(ereads, peak.ref = names(ereads)[3], peak.cutoff = 20, ylim = extendrange(c(0, 1))))
 @ 
 \end{center}
+
+
+%%%%%%%%%%%%%%%
+
+
+\newpage
+
+(Not directly relevant) 
+
+
+<<echo=FALSE,results=hide>>=
+
+all.reads <- 
+    GenomeDataList(list(ctubes = combineLaneReads(myodMyo[c("2", "4", "7")]),
+                        cfibromyod = combineLaneReads(myodFibro[c("2", "4", "7")]),
+                        primary_6975 = solexa54[["7"]]))
+ereads <- gdApply(all.reads,
+                  function(x, seqLen = 200) {
+                      sort(extendReads(x, seqLen = seqLen))
+                  })
+foo <- overlapData(ereads, peak.cutoff = 20)
+
+@ 
+
+
+\begin{center}
+<<fig=TRUE,echo=FALSE,results=hide,height=5>>=
+plot(splom(~peakSummary[-c(1, 2, 3, ncol(peakSummary))] | ifelse(peakSummary$promoter, "In promoter", "Not in promoter"),
+           data = foo, pch = ".", cex = 2, 
+           main = sprintf("Combined data, peaks of depth >= %g", foo$peak.cutoff),
+           xlab = "Scatter plot matrix of sqrt(number of overlapping reads)"))
+
+@ 
+<<fig=TRUE,echo=FALSE,results=hide,height=5>>=
+plot(splom(~peakSummary[-c(1, 2, 3, ncol(peakSummary))] | ifelse(peakSummary$promoter, "In promoter", "Not in promoter"),
+           data = foo, pch = ".", cex = 2, 
+           panel = panel.smoothScatter,
+           main = sprintf("Combined data, peaks of depth >= %g", foo$peak.cutoff),
+           xlab = "Scatter plot matrix of sqrt(number of overlapping reads)"))
+
+@ 
+<<fig=TRUE,echo=FALSE,results=hide,height=3>>=
+plot(stripplot(type ~ cors, data = extract.cors(foo), groups = sample, jitter = TRUE, pch = c(16, 1),
+               xlab = "Pairwise correlation of sqrt(number of overlapping reads), observed and subsampled",
+               main = sprintf("Combined data, peaks of depth >= %g", foo$peak.cutoff)))
+@ 
+\end{center}
+
 
 
 
