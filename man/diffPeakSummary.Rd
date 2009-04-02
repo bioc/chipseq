@@ -8,7 +8,7 @@ to compute summary statistics for each of the sets separately.
 }
 \usage{
 diffPeakSummary(ranges1, ranges2, chrom.lens, lower = 10, extend = 0,
-                islands = FALSE, peak.fun = NULL,
+                islands = FALSE, peak.fun = NULL, merge = 0L,
                 viewSummary = list(sums = viewSums, maxs = viewMaxs))
 }
 \arguments{
@@ -18,9 +18,14 @@ diffPeakSummary(ranges1, ranges2, chrom.lens, lower = 10, extend = 0,
   \item{lower}{ The height used to declare a peak in the combined samples. }
   \item{extend}{ Currently unused. The intent is to extend peaks by this
     amount before summarizing. }
+  \item{peak.fun}{ Function use to use to find peaks.  The default makes
+    use of additional arguments \code{merge} and \code{islands}, which
+    are otherwise ignored. }
+  \item{merge}{ Integer giving the amount of gaps between peaks that
+    shoudl be conidered significant.  Smaller gaps are removed by
+    combining neighbouring peaks.  }
   \item{islands}{ Logical indicating whether or not to use islands
     (coverage > 0) as peaks. }
-  \item{peak.fun}{ Function use to use to find peaks. }
   \item{viewSummary}{ A list of the per peak summaries. }
 }
 \details{

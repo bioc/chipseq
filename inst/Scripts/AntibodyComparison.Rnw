@@ -23,9 +23,9 @@ library(geneplotter)
 
 
 library(robustbase)
-fcorrelation <- function(x) { covMcd(x, cor = TRUE)$cor }
+## fcorrelation <- function(x) { covMcd(x, cor = TRUE)$cor }
 ## OR: fcorrelation <- cor
-
+fcorrelation <- function(x) { cor(x, method = "spearman") }
 
 
 data(solexa54)
@@ -71,7 +71,7 @@ summarizeData <-
                    }
                    ans <- data.frame(start = start(chrpeaks),
                                      end = end(chrpeaks),
-                                     promoter = in.promoter)
+                                     promoter = ifelse(in.promoter, "In promoter", "Not in promoter"))
                    for (nm in names(edata))
                        ans[[nm]] <- countOverlapping(nm)
                    ans
@@ -81,14 +81,15 @@ summarizeData <-
     computeRates <- function(cutoff = 5)
     {
         mytab <- function(x) table(factor(x, levels = c(FALSE, TRUE)))
-        dsub <- peakSummary.df ## [peakSummary.df[[ref]] >= ref.cutoff, ]
-        dsub.promoter <- subset(dsub, promoter)
+        ## dsub <- peakSummary.df ## [peakSummary.df[[ref]] >= ref.cutoff, ]
+        dsub.promoter <- subset(peakSummary.df, promoter == "In promoter")
+        dsub <- subset(peakSummary.df, promoter != "In promoter")
         props <- c(sapply(include, function(x) prop.table(mytab(dsub[[x]] >= cutoff))[2]),
                    sapply(include, function(x) prop.table(mytab(dsub.promoter[[x]] >= cutoff))[2]))
         counts <- c(sapply(include, function(x) mytab(dsub[[x]] >= cutoff)[2]),
                     sapply(include, function(x) mytab(dsub.promoter[[x]] >= cutoff)[2]))
         data.frame(cutoff = cutoff, ref = ref, ref.cutoff = ref.cutoff,
-                   promoter = rep(c("All", "Promoter"), each = length(include)),
+                   promoter = rep(c("Not promoter", "Promoter"), each = length(include)),
                    sample = rep(include, 2),
                    proportion = props, counts = counts,
                    stringsAsFactors = FALSE)
@@ -458,7 +459,7 @@ overlapData <-
                    }
                    ans <- data.frame(start = start(chrpeaks),
                                      end = end(chrpeaks),
-                                     promoter = in.promoter)
+                                     promoter = ifelse(in.promoter, "In promoter", "Not in promoter")) 
                    for (nm in names(edata))
                        ans[[nm]] <- sqrt(countOverlapping(nm))
                    ans
@@ -497,20 +498,27 @@ overlapData <-
                        {
                            as.numeric(as.table(t(overlap(chrpeaks, fdata[[x]][[chr]], multiple = TRUE))))
                        }
-                       ans <- data.frame(promoter = in.promoter)
+                       ans <- data.frame(promoter = ifelse(in.promoter, "In promoter", "Not in promoter"))
                        for (nm in names(fdata))
                            ans[[nm]] <- sqrt(countOverlapping(nm))
                        ans
                    }, simplify = FALSE)
         simPeakSummary.df <- do.call(rbind, simPeakSummary)
-        list(all = fcorrelation(simPeakSummary.df[, names(edata)]),
-             promoter = fcorrelation(simPeakSummary.df[simPeakSummary.df$promoter, names(edata)]))
+        
+        simdsub.promoter <- subset(simPeakSummary.df, promoter == "In promoter")[names(edata)]
+        simdsub.rest <- subset(simPeakSummary.df, promoter != "In promoter")[names(edata)]
+        list(rest = fcorrelation(simdsub.rest),
+             promoter = fcorrelation(simdsub.promoter))
     }    
     cors <- replicate(10, corSummary(), simplify = FALSE)
     close(pb)
+
+    dsub.promoter <- subset(peakSummary.df, promoter == "In promoter")[names(edata)]
+    dsub.rest <- subset(peakSummary.df, promoter != "In promoter")[names(edata)]
+    
     list(peakSummary = peakSummary.df, 
-         cors.obs = list(all = fcorrelation(peakSummary.df[, names(edata)]),
-                         promoter = fcorrelation(peakSummary.df[peakSummary.df$promoter, names(edata)])),
+         cors.obs = list(rest = fcorrelation(dsub.rest),
+                         promoter = fcorrelation(dsub.promoter)),
          cors.null = cors, 
          peak.cutoff = peak.cutoff)
 }
@@ -520,17 +528,17 @@ extract.cors <- function(x)
 {
     cor.names <- 
         with(x$cors.obs, 
-             outer(rownames(all), colnames(all), FUN = paste, sep = ":")[lower.tri(all)])
+             outer(rownames(rest), colnames(rest), FUN = paste, sep = ":")[lower.tri(rest)])
     null.cors <- 
         sapply(x$cors.null, 
                function(u) {
-                   with(u, c(all[lower.tri(all)], promoter[lower.tri(promoter)]))
+                   with(u, c(rest[lower.tri(rest)], promoter[lower.tri(promoter)]))
                })
     colnames(null.cors) <- sprintf("null_%g", seq_len(ncol(null.cors)))
-    obs.cors <- with(x$cors.obs, c(all[lower.tri(all)], promoter[lower.tri(promoter)]))
+    obs.cors <- with(x$cors.obs, c(rest[lower.tri(rest)], promoter[lower.tri(promoter)]))
     data.frame(cors = c(obs.cors, null.cors), 
                sample = rep(c("observed", "subsampled"), c(length(obs.cors), length(null.cors))),
-               type = c(sprintf("all_%s", cor.names), sprintf("promoter_%s", cor.names)))
+               type = c(sprintf("rest_%s", cor.names), sprintf("promoter_%s", cor.names)))
 }
 
 
@@ -599,7 +607,7 @@ foo <- overlapData(ereads[4:6], peak.cutoff = 20)
 
 \begin{center}
 <<fig=TRUE,echo=FALSE,results=hide,height=5>>=
-plot(splom(~peakSummary[-c(1, 2, 3, ncol(foo$peakSummary))] | ifelse(peakSummary$promoter, "In promoter", "Not in promoter"),
+plot(splom(~peakSummary[-c(1, 2, 3, ncol(foo$peakSummary))] | peakSummary$promoter,
            data = foo, pch = ".", cex = 2, 
            main = sprintf("Combined data, peaks of depth >= %g", foo$peak.cutoff),
            xlab = "Scatter plot matrix of sqrt(number of overlapping reads)"))
@@ -622,7 +630,7 @@ foo <- overlapData(ereads[1:3], peak.cutoff = 20)
 
 \begin{center}
 <<fig=TRUE,echo=FALSE,results=hide,height=5>>=
-plot(splom(~peakSummary[-c(1, 2, 3, ncol(foo$peakSummary))] | ifelse(peakSummary$promoter, "In promoter", "Not in promoter"),
+plot(splom(~peakSummary[-c(1, 2, 3, ncol(foo$peakSummary))] | peakSummary$promoter,
            data = foo, pch = ".", cex = 2, 
            main = sprintf("Combined data, peaks of depth >= %g", foo$peak.cutoff),
            xlab = "Scatter plot matrix of sqrt(number of overlapping reads)"))
@@ -701,7 +709,7 @@ plot(plotSamples(ereads, peak.ref = names(ereads)[2], peak.cutoff = 20, ylim = e
 ##        ylab = "Number of overlapping reads in real_6975")
 
 
-plot(splom(~peakSummary[-c(1, 2, 3, ncol(peakSummary))] | ifelse(peakSummary$promoter, "In promoter", "Not in promoter"),
+plot(splom(~peakSummary[-c(1, 2, 3, ncol(peakSummary))] | peakSummary$promoter,
            data = foo, pch = ".", cex = 2, 
            main = sprintf("Combined data, peaks of depth >= %g", foo$peak.cutoff),
            xlab = "Scatter plot matrix of sqrt(number of overlapping reads)"))
@@ -724,12 +732,17 @@ figures on pages 18-20 indicate that real 6196 peaks are a subset of
 real 6975 peaks. I am wondering if that is because real 6975 is just
 too much better than all other lanes we have run so far, or real 6196
 is not of high quality.''
+\vspace{4mm}
+Also included is the combined Fibroblast+MyoD.
 
 
 <<echo=FALSE,results=hide>>=
 
-all.reads <- c(myodMyo[c("2", "4", "7")], solexa54[c("7", "8")])
-names(all.reads) <- c("tube_7311", "tube_6975", "tube_6196", "real_6975", "real_6196")
+all.reads <- c(myodMyo[c("2", "4", "7")], 
+               solexa54[c("7", "8")],
+               GenomeDataList(list(cfibromyod = combineLaneReads(myodFibro[c("2", "4", "7")]))))
+names(all.reads) <- c("tube_7311", "tube_6975", "tube_6196", 
+                      "real_6975", "real_6196", "cfibromyod")
 ereads <- gdApply(all.reads,
                   function(x, seqLen = 200) {
                       sort(extendReads(x, seqLen = seqLen))
@@ -759,7 +772,8 @@ plot(plotSamples(ereads, peak.ref = names(ereads)[2], peak.cutoff = 20, ylim = e
 
 \begin{center}
 <<fig=TRUE,echo=FALSE,results=hide>>=
-plot(plotSamples(ereads, peak.ref = names(ereads)[3], peak.cutoff = 20, ylim = extendrange(c(0, 1))))
+plot(plotSamples(ereads, peak.ref = names(ereads)[3], 
+                 peak.cutoff = 20, ylim = extendrange(c(0, 1))))
 @ 
 \end{center}
 
@@ -770,6 +784,7 @@ plot(plotSamples(ereads, peak.ref = names(ereads)[3], peak.cutoff = 20, ylim = e
 \newpage
 
 (Not directly relevant) Comparison of Fibroblast+MyoD with myotubes
+using correlation.
 
 
 <<echo=FALSE,results=hide>>=
@@ -789,22 +804,22 @@ foo <- overlapData(ereads, peak.cutoff = 20)
 
 
 \begin{center}
-<<fig=TRUE,echo=FALSE,results=hide,height=5>>=
-plot(splom(~peakSummary[-c(1, 2, 3, ncol(peakSummary))] | ifelse(peakSummary$promoter, "In promoter", "Not in promoter"),
+<<fig=TRUE,echo=FALSE,results=hide,height=4>>=
+plot(splom(~peakSummary[-c(1, 2, 3, ncol(peakSummary))] | peakSummary$promoter,
            data = foo, pch = ".", cex = 2, 
            main = sprintf("Combined data, peaks of depth >= %g", foo$peak.cutoff),
            xlab = "Scatter plot matrix of sqrt(number of overlapping reads)"))
 
 @ 
-<<fig=TRUE,echo=FALSE,results=hide,height=5>>=
-plot(splom(~peakSummary[-c(1, 2, 3, ncol(peakSummary))] | ifelse(peakSummary$promoter, "In promoter", "Not in promoter"),
+<<fig=TRUE,echo=FALSE,results=hide,height=4>>=
+plot(splom(~peakSummary[-c(1, 2, 3, ncol(peakSummary))] | peakSummary$promoter,
            data = foo, pch = ".", cex = 2, 
            panel = panel.smoothScatter,
            main = sprintf("Combined data, peaks of depth >= %g", foo$peak.cutoff),
            xlab = "Scatter plot matrix of sqrt(number of overlapping reads)"))
 
 @ 
-<<fig=TRUE,echo=FALSE,results=hide,height=3>>=
+<<fig=TRUE,echo=FALSE,results=hide,height=2>>=
 plot(stripplot(type ~ cors, data = extract.cors(foo), groups = sample, jitter = TRUE, pch = c(16, 1),
                xlab = "Pairwise correlation of sqrt(number of overlapping reads), observed and subsampled",
                main = sprintf("Combined data, peaks of depth >= %g", foo$peak.cutoff)))

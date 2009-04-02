@@ -18,8 +18,8 @@ laneCoverage <- function(lane, chromLens) {
 
 diffPeakSummary <-
     function(ranges1, ranges2, chrom.lens,
-             lower = 10, extend = 0, islands = FALSE,
-             peak.fun = NULL,
+             lower = 10, extend = 0, 
+             peak.fun = NULL, merge = 0L, islands = FALSE,
              viewSummary = list(sums = viewSums, maxs = viewMaxs))
 
     ## 'extend' is unused.  The intent is to extend the peaks by this
@@ -32,15 +32,23 @@ diffPeakSummary <-
     if (is.null(peak.fun)) 
         peak.fun <- function(x)
         {
-            if (islands)
+            peaks <-
+                if (islands)
+                {
+                    s <- slice(x, lower = 1)
+                    s[viewMaxs(s) >= lower]
+                }
+                else 
+                    slice(x, lower = lower)
+            if (merge > 0)
             {
-                s <- slice(x, lower = 1)
-                s[viewMaxs(s) >= lower]
+                end(peaks) <- end(peaks) + merge
+                peaks <- asNormalIRanges(peaks)
+                end(peaks) <- end(peaks) - merge
             }
-            else 
-                slice(x, lower = lower)
+            peaks
         }
-    
+
     combined <- combineLanes(list(ranges1, ranges2))
     comb.cov <- laneCoverage(combined, chrom.lens)
     comb.peaks <- lapply(comb.cov, peak.fun)
