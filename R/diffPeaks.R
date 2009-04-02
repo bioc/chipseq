@@ -43,7 +43,7 @@ diffPeakSummary <-
             if (merge > 0)
             {
                 end(peaks) <- end(peaks) + merge
-                peaks <- asNormalIRanges(peaks)
+                peaks <- reduce(peaks)
                 end(peaks) <- end(peaks) - merge
             }
             peaks

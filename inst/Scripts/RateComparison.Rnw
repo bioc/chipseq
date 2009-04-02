@@ -1,0 +1,346 @@
+\documentclass{article}
+\title{Compare rates of overlap with peaks}
+
+\usepackage[text={178mm,230mm},centering]{geometry}
+\usepackage{Sweave}
+
+\SweaveOpts{keep.source=TRUE,eps=TRUE,pdf=FALSE,width=15,height=20,prefix.string=figs/figs-rate}
+\setkeys{Gin}{width=0.98\textwidth}
+
+\begin{document}
+
+\maketitle
+
+\raggedright
+
+
+One issue in comparing peak-sets from different samples is that the
+sample sizes are different, making comparisons difficult.  Here, we
+take a slightly different exploratory approach:
+\begin{itemize}
+\item Choose one lane as the reference, and determine peaks (depth of
+  20 and 12 used here)
+\item For each ``peak'', record its midpoint (just as an easy summary;
+  perhaps a better approach would be to take the midpoint of the
+  highest plateau).
+\item For various other lanes, compute number of reads overlapping
+  each such midpoint.
+\end{itemize}
+\vspace{4mm}
+
+
+
+<<setup,echo=FALSE,results=hide>>=
+
+library(lattice)
+library(chipseq)
+library(chipseqData)
+library(BSgenome.Mmusculus.UCSC.mm9)
+library(geneplotter)
+
+lattice.options(default.theme = standard.theme("pdf"))
+
+data(solexa54)
+data(myodMyo)
+data(myodFibro)
+
+set.seed(20081008)
+
+## promoter information
+
+data(geneMouse)
+gregions <- genomic_regions(genes = geneMouse, proximal = 1000)
+gregions <- subset(gregions, chrom %in% paste("chr", 1:19, sep = ""))
+gregions$chrom <- gregions$chrom[drop = TRUE]
+
+gpromoters <- gregions[c("chrom", "promoter.start", "promoter.end")]
+names(gpromoters) <- c("chr", "start", "end")
+gpromoters.split <- split(gpromoters, gpromoters$chr)
+
+
+summarizeData <-
+    function(edata, peak.ref, peak.cutoff = 6, include = names(edata))
+{
+    peaks <-
+        gdApply(edata[[peak.ref]],
+                function(g, cutoff = peak.cutoff) {
+                    peaks <- slice(coverage(g, 1L, max(end(g)) + 100L), lower = cutoff)
+                    midpoints <- IRanges((start(peaks)+end(peaks)) %/% 2L, width = 1L)
+                    ## print(length(g))
+                    list(peaks = IntervalTree(peaks), midpoints = IntervalTree(midpoints))
+                })
+    ## accumulate per-peak information
+    peakSummary <-
+        sapply(names(peaks),
+               function(chr) {
+                   ## print(chr)
+                   chrpeaks <- peaks[[chr]]
+                   in.promoter <- !is.na(overlap(with(gpromoters.split[[chr]], IRanges(start, end)),
+                                                 chrpeaks$peaks, multiple = FALSE))
+                   countOverlapping <- function(x)
+                   {
+                       as.numeric(as.table(t(overlap(chrpeaks$midpoints, 
+                                                     edata[[x]][[chr]], multiple = TRUE))))
+                   }
+                   ans <- data.frame(start = start(chrpeaks$peaks),
+                                     end = end(chrpeaks$peaks),
+                                     midpoint = start(chrpeaks$midpoints),
+                                     promoter = factor(ifelse(in.promoter,
+                                                              "In promoter",
+                                                              "Not in promoter")))
+                   for (nm in include)
+                       ans[[nm]] <- countOverlapping(nm)
+                   ans
+               }, simplify = FALSE)
+    peakSummary.df <- do.call(make.groups, peakSummary)
+    rownames(peakSummary.df) <- NULL
+    list(peakSummary = peakSummary.df, 
+         peak.cutoff = peak.cutoff, peak.ref = peak.ref,
+         include = include, nreads.ref = sum(unlist(lapply(edata[[peak.ref]], length))))
+}
+
+
+## all.reads <- c(myodMyo[c("2", "4", "7")], 
+##                solexa54[c("7", "8")],
+##                GenomeDataList(list(cfibromyod = combineLaneReads(myodFibro[c("2", "4", "7")]))))
+## names(all.reads) <- c("tube_7311", "tube_6975", "tube_6196", 
+##                       "real_6975", "real_6196", "cfibromyod")
+
+
+## getPlotFormula <- function(x, promoter = TRUE)
+## {
+##     with(x, 
+##      {
+##          xvar <- peak.ref
+##          yvars <- paste(sprintf("sqrt(%s)", setdiff(include, peak.ref)), collapse = "+")
+##          as.formula(sprintf("%s ~ sqrt(%s) %s", 
+##                             yvars, xvar, 
+##                             if (promoter) "| promoter" else ""))
+##      })
+## }
+
+## with(foo, xyplot(getPlotFormula(foo), data = peakSummary,
+##                  outer = TRUE,
+##                  panel = panel.smoothScatter,
+##                  scales = list(y = list(relation = "free", rot = 0))))
+
+
+getSplomFormula <- function(include)
+{
+    vars <- paste(sprintf("%s = sqrt(%s)", include, include), collapse = ", ")
+    as.formula(sprintf("~ data.frame(%s) | promoter", vars))
+}
+
+
+@ 
+
+
+
+
+<<myodmyo,echo=FALSE,results=hide>>=
+
+all.reads <- c(myodMyo[c("2", "4", "7")], 
+               solexa54[c("7", "8")],
+               myodFibro[c("2", "4", "7")])
+
+names(all.reads) <- c("tube_7311", "tube_6975", "tube_6196", 
+                      "real_6975", "real_6196", 
+                      "fibrom_7311", "fibrom_6975", "fibrom_6196")
+ereads <- gdApply(all.reads,
+                  function(x, seqLen = 200) {
+                      sort(extendReads(x, seqLen = seqLen))
+                  })
+
+
+@ 
+
+
+\newpage
+
+\begin{center}
+<<fig=TRUE,echo=FALSE,results=hide>>=
+plot(with(summarizeData(ereads, peak.ref = names(ereads)[1], peak.cutoff = 20),
+          splom(getSplomFormula(include), data = peakSummary, 
+                xlab = "Scatter plot matrix of sqrt(overlapping reads)",
+                layout = c(1, 2),
+                main = sprintf("%s peaks (depth >= %g)", peak.ref, peak.cutoff),
+                panel = panel.smoothScatter)))
+@ 
+\end{center}
+
+
+\newpage
+
+\begin{center}
+<<fig=TRUE,echo=FALSE,results=hide>>=
+plot(with(summarizeData(ereads, peak.ref = names(ereads)[2], peak.cutoff = 20),
+          splom(getSplomFormula(include), data = peakSummary, 
+                xlab = "Scatter plot matrix of sqrt(overlapping reads)",
+                layout = c(1, 2),
+                main = sprintf("%s peaks (depth >= %g)", peak.ref, peak.cutoff),
+                panel = panel.smoothScatter)))
+@ 
+\end{center}
+
+
+\newpage
+
+\begin{center}
+<<fig=TRUE,echo=FALSE,results=hide>>=
+plot(with(summarizeData(ereads, peak.ref = names(ereads)[3], peak.cutoff = 20),
+          splom(getSplomFormula(include), data = peakSummary, 
+                xlab = "Scatter plot matrix of sqrt(overlapping reads)",
+                layout = c(1, 2),
+                main = sprintf("%s peaks (depth >= %g)", peak.ref, peak.cutoff),
+                panel = panel.smoothScatter)))
+@ 
+\end{center}
+
+
+<<>>=
+
+fcorrelation <- function(x) { cor(x, method = "spearman") } ## OR: fcorrelation <- cor
+rank01 <- function(x) { (rank(x)-1) / (length(x)-1) }
+
+getSummaries <- function(x) {
+    corr <- fcorrelation(x)
+    corr <- corr[lower.tri(corr)]
+    names(corr) <- c("cor(tube,real)", "cor(tube,fibromyod)", "cor(real,fibromyod)")
+    c(corr, "sd(rank01(tube)-rank01(fibromyod))" = with(x, sd(rank01(tube) - rank01(fibromyod))))
+}
+
+foo <- summarizeData(ereads, peak.ref = "tube_7311", peak.cutoff = 20)
+totdf <- 
+    with(foo$peakSummary, 
+         data.frame(tube = tube_6975 + tube_6196,
+                    real = real_6975 + real_6196,
+                    fibromyod = fibrom_7311 + fibrom_6975 + fibrom_6196,
+                    promoter = promoter))
+
+cbind(promoter = getSummaries(subset(totdf, promoter == "In promoter", select = -promoter)),
+      rest = getSummaries(subset(totdf, promoter != "In promoter", select = -promoter)))
+
+
+
+
+foo <- summarizeData(ereads, peak.ref = "tube_6975", peak.cutoff = 20)
+totdf <- 
+    with(foo$peakSummary, 
+         data.frame(tube = tube_7311 + tube_6196,
+                    real = real_6975 + real_6196,
+                    fibromyod = fibrom_7311 + fibrom_6975 + fibrom_6196,
+                    promoter = promoter))
+
+cbind(promoter = getSummaries(subset(totdf, promoter == "In promoter", select = -promoter)),
+      rest = getSummaries(subset(totdf, promoter != "In promoter", select = -promoter)))
+
+
+foo <- summarizeData(ereads, peak.ref = "tube_6196", peak.cutoff = 20)
+totdf <- 
+    with(foo$peakSummary, 
+         data.frame(tube = tube_7311 + tube_6975,
+                    real = real_6975 + real_6196,
+                    fibromyod = fibrom_7311 + fibrom_6975 + fibrom_6196,
+                    promoter = promoter))
+
+cbind(promoter = getSummaries(subset(totdf, promoter == "In promoter", select = -promoter)),
+      rest = getSummaries(subset(totdf, promoter != "In promoter", select = -promoter)))
+
+
+
+@ 
+
+\newpage
+
+
+Another look at strong combined peaks, by promoter and CpG island.
+
+<<echo=FALSE,results=hide>>=
+
+data(CpG.mm9)
+mouse.chromlens <- seqlengths(Mmusculus)
+
+computeOverlap <- function(chr, start, end, tchr, tstart, tend)
+{
+    tsplit <- split(IRanges(tstart, tend), tchr)
+    ans <- logical(length(chr))
+    for (chrom in names(tsplit))
+    {
+        id <- which(chr == chrom)
+        ans[id] <-
+            !is.na(overlap(tsplit[[chrom]], 
+                           IRanges(start[id], end[id]),
+                           multiple = FALSE))
+    }
+    ans
+}    
+
+
+sqrt.scale.comps <- function (axis = c("x", "y"))
+{
+    axis <- match.arg(axis)
+    switch(axis, x = function(...) {
+        ans <- xscale.components.default(...)
+        ans$bottom$labels$labels <- (ans$bottom$labels$at)^2
+        ans
+    }, y = function(...) {
+        ans <- yscale.components.default(...)
+        ans$left$labels$labels <- (ans$left$labels$at)^2
+        ans
+    })
+}
+
+
+ctubes <- combineLaneReads(myodMyo[c("2","4","7")])
+cfibromyod <- combineLaneReads(myodFibro[c("2","4","7")])
+
+ctubes.ext <- gdApply(ctubes, extendReads, seqLen = 200)
+cfibromyod.ext <- gdApply(cfibromyod, extendReads, seqLen = 200)
+
+peakSummaryTubeFibro <-
+    diffPeakSummary(ctubes.ext, cfibromyod.ext,
+                    chrom.lens = mouse.chromlens,
+                    lower = 15, islands = FALSE, merge = 20L)
+
+peakSummaryTubeFibro <-
+    within(peakSummaryTubeFibro,
+       {
+           promoter <-
+               ifelse(computeOverlap(chromosome, start, end,
+                                     gpromoters$chr, 
+                                     gpromoters$start, 
+                                     gpromoters$end),
+                      "In promoter", "Not in promoter")
+           CpG <-
+               ifelse(computeOverlap(chromosome, start, end,
+                                     CpG.mm9$chr, 
+                                     CpG.mm9$start, 
+                                     CpG.mm9$end),
+                      "In CpG island", "Not in CpG island")
+       })
+
+
+xyplot(sqrt(maxs2) ~ sqrt(maxs1) | CpG + promoter,
+       data = peakSummaryTubeFibro,
+       xlab = "Max depth in Myotube",
+       ylab = "Max depth in Fibroblast+MyoD",
+       panel = panel.smoothScatter,
+       xscale.components = sqrt.scale.comps("x"),
+       yscale.components = sqrt.scale.comps("y"),
+       main = "Fibroblast+MyoD and Myotube combined peaks\n(depth >= 15, merged if gap <= 20)",
+       aspect = "iso")
+
+
+
+@ 
+
+
+\begin{center}
+<<fig=TRUE,echo=FALSE,results=hide,width=12,height=14>>=
+plot(trellis.last.object())
+@ 
+\end{center}
+
+
+
+\end{document}
