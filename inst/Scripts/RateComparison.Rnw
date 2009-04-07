@@ -64,7 +64,7 @@ summarizeData <-
     peaks <-
         gdApply(edata[[peak.ref]],
                 function(g, cutoff = peak.cutoff) {
-                    peaks <- slice(coverage(g, 1L, max(end(g)) + 100L), lower = cutoff)
+                    peaks <- slice(coverage(g, width = max(end(g)) + 100L), lower = cutoff)
                     midpoints <- IRanges((start(peaks)+end(peaks)) %/% 2L, width = 1L)
                     ## print(length(g))
                     list(peaks = IntervalTree(peaks), midpoints = IntervalTree(midpoints))

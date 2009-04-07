@@ -103,7 +103,7 @@ sliceSummary <-
     ## x is a list at the lane->chromosome level, with components "+" and "-"
 {
     g <- extendReads(x)
-    cov <- coverage(g, 1, max(end(g) + 400L))
+    cov <- coverage(g, width = max(end(g) + 400L))
     s <- slice(cov, lower = lower)
     ans <- data.frame(start = start(s), end = end(s))
     if (is.list(viewSummary)) 

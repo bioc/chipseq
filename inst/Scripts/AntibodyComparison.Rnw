@@ -55,7 +55,7 @@ summarizeData <-
         gdApply(edata[[peak.ref]],
                 function(g, cutoff = peak.cutoff) {
                     print(length(g))
-                    IntervalTree(slice(coverage(g, 1L, max(end(g)) + 100L), lower = cutoff))
+                    IntervalTree(slice(coverage(g, width = max(end(g)) + 100L), lower = cutoff))
                 })
     ## accumulate per-peak information
     peakSummary <-
@@ -166,13 +166,13 @@ peakProfile <- function(ereads, chr = "chr1",
                 replicate(nrep,
                       {
                           sub <- comb[sort(sample.int(ncomb, nref))]
-                          cov <- coverage(sub, 1, chrlens[chr])
+                          cov <- coverage(sub, width = chrlens[chr])
                           data.frame(cutoff = cutoffs,
                                      npeaks = sapply(cutoffs, function(lower) length(slice(cov, lower = lower))),
                                      type = "subsample")
                       }, simplify = FALSE)
             npeaks.ref <- {
-                cov <- coverage(ref.chr, 1, chrlens[chr])
+                cov <- coverage(ref.chr, width = chrlens[chr])
                 data.frame(cutoff = cutoffs,
                            npeaks = sapply(cutoffs, function(lower) length(slice(cov, lower = lower))),
                            type = "observed")
@@ -440,7 +440,7 @@ overlapData <-
            {
                setTxtProgressBar(pb, pbi)
                pbi <<- pbi + 1
-               IntervalTree(slice(coverage(comb[[chr]], 1L, chrlens[chr]), lower = peak.cutoff))
+               IntervalTree(slice(coverage(comb[[chr]], width = chrlens[chr]), lower = peak.cutoff))
            }, simplify = FALSE)
     ## accumulate per-peak information
     pbi <<- 1

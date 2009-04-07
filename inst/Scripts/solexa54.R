@@ -57,7 +57,7 @@ cov54 <-
                  sapply(names(x), 
                         function(chr) { 
                             message(chr)
-                            coverage(x[[chr]], 1, mouse.chromlens[chr])
+                            coverage(x[[chr]], width = mouse.chromlens[chr])
                         }, simplify = FALSE)
              }),
       lapply(extRanges54[3], # human
@@ -65,7 +65,7 @@ cov54 <-
                  sapply(names(x), 
                         function(chr) { 
                             message(chr)
-                            coverage(x[[chr]], 1, human.chromlens[chr])
+                            coverage(x[[chr]], width = human.chromlens[chr])
                         }, simplify = FALSE)
              }))
 

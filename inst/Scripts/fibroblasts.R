@@ -59,13 +59,13 @@ if (FALSE)
                   {
                       cat(".")
                       sub <- comb.chr[sort(sample.int(ncomb, nref))]
-                      cov <- coverage(sub, 1, chrlens[chr])
+                      cov <- coverage(sub, width = chrlens[chr])
                       data.frame(cutoff = cutoffs,
                                  npeaks = sapply(cutoffs, function(lower) length(slice(cov, lower = lower))),
                                  type = "simulation")
                   }, simplify = FALSE)
         npeaks.ref <- {
-            cov <- coverage(ref.chr, 1, chrlens[chr])
+            cov <- coverage(ref.chr, width = chrlens[chr])
             data.frame(cutoff = cutoffs,
                        npeaks = sapply(cutoffs, function(lower) length(slice(cov, lower = lower))),
                        type = "observed")
@@ -132,7 +132,7 @@ do.call(cbind, lapply(ereads[1:2], function(x) unlist(lapply(x, length)) / 1e3))
 
 countPeaks <- function(x, lower = c(10))
 {
-    cov <- coverage(x, 1, max(end(x)) + 500) 
+    cov <- coverage(x, width = max(end(x)) + 500) 
     sapply(lower, function(i) length(slice(cov, lower = i)))
 }
 
@@ -152,7 +152,7 @@ summarizeData <-
         gdApply(edata[[peak.ref]],
                 function(g, cutoff = peak.cutoff) {
                     print(length(g))
-                    IntervalTree(slice(coverage(g, 1L, max(end(g)) + 100L), lower = cutoff))
+                    IntervalTree(slice(coverage(g, width = max(end(g)) + 100L), lower = cutoff))
                 })
     ## accumulate per-peak information
     peakSummary <-
@@ -319,7 +319,7 @@ nreads <- do.call(cbind, lapply(ereads, function(x) unlist(lapply(x, length)) / 
 
 countPeaks <- function(x, lower = c(10))
 {
-    cov <- coverage(x, 1, max(end(x)) + 500) 
+    cov <- coverage(x, width = max(end(x)) + 500) 
     sapply(lower, function(i) length(slice(cov, lower = i)))
 }
 

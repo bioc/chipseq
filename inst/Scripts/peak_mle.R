@@ -123,7 +123,7 @@ ctubes <- combineLaneReads(myodMyo[c("2","4","7")])
 peakIslands <- function(chr, data, g = extendReads(data[[chr]]), lower = 10)
 {
     if (interactive()) message(chr)
-    s <- slice(coverage(g, 1, max(end(g))), lower = 1)
+    s <- slice(coverage(g, width = max(end(g))), lower = 1)
     s <- s[viewMaxs(s) >= lower]
     data.frame(chrom = chr, start = start(s), end = end(s),
                maxs = viewMaxs(s), sums = viewSums(s),

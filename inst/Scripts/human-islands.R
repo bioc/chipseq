@@ -27,7 +27,7 @@ coverageSummary <-
     ## x is a list at the lane->chromosome level, with components "+" and "-"
 {
     g <- extendReads(x)
-    coverage(g, 1, max)
+    coverage(g, width = max)
 }
 
 

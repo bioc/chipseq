@@ -2,8 +2,10 @@ basesCovered <- function(x, shift = seq(0, 500, 5), seqLen = 35, verbose = FALSE
 {
     maxShift <- max(shift)
     rng <- range(unlist(x)) + c(-1, 1) * maxShift
-    cov.pos <- coverage(extendReads(x, seqLen = seqLen, strand = "+"), rng[1], rng[2]) > 0
-    cov.neg <- coverage(extendReads(x, seqLen = seqLen, strand = "-"), rng[1], rng[2]) > 0
+    shift <- 1 - rng[1]
+    width <- rng[2] + shift
+    cov.pos <- coverage(extendReads(x, seqLen = seqLen, strand = "+"), shift = shift, width = width) > 0
+    cov.neg <- coverage(extendReads(x, seqLen = seqLen, strand = "-"), shift = shift, width = width) > 0
     n <- diff(rng) + 1L
     ans <- shiftApply(shift, cov.pos, cov.neg, function(x, y) sum(x | y),
                       verbose = verbose)

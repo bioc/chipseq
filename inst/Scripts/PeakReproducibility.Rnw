@@ -43,11 +43,11 @@ findPeaks <- function(x, g = extendReads(x), lower = 8,
 {
     if (give.islands) ## return the whole island when a peak is found
     {
-        s <- slice(coverage(g, 1, max(end(g))), lower = 1)
+        s <- slice(coverage(g, width = max(end(g))), lower = 1)
         s <- s[viewMaxs(s) >= lower]
     }
     else 
-        s <- slice(coverage(g, 1, max(end(g))), lower = lower)
+        s <- slice(coverage(g, width = max(end(g))), lower = lower)
     if (df) data.frame(start = start(s), end = end(s))
     else s
 }
@@ -486,7 +486,7 @@ depthUnderPeaks <- function(x = pairedReads$"2", ref.peaks)
     {
         ref <- ref.peaks[[chr]]
         g <- extendReads(x[[chr]])
-        cov <- coverage(g, 1, max(end(g), end(ref)))
+        cov <- coverage(g, width = max(end(g), end(ref)))
         vcopy <- Views(cov, ref)
         data.frame(ref = viewMaxs(ref), 
                    obs = viewMaxs(vcopy))

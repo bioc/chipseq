@@ -100,7 +100,7 @@ countOverlap <- function(isochore = isochore.df,
     readranges <- extendReads(reads[[chrom]])
     if (singletons)
     {
-        s <- slice(coverage(readranges, 1, max(end(readranges)) + 300L), lower = 1)
+        s <- slice(coverage(readranges, width = max(end(readranges)) + 300L), lower = 1)
         readranges <- s[viewMaxs(s) == 1]
     }
     readranges <- readranges[order(start(readranges))]

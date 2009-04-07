@@ -51,7 +51,7 @@ combinedPeaks <-
     gdApply(ereads$combined,
             function(g, cutoff = 6) {
                 print(length(g))
-                IntervalTree(slice(coverage(g, 1L, max(end(g)) + 100L), lower = cutoff))
+                IntervalTree(slice(coverage(g, width = max(end(g)) + 100L), lower = cutoff))
             })
 
 

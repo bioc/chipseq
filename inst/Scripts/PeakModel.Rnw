@@ -184,7 +184,7 @@ startest <- function(data)
 
 islandDepthSummary <- function(x, g = extendReads(x))
 {
-    s <- slice(coverage(g, 1, max(end(g))), lower = 1)
+    s <- slice(coverage(g, width = max(end(g))), lower = 1)
     tab <- table(viewMaxs(s))
     ans <- data.frame(depth = as.numeric(names(tab)), count = as.numeric(tab))
     ans

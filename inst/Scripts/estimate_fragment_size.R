@@ -62,8 +62,8 @@ computeCoveredChr <-
     max.shift <- max(shift)
     xchr <- x[[chr]]
     n <- chrlens[chr]
-    cov.pos <- coverage(extendReads(xchr, seqLen = 35, strand = "+"), 1, n) > 0
-    cov.neg <- coverage(extendReads(xchr, seqLen = 35, strand = "-"), 1, n) > 0
+    cov.pos <- coverage(extendReads(xchr, seqLen = 35, strand = "+"), width = n) > 0
+    cov.neg <- coverage(extendReads(xchr, seqLen = 35, strand = "-"), width = n) > 0
     total <- sum((cov.pos + cov.neg) > 0)
     sapply(shift, function(s) {
         cat("\r", s, "/", max.shift)
@@ -200,7 +200,7 @@ xyplot(mu.est ~ index | reorder(sample, mu.est), groups = chr,
 ##     xchr[["-"]] <- xchr[["-"]] - shift
 ##     n <- chrlens[chr]
 ##     cov <- coverage(extendReads(xchr, readLen = 35, seqLen = 35),
-##                     1, n)
+##                     width = n)
 ##     s <- slice(cov, lower = 1)
 ##     sum(as.numeric(width(s)))
 ## }
@@ -232,8 +232,8 @@ computeOverlap <-
 {
     xchr <- x[[chr]]
     n <- chrlens[chr]
-    covpos <- coverage(extendReads(xchr, readLen = 35, seqLen = seqLen, strand = "+"), 1L, n)
-    covneg <- coverage(extendReads(xchr, readLen = 35, seqLen = seqLen, strand = "-"), 1L, n)
+    covpos <- coverage(extendReads(xchr, readLen = 35, seqLen = seqLen, strand = "+"), width = n)
+    covneg <- coverage(extendReads(xchr, readLen = 35, seqLen = seqLen, strand = "-"), width = n)
     cov <- covpos + covneg
     c(total = sum(cov), diff = sum(cov - pmax(covpos, covneg)))
 }
@@ -396,8 +396,10 @@ names(reads) <- c("-", "+")
 plotOverlap <- function(seqLen = 100, main = as.character(seqLen), ...)
 {
     rng <- as.integer(range(reads)) + c(-300L, 300L)
-    cov.pos <- coverage(extendReads(reads, readLen = 35, seqLen = seqLen, strand = "+"), rng[1], rng[2])
-    cov.neg <- coverage(extendReads(reads, readLen = 35, seqLen = seqLen, strand = "-"), rng[1], rng[2])
+    shift <- 1 - rng[1]
+    width <- rng[2] + shift
+    cov.pos <- coverage(extendReads(reads, readLen = 35, seqLen = seqLen, strand = "+"), shift = shift, width = width)
+    cov.neg <- coverage(extendReads(reads, readLen = 35, seqLen = seqLen, strand = "-"), shift = shift, width = width)
     cov.total <- cov.pos + cov.neg
     cov.max <- pmax(cov.pos, cov.neg)
     df <- data.frame(coverage = c(as.numeric(cov.total), as.numeric(cov.max)),
@@ -480,10 +482,10 @@ computeSimilarity <-
     n <- chrlens[chr]
     covpos <-
         coverage(extendReads(xchr, readLen = 35, seqLen = 35, strand = "+"),
-                 1, n)
+                 width = n)
     covneg <-
         coverage(extendReads(xchr, readLen = 35, seqLen = 35, strand = "-"),
-                 1, n)
+                 width = n)
 ##     ans <- numeric(100)
 ##     for (i in seq_along(ans))
 ##         ans[i] <-

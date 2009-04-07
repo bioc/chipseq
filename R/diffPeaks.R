@@ -10,7 +10,7 @@
 laneCoverage <- function(lane, chromLens) {
     sapply(names(lane),
            function(chr) {
-               coverage(lane[[chr]], 1, chromLens[chr])
+               coverage(lane[[chr]], width = chromLens[chr])
            }, 
            simplify = FALSE)
 }
