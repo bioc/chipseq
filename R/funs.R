@@ -45,7 +45,7 @@ setMethod("as.list", "AlignedRead",
 
 setAs("AlignedRead", "GenomeData",
       function(from) {
-          new("GenomeData", as.list(from))
+          GenomeData(as.list(from))
       })
 
 

@@ -169,32 +169,32 @@ plot(with(summarizeData(ereads, peak.ref = names(ereads)[1], peak.cutoff = 20),
 \end{center}
 
 
-\newpage
+% \newpage
 
-\begin{center}
-<<fig=TRUE,echo=FALSE,results=hide>>=
-plot(with(summarizeData(ereads, peak.ref = names(ereads)[2], peak.cutoff = 20),
-          splom(getSplomFormula(include), data = peakSummary, 
-                xlab = "Scatter plot matrix of sqrt(overlapping reads)",
-                layout = c(1, 2),
-                main = sprintf("%s peaks (depth >= %g)", peak.ref, peak.cutoff),
-                panel = panel.smoothScatter)))
-@ 
-\end{center}
+% \begin{center}
+% <<fig=TRUE,echo=FALSE,results=hide>>=
+% plot(with(summarizeData(ereads, peak.ref = names(ereads)[2], peak.cutoff = 20),
+%           splom(getSplomFormula(include), data = peakSummary, 
+%                 xlab = "Scatter plot matrix of sqrt(overlapping reads)",
+%                 layout = c(1, 2),
+%                 main = sprintf("%s peaks (depth >= %g)", peak.ref, peak.cutoff),
+%                 panel = panel.smoothScatter)))
+% @ 
+% \end{center}
 
 
-\newpage
+% \newpage
 
-\begin{center}
-<<fig=TRUE,echo=FALSE,results=hide>>=
-plot(with(summarizeData(ereads, peak.ref = names(ereads)[3], peak.cutoff = 20),
-          splom(getSplomFormula(include), data = peakSummary, 
-                xlab = "Scatter plot matrix of sqrt(overlapping reads)",
-                layout = c(1, 2),
-                main = sprintf("%s peaks (depth >= %g)", peak.ref, peak.cutoff),
-                panel = panel.smoothScatter)))
-@ 
-\end{center}
+% \begin{center}
+% <<fig=TRUE,echo=FALSE,results=hide>>=
+% plot(with(summarizeData(ereads, peak.ref = names(ereads)[3], peak.cutoff = 20),
+%           splom(getSplomFormula(include), data = peakSummary, 
+%                 xlab = "Scatter plot matrix of sqrt(overlapping reads)",
+%                 layout = c(1, 2),
+%                 main = sprintf("%s peaks (depth >= %g)", peak.ref, peak.cutoff),
+%                 panel = panel.smoothScatter)))
+% @ 
+% \end{center}
 
 
 <<>>=
@@ -293,9 +293,11 @@ sqrt.scale.comps <- function (axis = c("x", "y"))
 
 ctubes <- combineLaneReads(myodMyo[c("2","4","7")])
 cfibromyod <- combineLaneReads(myodFibro[c("2","4","7")])
+cprimary <- combineLaneReads(solexa54[c("7","8")])
 
 ctubes.ext <- gdApply(ctubes, extendReads, seqLen = 200)
 cfibromyod.ext <- gdApply(cfibromyod, extendReads, seqLen = 200)
+cprimary.ext <- gdApply(cprimary, extendReads, seqLen = 200)
 
 peakSummaryTubeFibro <-
     diffPeakSummary(ctubes.ext, cfibromyod.ext,
@@ -340,6 +342,106 @@ xyplot(sqrt(maxs2) ~ sqrt(maxs1) | CpG + promoter,
 plot(trellis.last.object())
 @ 
 \end{center}
+
+
+<<echo=FALSE,results=hide>>=
+
+peakSummaryTubePrimary <-
+    diffPeakSummary(ctubes.ext, cprimary.ext,
+                    chrom.lens = mouse.chromlens,
+                    lower = 15, islands = FALSE, merge = 20L)
+
+peakSummaryTubePrimary <-
+    within(peakSummaryTubePrimary,
+       {
+           promoter <-
+               ifelse(computeOverlap(chromosome, start, end,
+                                     gpromoters$chr, 
+                                     gpromoters$start, 
+                                     gpromoters$end),
+                      "In promoter", "Not in promoter")
+           CpG <-
+               ifelse(computeOverlap(chromosome, start, end,
+                                     CpG.mm9$chr, 
+                                     CpG.mm9$start, 
+                                     CpG.mm9$end),
+                      "In CpG island", "Not in CpG island")
+       })
+
+
+xyplot(sqrt(maxs2) ~ sqrt(maxs1) | CpG + promoter,
+       data = peakSummaryTubePrimary,
+       xlab = "Max depth in C2C12 Myotube",
+       ylab = "Max depth in Primary Myotube",
+       panel = panel.smoothScatter,
+       xscale.components = sqrt.scale.comps("x"),
+       yscale.components = sqrt.scale.comps("y"),
+       main = "C2C12 and primary Myotube combined peaks\n(depth >= 15, merged if gap <= 20)",
+       aspect = "iso")
+
+    
+@ 
+
+
+\begin{center}
+<<fig=TRUE,echo=FALSE,results=hide,width=12,height=14>>=
+plot(trellis.last.object())
+@ 
+\end{center}
+
+
+
+<<echo=FALSE,results=hide>>=
+
+peakSummaryPrimaryFibro <-
+    diffPeakSummary(cprimary.ext, cfibromyod.ext, 
+                    chrom.lens = mouse.chromlens,
+                    lower = 15, islands = FALSE, merge = 20L)
+
+peakSummaryPrimaryFibro <-
+    within(peakSummaryPrimaryFibro,
+       {
+           promoter <-
+               ifelse(computeOverlap(chromosome, start, end,
+                                     gpromoters$chr, 
+                                     gpromoters$start, 
+                                     gpromoters$end),
+                      "In promoter", "Not in promoter")
+           CpG <-
+               ifelse(computeOverlap(chromosome, start, end,
+                                     CpG.mm9$chr, 
+                                     CpG.mm9$start, 
+                                     CpG.mm9$end),
+                      "In CpG island", "Not in CpG island")
+       })
+
+
+xyplot(sqrt(maxs2) ~ sqrt(maxs1) | CpG + promoter,
+       data =  peakSummaryPrimaryFibro,
+       xlab = "Max depth in Primary Myotube",
+       ylab = "Max depth in Fibroblast+MyoD",
+       panel = panel.smoothScatter,
+       xscale.components = sqrt.scale.comps("x"),
+       yscale.components = sqrt.scale.comps("y"),
+       main = "Fibroblast+MyoD and primary Myotube combined peaks\n(depth >= 15, merged if gap <= 20)",
+       aspect = "iso")
+
+    
+@ 
+
+
+\begin{center}
+<<fig=TRUE,echo=FALSE,results=hide,width=12,height=14>>=
+plot(trellis.last.object())
+@ 
+\end{center}
+
+
+
+
+
+
+
 
 
 
