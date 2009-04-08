@@ -2,8 +2,6 @@
 \alias{readReads}
 \alias{as.list,AlignedRead-method}
 \alias{coerce,AlignedRead,GenomeData-method}
-
-\alias{}
 \title{ A function to read in Aligned Short Reads }
 \description{
   This is a helper function for reading in aligned reads with a number
@@ -14,10 +12,6 @@
 readReads(srcdir, lane, ...,
           include = "chr[0-9]+$", type = "MAQMapShort",
           simplify = TRUE, minScore = 15)
-
-as.list(x)
-as(object, "GenomeData")
-
 }
 \arguments{
   \item{srcdir}{The source directory.  }
@@ -30,17 +24,28 @@ as(object, "GenomeData")
     reduced to a simpler \code{"GenomeData"} object, which only retains
     the locations of the alignments. }
   \item{minScore}{ A minimum quality score cutoff (possibly MAQ specific). }
-  \item{x, object}{ An object of class \code{"AlignedRead"}.
-    \code{as.list} converts the object into into a list of
-    per-chromosome alignment locations, which can be further coerced
-    into a \code{"GenomeData"} object by the coercion method.  These
-    functions are used by \code{readReads} when \code{simplify=TRUE}. } 
 }
 \details{
   This has mainly been used for MAQ alignments.  Our default parameters
   are to include only autosomal chromosomes (there seem to be problems
   with the others that will require details).  We reduce to one read per
   start location and strand.
+}
+
+\section{Coercion}{
+
+  When \code{simplify=TRUE} is specified, the return value is simplified
+  to contain only alignemnt locations (and not associated quality
+  information, etc.).  This simplification can also be done afterwards
+  through coercion methods:
+  \describe{
+    \item{}{\code{as.list(x)}: 
+      where \code{x} is an object of class \code{"AlignedRead"}
+    }
+    \item{}{\code{as(object, "GenomeData")}: 
+      where \code{object} is an object of class \code{"AlignedRead"}
+    }
+  }
 }
 
 \seealso{

@@ -2,13 +2,14 @@
 \alias{diffPeakSummary}
 \title{ A function to identify and produce summary statistics for differentially expressed peaks. }
 \description{
- Given two sets of reads this function identifies all peaks in the combined
-data with height larger than \code{lower} and then uses those regions
-to compute summary statistics for each of the sets separately.
+  Given two sets of reads this function identifies all peaks in the
+  combined data with height larger than \code{lower} and then uses those
+  regions to compute summary statistics for each of the sets separately.
 }
 \usage{
-diffPeakSummary(ranges1, ranges2, chrom.lens, lower = 10, extend = 0,
-                islands = FALSE, peak.fun = NULL, merge = 0L,
+diffPeakSummary(ranges1, ranges2, chrom.lens,
+                lower = 10, extend = 0, 
+                peak.fun = NULL, merge = 0L, islands = FALSE,
                 viewSummary = list(sums = viewSums, maxs = viewMaxs))
 }
 \arguments{
@@ -28,13 +29,10 @@ diffPeakSummary(ranges1, ranges2, chrom.lens, lower = 10, extend = 0,
     (coverage > 0) as peaks. }
   \item{viewSummary}{ A list of the per peak summaries. }
 }
-\details{
- Not much more to be said.
-}
 \value{
- A \code{data.frame} with one row for each peak in the combined data. 
-The chromosome, start and stop nucleotide positions (+ strand) are given 
-as are the summary statistics requested.
+  A \code{data.frame} with one row for each peak in the combined data.
+  The chromosome, start and stop nucleotide positions (+ strand) are
+  given as are the summary statistics requested.
 }
 \author{ D. Sarkar }
 \examples{

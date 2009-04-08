@@ -17,7 +17,8 @@ data(isochores.mm8)
 \format{
   A data frame with 32894 observations on the following 4 variables.
   \describe{
-    \item{\code{Begin}, \code{End}}{ isochore boundaries. }
+    \item{\code{Begin}}{ isochore starts. }
+    \item{\code{End}}{ isochore ends. }
     \item{\code{GC}}{ GC content in isochore. }
     \item{\code{chromosome}}{ chromosome identifier. }
   }
