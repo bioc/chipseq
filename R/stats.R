@@ -104,7 +104,7 @@ sparse.density <- function(x, width = 50, kernel = "epanechnikov", experimental 
     island.densities <- 
         if (!experimental)
         {
-            tapply(x, ox, doDensity, kernel = kernel, width = width, simplify = FALSE)
+            tapply(x, ox, doDensity1, kernel = kernel, width = width, simplify = FALSE)
         }
         else 
         {

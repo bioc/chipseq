@@ -16,6 +16,8 @@ laneCoverage <- function(lane, chromLens) {
 }
 
 
+
+
 diffPeakSummary <-
     function(ranges1, ranges2, chrom.lens,
              lower = 10, extend = 0, 
@@ -60,13 +62,13 @@ diffPeakSummary <-
 
     peakSummary <-
         do.call(rbind,
-                lapply(names(peaks1),
+                lapply(names(comb.peaks),
                        function(chr) {
                            if (length(peaks1[[chr]]) == 0) return(NULL)
                            ans <-
                                data.frame(chromosome = chr,
-                                          start = start(peaks1[[chr]]),
-                                          end = end(peaks1[[chr]]),
+                                          start = start(comb.peaks[[chr]]),
+                                          end = end(comb.peaks[[chr]]),
                                           comb.max = viewMaxs(comb.peaks[[chr]]),
                                           stringsAsFactors = FALSE)
                            if (is.list(viewSummary))
