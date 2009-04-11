@@ -129,7 +129,7 @@ sparse.density <- function(x, width = 50, kernel = "epanechnikov", experimental 
 
 
 
-basesCovered <- function(x, shift = seq(0, 500, 5), seqLen = 35, verbose = FALSE)
+basesCovered <- function(x, shift = seq(5, 300, 5), seqLen = 35, verbose = FALSE)
 {
     maxShift <- max(shift)
     rng <- range(unlist(x)) + c(-1, 1) * maxShift
@@ -160,7 +160,7 @@ similarity.corr <- function(pos, neg, center = FALSE)
 
 correlationProfile <-
     function(x, chrom,
-             shift = seq(0, 300, 5),
+             shift = seq(5, 300, 5),
              chrom.lengths,
              center = FALSE,
              ...)
