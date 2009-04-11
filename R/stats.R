@@ -129,8 +129,6 @@ sparse.density <- function(x, width = 50, kernel = "epanechnikov", experimental 
 
 
 
-
-
 basesCovered <- function(x, shift = seq(0, 500, 5), seqLen = 35, verbose = FALSE)
 {
     maxShift <- max(shift)
@@ -145,24 +143,63 @@ basesCovered <- function(x, shift = seq(0, 500, 5), seqLen = 35, verbose = FALSE
     data.frame(mu = seqLen + shift, covered = ans / ans[1])
 }
 
+## correlation from Rle objects.
 
-densityCorr <- function(x, shift = seq(0, 500, 5), ...)
+similarity.corr <- function(pos, neg, center = FALSE)
 {
-    nShift <- length(shift)
-    maxShift <- max(shift)
-    rng <- range(unlist(x)) + c(-1, 1) * maxShift
-    dotArgs <- list(...)
-    if ("n" %in% names(dotArgs)) {
-        n <- dotArgs[["n"]]
-    } else {
-        n <- min(65536, round(diff(rng) / 2))
+    ## pos, neg are "Rle" objects
+    if (center)
+    {
+        pos <- pos - mean(pos)
+        neg <- neg - mean(neg)
     }
-    d1 <- density(x$"+", from = rng[1], to = rng[2], n = n, ...)
-    d2 <- density(x$"-", from = rng[1], to = rng[2] + maxShift, n = n, ...)
-    d2Shifted <- approx(d2, xout = as.vector(outer(d1$x, shift, FUN = "+")))
-    d2Y <- matrix(d2Shifted$y, ncol = nShift)
-    data.frame(mu = shift, corr = as.vector(cor(d1$y, d2Y)))
+    sum(pos * neg) / sqrt(sum(pos * pos) * sum(neg * neg))
 }
+
+
+
+correlationProfile <-
+    function(x, chrom,
+             shift = seq(0, 300, 5),
+             chrom.lengths,
+             center = FALSE,
+             ...)
+{
+    dl <- lapply(x[[chrom]], sparse.density,
+                 from = 1L, to = chrom.lengths[chrom], ...)
+    len <- length(dl[[1]])
+    wid <- len - max(shift)
+    cl <-
+        sapply(shift,
+               function(s) {
+                   corr <- 
+                       with(dl,
+                            similarity.corr(subseq(`+`, start = 1L, width = wid),
+                                            subseq(`-`, start = 1L + s, width = wid),
+                                            center = FALSE))
+                   ## if (interactive()) print(corr)
+                   corr
+               })
+    data.frame(mu = shift, corr = cl)
+}
+
+## densityCorr <- function(x, shift = seq(0, 500, 5), ...)
+## {
+##     nShift <- length(shift)
+##     maxShift <- max(shift)
+##     rng <- range(unlist(x)) + c(-1, 1) * maxShift
+##     dotArgs <- list(...)
+##     if ("n" %in% names(dotArgs)) {
+##         n <- dotArgs[["n"]]
+##     } else {
+##         n <- min(65536, round(diff(rng) / 2))
+##     }
+##     d1 <- density(x$"+", from = rng[1], to = rng[2], n = n, ...)
+##     d2 <- density(x$"-", from = rng[1], to = rng[2] + maxShift, n = n, ...)
+##     d2Shifted <- approx(d2, xout = as.vector(outer(d1$x, shift, FUN = "+")))
+##     d2Y <- matrix(d2Shifted$y, ncol = nShift)
+##     data.frame(mu = shift, corr = as.vector(cor(d1$y, d2Y)))
+## }
 
 
 
@@ -199,3 +236,30 @@ jothi.estimate <- function(x, maxDist = 500L)
 
     2 * sum(abs(i-j) + 0.5 * abs(j-k)) / sum(keep)
 }
+
+## point estimates for the other methods
+
+coverage.estimate <- function(x, ...)
+{
+    d <- basesCovered(x, ...)
+    with(d, mu[which.min(covered)])
+}
+
+correlation.estimate <- function(x, ...)
+{
+    d <- densityCorr(x, ...)
+    with(d, mu[which.max(corr)])
+}
+
+estimate.mean.fraglen <-
+    function(x, method = c("SISSR", "coverage", "correlation"),
+             ...)
+{
+    method <- match.arg(method)
+    switch(method,
+           SISSR = jothi.estimate(x, ...),
+           coverage = coverage.estimate(x, ...),
+           correlation = correlation.estimate(x, ...))
+}
+
+    
