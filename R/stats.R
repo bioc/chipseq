@@ -244,7 +244,6 @@ densityCorr <- function(x, shift = seq(0, 500, 5), ...)
 jothi.estimate <- function(x, maxDist = 500L)
 {
     i <- x$"+"
-    message(length(i), " reads")
     pos <- sort(unique(x$"+"))
     neg <- sort(unique(x$"-"))
 
