@@ -156,6 +156,9 @@ similarity.corr <- function(pos, neg, center = FALSE)
 
 
 
+## this needs chromosome lengths, and includes all the 0-s on either
+## side 
+
 correlationProfile <-
     function(x, chrom,
              shift = seq(5, 300, 5),
@@ -180,6 +183,32 @@ correlationProfile <-
                })
     data.frame(mu = shift, corr = cl)
 }
+
+
+
+## this version only uses the range of the data
+
+densityCorr <- function(x, shift = seq(0, 500, 5), ...)
+{
+    maxShift <- max(shift)
+    rng <- range(unlist(x)) + c(-1, 1) * maxShift
+    dl <- lapply(x, sparse.density, from = rng[1], to = rng[2], ...)
+    len <- length(dl[[1]])
+    wid <- len - max(shift)
+    cl <-
+        sapply(shift,
+               function(s) {
+                   corr <- 
+                       with(dl,
+                            similarity.corr(subseq(`+`, start = 1L, width = wid),
+                                            subseq(`-`, start = 1L + s, width = wid),
+                                            center = FALSE))
+                   ## if (interactive()) print(corr)
+                   corr
+               })
+    data.frame(mu = shift, corr = cl)
+}
+
 
 ## densityCorr <- function(x, shift = seq(0, 500, 5), ...)
 ## {
