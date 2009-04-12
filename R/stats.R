@@ -133,10 +133,8 @@ basesCovered <- function(x, shift = seq(5, 300, 5), seqLen = 35, verbose = FALSE
 {
     maxShift <- max(shift)
     rng <- range(unlist(x)) + c(-1, 1) * maxShift
-    shift <- 1 - rng[1]
-    width <- rng[2] + shift
-    cov.pos <- coverage(extendReads(x, seqLen = seqLen, strand = "+"), shift = shift, width = width) > 0
-    cov.neg <- coverage(extendReads(x, seqLen = seqLen, strand = "-"), shift = shift, width = width) > 0
+    cov.pos <- coverage(extendReads(x, seqLen = seqLen, strand = "+"), shift = 1-rng[1], width = 1+diff(rng)) > 0
+    cov.neg <- coverage(extendReads(x, seqLen = seqLen, strand = "-"), shift = 1-rng[1], width = 1+diff(rng)) > 0
     n <- diff(rng) + 1L
     ans <- shiftApply(shift, cov.pos, cov.neg, function(x, y) sum(x | y),
                       verbose = verbose)
