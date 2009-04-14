@@ -104,8 +104,8 @@ sparse.density <- function(x, width = 50, kernel = "epanechnikov", experimental 
     rix <- sort(reduce(ix))
     ## we will calculate density on a range containing the data.  If
     ## necessary, we will subset later (FIXME: TODO).
-    from0 <- min(from, start(rix)[1] - 10L)
-    to0 <- max(to, end(rix)[length(rix)] + 10L)
+    from0 <- min(from, start(rix)[1] - 1L)
+    to0 <- max(to, end(rix)[length(rix)] + 1L)
     if (from > from0 || to < to0) stop("[from, to] smaller than support not implemented yet (but easy to add)")
     ## ox <- overlap(rix, x, multiple = FALSE)
     ox <- findInterval(x, start(rix)) # equivalent, but a little faster
@@ -269,26 +269,26 @@ rle_sum_prod_prototype <- function (x1, n1, s1, x2, n2, s2, len)
 
 ## this version only uses the range of the data
 
-densityCorr <- function(x, shift = seq(0, 500, 5), center = FALSE, ...)
+densityCorr <- function(x, shift = seq(0, 500, 5), center = FALSE, width = 50, ...)
 {
     maxShift <- max(shift)
-    rng <- range(unlist(x)) + c(-1, 1) * maxShift
+    rng <- range(unlist(x)) + c(-1, 1) * (maxShift +  width)
     dl <- lapply(x, sparse.density, from = rng[1], to = rng[2], ...)
     if (center) dl <- lapply(dl, function(x) { x - mean(x) })
     len <- length(dl[[1]])
     wid <- len - max(shift)
     ## cl <- shiftApply(shift[1:10], dl$"+", dl$"-", FUN = similarity.corr, simplify = TRUE)
     ## cl <- shiftApply(shift[1:10], dl$"+", dl$"-", FUN = function(x, y) sum(x * y), simplify = TRUE)
-    ## cl <- shiftApply(shift, dl$"+", dl$"-", FUN = RleSumProd, simplify = TRUE)
-    cl <-
-        sapply(shift,
-               function(s) {
-                   sumxy <- 
-                       with(dl,
-                            RleSumProd(subseq(`+`, start = 1L, width = wid),
-                                       subseq(`-`, start = 1L + s, width = wid)))
-                   sumxy
-               })
+    cl <- shiftApply(shift, dl$"+", dl$"-", FUN = RleSumProd, simplify = TRUE)
+    ##     cl <-
+    ##         sapply(shift,
+    ##                function(s) {
+    ##                    sumxy <- 
+    ##                        with(dl,
+    ##                             RleSumProd(subseq(`+`, start = 1L, width = wid),
+    ##                                        subseq(`-`, start = 1L + s, width = wid)))
+    ##                    sumxy
+    ##                })
     data.frame(mu = shift, corr = cl / with(dl, sqrt( RleSumProd(`+`, `+`) * RleSumProd(`-`, `-`)  ) ))
 }
 
