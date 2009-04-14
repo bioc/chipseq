@@ -80,6 +80,14 @@ doDensity2 <- function(x, dk, width) ## explicit looping (but dk not recomputed)
     }
 }
 
+doDensity3 <- function(x, dk, width) ## loop in C
+{
+    .Call("do_naive_density",
+          as.integer(x), as.double(dk), as.integer(width),
+          PACKAGE = "chipseq")
+}
+
+
 ## experimental=FALSE calls R's density() within each "island".
 ## experimental=TRUE pre-computes the kernel function for the given
 ## width and contructs the density by looping in R.  This gives a ~60x
@@ -104,12 +112,14 @@ sparse.density <- function(x, width = 50, kernel = "epanechnikov", experimental 
     island.densities <- 
         if (!experimental)
         {
-            tapply(x, ox, doDensity1, kernel = kernel, width = width, simplify = FALSE)
+            ## tapply(x, ox, doDensity1, kernel = kernel, width = width, simplify = FALSE) # really slow
+            dk <- dKernel(width = width, kernel = kernel)
+            tapply(x, ox, doDensity2, dk = dk, width = width, simplify = FALSE)
         }
         else 
         {
             dk <- dKernel(width = width, kernel = kernel)
-            tapply(x, ox, doDensity2, dk = dk, width = width, simplify = FALSE)
+            tapply(x, ox, doDensity3, dk = dk, width = width, simplify = FALSE)
         }
     ## result will be a "Rle" object.  Need to compute @values and
     ## @lengths.  We have the pieces, each of which will have
@@ -126,9 +136,6 @@ sparse.density <- function(x, width = 50, kernel = "epanechnikov", experimental 
 
 
 
-
-
-
 basesCovered <- function(x, shift = seq(5, 300, 5), seqLen = 35, verbose = FALSE)
 {
     maxShift <- max(shift)
@@ -136,10 +143,29 @@ basesCovered <- function(x, shift = seq(5, 300, 5), seqLen = 35, verbose = FALSE
     cov.pos <- coverage(extendReads(x, seqLen = seqLen, strand = "+"), shift = 1-rng[1], width = 1+diff(rng)) > 0
     cov.neg <- coverage(extendReads(x, seqLen = seqLen, strand = "-"), shift = 1-rng[1], width = 1+diff(rng)) > 0
     n <- diff(rng) + 1L
-    ans <- shiftApply(shift, cov.pos, cov.neg, function(x, y) sum(x | y),
-                      verbose = verbose)
+    ## ans <- shiftApply(shift, cov.pos, cov.neg, function(x, y) sum(x | y), verbose = verbose)
+    ans <- shiftApply(shift, cov.pos, cov.neg, RleSumAny, verbose = verbose)
     data.frame(mu = seqLen + shift, covered = ans / ans[1])
 }
+
+
+## An efficient version of sum(e1 | e2), where e1 and e2 are Rle objects
+
+RleSumAny <- function (e1, e2)
+{
+    len <- length(e1)
+    stopifnot(len == length(e2))
+    x1 <- runValue(e1); n1 <- runLength(e1); s1 <- cumsum(n1)
+    x2 <- runValue(e2); n2 <- runLength(e2); s2 <- cumsum(n2)
+    .Call("rle_sum_any",
+          as.integer(x1), as.integer(n1), as.integer(s1),
+          as.integer(x2), as.integer(n2), as.integer(s2),
+          as.integer(len),
+          PACKAGE = "chipseq")
+}
+
+
+
 
 ## correlation from Rle objects.
 
@@ -151,8 +177,10 @@ similarity.corr <- function(pos, neg, center = FALSE)
         pos <- pos - mean(pos)
         neg <- neg - mean(neg)
     }
-    sum(pos * neg) / sqrt(sum(pos * pos) * sum(neg * neg))
+    RleSumProd(pos, neg) / sqrt(RleSumProd(pos, pos) * RleSumProd(neg, neg))
 }
+
+
 
 
 
@@ -168,45 +196,100 @@ correlationProfile <-
 {
     dl <- lapply(x[[chrom]], sparse.density,
                  from = 1L, to = chrom.lengths[chrom], ...)
+    if (center) dl <- lapply(dl, function(x) { x - mean(x) })
     len <- length(dl[[1]])
     wid <- len - max(shift)
     cl <-
         sapply(shift,
                function(s) {
-                   corr <- 
+                   sumxy <- 
                        with(dl,
-                            similarity.corr(subseq(`+`, start = 1L, width = wid),
-                                            subseq(`-`, start = 1L + s, width = wid),
-                                            center = FALSE))
-                   ## if (interactive()) print(corr)
-                   corr
+                            RleSumProd(subseq(`+`, start = 1L, width = wid),
+                                       subseq(`-`, start = 1L + s, width = wid)))
+                   sumxy
                })
-    data.frame(mu = shift, corr = cl)
+    data.frame(mu = shift, corr = cl / with(dl( sqrt( RleSumProd(`+`, `+`) * RleSumProd(`-`, `-`)  ) )))
+}
+
+
+### really really slow
+## RleSumProd <- function (x1, n1, x2, n2)
+## {
+##     ok <- e1 != 0 & e2 != 0
+##     sum(e1[ok] * e2[ok])
+## }
+
+
+
+## An efficient version of sum(e1 * e2), where e1 and e2 are Rle objects
+
+RleSumProd <- function (e1, e2)
+{
+    len <- length(e1)
+    stopifnot(len == length(e2))
+    x1 <- runValue(e1); n1 <- runLength(e1); s1 <- cumsum(n1)
+    x2 <- runValue(e2); n2 <- runLength(e2); s2 <- cumsum(n2)
+    ## rle_sum_prod_prototype(x1, n1, s1, x2, n2, s2, len)
+    .Call("rle_sum_prod",
+          as.double(x1), as.integer(n1), as.integer(s1),
+          as.double(x2), as.integer(n2), as.integer(s2),
+          as.integer(len),
+          PACKAGE = "chipseq")
+}
+
+
+rle_sum_prod_prototype <- function (x1, n1, s1, x2, n2, s2, len)
+{
+    i1 <- i2 <- k <- 1 #i: RLE pointer, k: virtual pointer of underlying seq
+    ans <- 0
+    while (k <= len)
+    {
+        if (x1[i1] == 0 || x2[i2] == 0) # both 0, no contribution
+        {
+            i1 <- i1 + 1
+            i2 <- i2 + 1
+            ## move lagging pointer ahead to location of the one ahead
+            while (s1[i1-1] < s2[i2-1]) i1 <- i1 + 1
+            while (s1[i1-1] > s2[i2-1]) i2 <- i2 + 1
+            k <- 1 + max(s1[i1-1], s2[i2-1])
+        }
+        else # at this point, moving the lagging one forward by one must reach or jump over the other
+        {
+            next.k <- 1 + min(s1[i1], s2[i2])
+            ans <- ans + (next.k - k) * x1[i1] * x2[i2]
+            if (s1[i1] == next.k - 1) i1 <- i1 + 1
+            if (s2[i2] == next.k - 1) i2 <- i2 + 1
+            k <- next.k
+        }
+    }
+    ans
 }
 
 
 
 ## this version only uses the range of the data
 
-densityCorr <- function(x, shift = seq(0, 500, 5), ...)
+densityCorr <- function(x, shift = seq(0, 500, 5), center = FALSE, ...)
 {
     maxShift <- max(shift)
     rng <- range(unlist(x)) + c(-1, 1) * maxShift
     dl <- lapply(x, sparse.density, from = rng[1], to = rng[2], ...)
+    if (center) dl <- lapply(dl, function(x) { x - mean(x) })
     len <- length(dl[[1]])
     wid <- len - max(shift)
+    ## cl <- shiftApply(shift[1:10], dl$"+", dl$"-", FUN = similarity.corr, simplify = TRUE)
+    ## cl <- shiftApply(shift[1:10], dl$"+", dl$"-", FUN = function(x, y) sum(x * y), simplify = TRUE)
+    ## cl <- shiftApply(shift, dl$"+", dl$"-", FUN = RleSumProd, simplify = TRUE)
     cl <-
         sapply(shift,
                function(s) {
-                   corr <- 
+                   sumxy <- 
                        with(dl,
-                            similarity.corr(subseq(`+`, start = 1L, width = wid),
-                                            subseq(`-`, start = 1L + s, width = wid),
-                                            center = FALSE))
-                   ## if (interactive()) print(corr)
-                   corr
+                            RleSumProd(subseq(`+`, start = 1L, width = wid),
+                                       subseq(`-`, start = 1L + s, width = wid)))
+                   sumxy
                })
-    data.frame(mu = shift, corr = cl)
+    data.frame(mu = shift, corr = cl / with(dl, sqrt( RleSumProd(`+`, `+`) * RleSumProd(`-`, `-`)  ) ))
 }
 
 
