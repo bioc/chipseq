@@ -4,7 +4,6 @@
 library(Matrix)
 library(IRanges)
 library(chipseq)
-library(geneplotter)
 
 
 if (FALSE)

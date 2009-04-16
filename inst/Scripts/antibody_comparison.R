@@ -96,8 +96,6 @@ rownames(PeakSummary.df) <- NULL
 
 ####
 
-library(geneplotter)
-
 splom(~data.frame(asinh(realMouse.6975), asinh(realMouse.6196),
                   asinh(myotubes.7311), asinh(myotubes.6975), asinh(myotubes.6196)),
       data = PeakSummary.df, ##pch = ".", cex = 2, alpha = 0.3)

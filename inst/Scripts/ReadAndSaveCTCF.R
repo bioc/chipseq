@@ -31,49 +31,49 @@ function (srcdir, lane, ..., include = "chr[0-9]+$", type = "MAQMapShort",
     ans
 }
 
-maqMaps <- c("SRR001985.map", "SRR001986.map", "SRR001987.map")
-names(maqMaps) <- as.character(seq_len(length(maqMaps)))
+maqMapFiles <- c("SRR001985.map", "SRR001986.map", "SRR001987.map")
+names(maqMapFiles) <- sprintf("CTCF_%g", seq_len(length(maqMapFiles)))
 
-bowtieMaps <- c("SRR001985.bowtie_map", "SRR001986.bowtie_map", "SRR001987.bowtie_map")
-names(bowtieMaps) <- as.character(seq_len(length(bowtieMaps)))
+bowtieMapFiles <- c("SRR001985.bowtie_map", "SRR001986.bowtie_map", "SRR001987.bowtie_map")
+names(bowtieMapFiles) <- sprintf("CTCF_%g", seq_len(length(bowtieMapFiles)))
 
-ctcf <-
+ctcfMaps <-
   list("maq" =
-       do.call(XDataFrameList, lapply(maqMaps, function(s)
+       do.call(XDataFrameList, lapply(maqMapFiles, function(s)
            readUniqueMappings(srcdir = "/home/jdavison/externalData/ES_CTCF/bases3-26/maq/maps",
                              lane = s, type = "MAQMapShort"))),
        "bowtie"=
-       do.call(XDataFrameList, lapply(bowtieMaps, function(s)
+       do.call(XDataFrameList, lapply(bowtieMapFiles, function(s)
            readUniqueMappings(srcdir = "/home/paboyoun/externalData/ES_CTCF/bases3-26/bowtie/maps",
                               lane = s, type = "Bowtie"))))
 
-sapply(ctcf, nrow)
+sapply(ctcfMaps, nrow)
 
-save(ctcf, file = "ctcf.rda")
-rm(ctcf)
+save(ctcfMaps, file = "ctcfMaps.rda")
+rm(ctcfMaps)
 gc()
 
 
-maqMaps <- c("SRR001996.map", "SRR001997.map", "SRR001998.map", "SRR001999.map")
-names(maqMaps) <- as.character(seq_len(length(maqMaps)))
+maqMapFiles <- c("SRR001996.map", "SRR001997.map", "SRR001998.map", "SRR001999.map")
+names(maqMapFiles) <- sprintf("GFP_%g", seq_len(length(maqMapFiles)))
 
-bowtieMaps <- c("SRR001996.bowtie_map", "SRR001997.bowtie_map", "SRR001998.bowtie_map", "SRR001999.bowtie_map")
-names(bowtieMaps) <- as.character(seq_len(length(bowtieMaps)))
+bowtieMapFiles <- c("SRR001996.bowtie_map", "SRR001997.bowtie_map", "SRR001998.bowtie_map", "SRR001999.bowtie_map")
+names(bowtieMapFiles) <- sprintf("GFP_%g", seq_len(length(bowtieMapFiles)))
 
-gfp <-
+gfpMaps <-
   list("maq" =
-       do.call(XDataFrameList, lapply(maqMaps, function(s)
+       do.call(XDataFrameList, lapply(maqMapFiles, function(s)
            readUniqueMappings(srcdir = "/home/jdavison/externalData/ES_CTCF/bases3-26/maq/GFP_background/maps",
                               lane = s, type = "MAQMapShort"))),
        "bowtie" =
-       do.call(XDataFrameList, lapply(bowtieMaps, function(s)
+       do.call(XDataFrameList, lapply(bowtieMapFiles, function(s)
            readUniqueMappings(srcdir = "/home/paboyoun/externalData/ES_CTCF/bases3-26/bowtie/GFP_background/maps",
                               lane = s, type = "Bowtie"))))
 
-sapply(gfp, nrow)
+sapply(gfpMaps, nrow)
 
-save(gfp, file = "gfp.rda")
-rm(gfp)
+save(gfpMaps, file = "gfpMaps.rda")
+rm(gfpMaps)
 gc()
 
 

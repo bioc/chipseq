@@ -218,7 +218,6 @@ useOuterStrips(hexbinplot(log2(sums) ~ log2(maxs) | which + lane,
                           trans = sqrt, inv = function(x) x^2))
 
 
-## library(geneplotter)
 ## xyplot(log2(sums) ~ log2(maxs) | lane + which, readSliceSummary.10,
 ##        panel = panel.smoothScatter)
 
@@ -243,7 +242,6 @@ useOuterStrips(hexbinplot(log2(end - start) ~ log2(maxs) | which + lane,
                           trans = sqrt, inv = function(x) x^2))
 
 
-## library(geneplotter)
 ## xyplot(log2(sums) ~ log2(maxs) | lane + which, readSliceSummary.10,
 ##        panel = panel.smoothScatter)
 

@@ -245,8 +245,6 @@ dev.off()
 
 
 
-library(geneplotter)
-
 splom(~data.frame(asinh(realMouse), asinh(ctubes), asinh(cfibromyod)),
       data = realMousePeakSummary.df,
       varnames = c("realMouse", "myotubes", "fibroblasts"),
@@ -264,7 +262,6 @@ splom(~data.frame(asinh(realMouse), asinh(ctubes), asinh(cfibromyod)),
 
 if (FALSE)
 {
-    require(geneplotter)
     FUN <- sqrt
     FUN <- log1p
     FUN <- asinh

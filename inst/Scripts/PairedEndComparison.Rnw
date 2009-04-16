@@ -20,7 +20,6 @@
 library(chipseq)
 library(hexbin)
 library(latticeExtra)
-library(geneplotter)
 
 load("myodFibro.rda")
 load("myodMyo.rda")

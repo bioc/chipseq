@@ -19,7 +19,6 @@ library(lattice)
 library(chipseq)
 library(chipseqData)
 library(BSgenome.Mmusculus.UCSC.mm9)
-library(geneplotter)
 
 
 library(robustbase)
@@ -700,7 +699,6 @@ plot(plotSamples(ereads, peak.ref = names(ereads)[2], peak.cutoff = 20, ylim = e
 ## xtabs(~I(real_6975^2 >= 20) + I(real_6196^2 >= 20),
 ##       data = foo$peakSummary)
 
-## library(geneplotter)
 ## xyplot(real_6975^2 ~ real_6196^2 | ifelse(promoter, "In promoter", "Not in promoter"),
 ##        data = foo$peakSummary, pch = ".", cex = 2, 
 ##        panel = panel.smoothScatter,

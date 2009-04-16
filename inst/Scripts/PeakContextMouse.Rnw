@@ -18,7 +18,6 @@
 library(chipseq)
 library(lattice)
 library(latticeExtra)
-library(geneplotter)
 
 set.seed(20081008)
 

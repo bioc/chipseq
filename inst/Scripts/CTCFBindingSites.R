@@ -32,7 +32,7 @@ matchPWMList <- function(pwm, subject, min.score = "80%") {
     revPWM <- pwm[c("T", "G", "C", "A"), ncol(pwm):1]
     rownames(revPWM) <- c("A", "C", "G", "T")
 
-    active(masks(subject)) <- FALSE
+    subject <- unmasked(subject)
     list("+" = start(matchPWM(pwm = pwm, subject = subject, min.score = min.score)),
          "-" = end(matchPWM(pwm = revPWM, subject = subject, min.score = min.score)))
 }
@@ -40,6 +40,8 @@ bsParams <-
   new("BSParams", X = Mmusculus, FUN = matchPWMList,
       exclude = c("X","Y","M","random"), simplify = FALSE)
 ctcfPWMMatches <- GenomeData(bsapply(bsParams, pwm = ctcfPWM, min.score = "85%"))
+save(ctcfPWMMatches, file = "ctcfPWMMatches.rda")
+
 ctcfPWMRanges <- extendReads(ctcfPWMMatches, seqLen = 20)
 ctcfPWMScores <-
   lapply(structure(names(ctcfPWMMatches), names = names(ctcfPWMMatches)),
@@ -72,21 +74,38 @@ ctcfPWMStringSet <-
          })
 fragmentLength <- 140L
 readLength <- 24L
+ctcfPWMPotentialRanges <-
+  lapply(structure(names(ctcfPWMMatches), names = names(ctcfPWMMatches)),
+         function(i) {
+             list("+" =
+                  IRanges(start = unlist(lapply(ctcfPWMMatches[[i]][["+"]],
+                                                function(j) {
+                                                (j - (fragmentLength - 1L)):(j + (20L - readLength))
+                                                #(j - (fragmentLength - ncol(ctcfPWM))):(j + (ncol(ctcfPWM) - readLength))
+                                                })),
+                          width = readLength),
+                  "-" =
+                  IRanges(end = unlist(lapply(ctcfPWMMatches[[i]][["-"]],
+                                              function(j) {
+                                              (j + (20L - readLength) + (fragmentLength - 1L)):j
+                                              #(j + (fragmentLength - ncol(ctcfPWM))):(j - (ncol(ctcfPWM) - readLength))
+                                              })),
+                          width = readLength))
+         })
+ctcfPWMPotentialReducedRanges <-
+  lapply(structure(names(ctcfPWMMatches), names = names(ctcfPWMMatches)),
+         function(i) {
+             list("+" = reduce(ctcfPWMPotentialRanges[[i]][["+"]]),
+                  "-" = reduce(ctcfPWMPotentialRanges[[i]][["-"]]))
+                })
 ctcfPWMPotentialReads <-
   DNAStringSet(sort(unique(unlist(
     lapply(structure(names(ctcfPWMMatches), names = names(ctcfPWMMatches)),
            function(i) {
                subject <- unmasked(Mmusculus[[i]])
-               c(as.character(Views(subject,
-                   IRanges(start = unlist(lapply(ctcfPWMMatches[[i]][["+"]],
-                                   function(j)
-                                   (j - (fragmentLength - 1L)):(j + (20L - readLength)))),
-                           width = readLength))),
+               c(as.character(Views(subject, ctcfPWMPotentialRanges[[i]][["+"]])),
                  as.character(reverseComplement(DNAStringSet(as.character(Views(subject,
-                   IRanges(end = unlist(lapply(ctcfPWMMatches[[i]][["-"]],
-                                 function(j)
-                                 (j + (20L - readLength) + (fragmentLength - 1L)):j)),
-                           width = readLength)))))))
+                                                ctcfPWMPotentialRanges[[i]][["-"]]))))))
            })))))
 
 data(abc)
@@ -99,4 +118,47 @@ ctcfPWMPotentialReadQuality <-
 
 writeFastq(ShortReadQ(sread = ctcfPWMPotentialReads,
                       quality = ctcfPWMPotentialReadQuality),
-           file = "ctcfPWMPotentialReads.fastq")
+           file = "ctcfPWMPotentialReads140upstream.fastq")
+
+## Using the MAQ mappings from CTCFBindingSites.R
+data(ctcfPWMMatches)
+ctcfSegMaqMaps <-
+  readUniqueMappings(srcdir = "/home/jdavison/simulations/maq/paboyoun/ctcf/maps",
+                     lane = "ctcfPWMPotentialReads.map", type = "MAQMapShort")
+
+ctcfSegMaqCoverage <-
+  lapply(structure(as.character(unique(ctcfSegMaqMaps[["chromosome"]])),
+                   names = as.character(unique(ctcfSegMaqMaps[["chromosome"]]))),
+         function(i, seqLen = 140) {
+             ctcfSubset <-
+               ctcfSegMaqMaps[as.vector(ctcfSegMaqMaps[["chromosome"]] == i),]
+             ctcfSplit <- split(ctcfSubset[["start"]], as.vector(ctcfSubset[["strand"]]))
+             ctcfReads <-
+               IRanges(start = c(ctcfSplit[["+"]], ctcfSplit[["-"]] - seqLen + 1L),
+                       end = c(ctcfSplit[["+"]] + seqLen - 1L, ctcfSplit[["-"]]))
+             coverage(ctcfReads, start = 1, end = seqlengths(Mmusculus)[[i]])
+         })
+
+ctcfMappingTables <-
+list("+" =
+     lapply(as.character(unique(ctcfSegMaqMaps[["chromosome"]])), function(chr) {
+                mapping <-
+                  IRanges(start =
+                          ctcfSegMaqMaps[as.vector(ctcfSegMaqMaps[["chromosome"]] == chr) &
+                                         as.vector(ctcfSegMaqMaps[["strand"]] == "+"),"start"],
+                          width = readLength)
+                y <- table(overlap(ctcfPWMPotentialReducedRanges[[chr]][["+"]], mapping, multiple = FALSE))
+                cbind(count = unname(y),
+                      total = width(ctcfPWMPotentialReducedRanges[[chr]][["+"]])[as.integer(names(y))] - readLength + 1L)
+            }),
+     "-" =
+     lapply(as.character(unique(ctcfSegMaqMaps[["chromosome"]])), function(chr) {
+                mapping <-
+                  IRanges(start =
+                          ctcfSegMaqMaps[as.vector(ctcfSegMaqMaps[["chromosome"]] == chr) &
+                                         as.vector(ctcfSegMaqMaps[["strand"]] == "-"),"start"],
+                          width = readLength)
+                 y <- table(overlap(ctcfPWMPotentialReducedRanges[[chr]][["-"]], mapping, multiple = FALSE))
+                 cbind(count = unname(y),
+                       total = width(ctcfPWMPotentialReducedRanges[[chr]][["-"]])[as.integer(names(y))] - readLength + 1L)
+             }))

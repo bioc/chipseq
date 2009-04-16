@@ -36,7 +36,6 @@ library(lattice)
 library(chipseq)
 library(chipseqData)
 library(BSgenome.Mmusculus.UCSC.mm9)
-library(geneplotter)
 
 lattice.options(default.theme = standard.theme("pdf"))
 

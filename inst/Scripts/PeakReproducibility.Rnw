@@ -18,7 +18,6 @@
 
 library(chipseq)
 library(lattice)
-library(geneplotter)
 library(latticeExtra)
 
 

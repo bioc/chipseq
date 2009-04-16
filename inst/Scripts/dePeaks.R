@@ -1,8 +1,7 @@
 
 library("lattice")
 library("chipseq")
-library("geneplotter")
-   library("BSgenome.Mmusculus.UCSC.mm9")
+library("BSgenome.Mmusculus.UCSC.mm9")
 
 if( FALSE) {
 if (file.exists("alignInfo.rda")) load("alignInfo.rda") else

@@ -13,7 +13,6 @@
 library(chipseq)
 library(lattice)
 library(latticeExtra)
-library(geneplotter)
 
 
 load("solexa54.rda")
