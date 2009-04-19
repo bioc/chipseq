@@ -16,6 +16,11 @@ laneCoverage <- function(lane, chromLens) {
 }
 
 
+countOverlappingReads <- function(peaks, reads)
+{
+    as.numeric(as.table(t(overlap(peaks, sort(reads), multiple = TRUE))))
+}
+
 
 
 diffPeakSummary <-
@@ -50,7 +55,7 @@ diffPeakSummary <-
             }
             peaks
         }
-
+    
     combined <- combineLanes(list(ranges1, ranges2))
     comb.cov <- laneCoverage(combined, chrom.lens)
     comb.peaks <- lapply(comb.cov, peak.fun)
@@ -70,6 +75,8 @@ diffPeakSummary <-
                                           start = start(comb.peaks[[chr]]),
                                           end = end(comb.peaks[[chr]]),
                                           comb.max = viewMaxs(comb.peaks[[chr]]),
+                                          overlap1 = countOverlappingReads(comb.peaks[[chr]], ranges1[[chr]]),
+                                          overlap2 = countOverlappingReads(comb.peaks[[chr]], ranges2[[chr]]),
                                           stringsAsFactors = FALSE)
                            if (is.list(viewSummary))
                            {
