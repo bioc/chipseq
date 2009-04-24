@@ -154,30 +154,44 @@ merge <- function(IR, maxgap)
 ## should be unified with combineLanes below (which works on extended
 ## reads)
 
-combineLaneReads <- function(laneList, chromList = names(laneList[[1]])) {
+combineLaneReads <- function(laneList, chromList = names(laneList[[1]]), keep.unique = FALSE)
+{
+    my.unlist <-
+        if(keep.unique) function(x, ...) { unique(unlist(x, ...)) }
+        else unlist
+    combineReads <- function(chr)
+    {
+        list("+" = my.unlist(lapply(laneList, function(x) x[[chr]][["+"]]), use.names = FALSE),
+             "-" = my.unlist(lapply(laneList, function(x) x[[chr]][["-"]]), use.names = FALSE))
+    }
     names(chromList) = chromList ##to get the return value named
-    GenomeData(lapply(chromList,
-                      function(chr) {
-                          list("+" = unlist(lapply(laneList, function(x) x[[chr]][["+"]]), use.names = FALSE),
-                               "-" = unlist(lapply(laneList, function(x) x[[chr]][["-"]]), use.names = FALSE))
-                      }))
+    GenomeData(lapply(chromList, combineReads))
 }
 
 ## Take two or more lanes worth of extended reads and combine.
 
-combineLanes <- function(laneList, chromList = names(laneList[[1]]))
+combineLaneRanges <- function(laneList, chromList = names(laneList[[1]]), keep.unique = FALSE)
 {
-    combineRanges <- function(rlist, byChr)
+    combineRanges <- function(chr)
     {
-        IRanges(start = unlist(lapply(rlist, function(x) start(x[[byChr]])),
-                               use.names = FALSE),
-                end = unlist(lapply(rlist, function(x) end(x[[byChr]])),
-                             use.names = FALSE))
+        ans <-
+            IRanges(start = unlist(lapply(laneList, function(x) start(x[[chr]])), use.names = FALSE),
+                    end = unlist(lapply(laneList, function(x) end(x[[chr]])), use.names = FALSE))
+        if (keep.unique) ans[!duplicated(ans)]
+        else ans
     }
     names(chromList) = chromList ##to get the return value named
-    lapply(chromList, function(x) combineRanges(laneList, x))
+    GenomeData(lapply(chromList, combineRanges))
 }
 
+combineLanes <- function(x, chromList = names(x[[1]]), keep.unique = FALSE)
+{
+    isRange <- is(x[[1]][[chromList[1]]], "IRanges")
+    if (isRange)
+        combineLaneRanges(laneList = x, chromList = chromList, keep.unique = keep.unique)
+    else
+        combineLaneReads(laneList = x, chromList = chromList, keep.unique = keep.unique)
+}
 
 
 
