@@ -61,7 +61,7 @@ splitbyChr <- function(x) {
 extendReads <- function(reads, seqLen=200, strand = c("+", "-"))
 {
     if (is(reads, "GenomeDataList") || is(reads, "GenomeData"))
-        gdApply(reads, extendReads, seqLen = seqLen, strand = strand)
+        gdapply(reads, extendReads, seqLen = seqLen, strand = strand)
     else if (is(reads, "AlignedRead")) 
     {
         readLen <- width(reads)
@@ -85,11 +85,14 @@ extendReads <- function(reads, seqLen=200, strand = c("+", "-"))
     }
     else if (is.list(reads)) 
     {
+        seqLen <- as.integer(seqLen)
         if (all(c("+", "-") %in% names(reads))) 
         {
             reads <- reads[strand]
-            IRanges(start = c(reads[["+"]], reads[["-"]] - seqLen + 1L),
-                    end = c(reads[["+"]] + seqLen - 1L, reads[["-"]]))
+            starts <- as.integer(c(reads[["+"]], reads[["-"]] - seqLen + 1L))
+            new("IRanges", start = starts, width = rep(seqLen, length.out = length(starts)), NAMES = NULL)
+            ## IRanges(start = c(reads[["+"]], reads[["-"]] - seqLen + 1L),
+            ##        end = c(reads[["+"]] + seqLen - 1L, reads[["-"]]))
             ## width = seqLen) # error when start=numeric(0)
         }
     }
