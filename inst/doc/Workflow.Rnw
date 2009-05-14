@@ -1,0 +1,434 @@
+%
+% NOTE -- ONLY EDIT THE .Rnw FILE!!!  The .tex file is
+% likely to be overwritten.
+%
+% \VignetteIndexEntry{A Sample ChIP-Seq analysis workflow}
+%\VignetteDepends{Biobase, IRanges}
+%\VignetteSuggests{Rgraphviz}
+%\VignetteKeywords{visualization}
+%\VignettePackage{chipseq}
+
+
+\documentclass[11pt]{article}
+\title{Some Basic Analyis of ChIP-Seq Data}
+
+
+\usepackage{times}
+\usepackage[text={178mm,230mm},centering]{geometry}
+\usepackage{Sweave}
+
+\date{January 23, 2009}
+
+\SweaveOpts{keep.source=TRUE,eps=FALSE,pdf=TRUE,width=9,height=6,prefix.string=figs-islands}
+\setkeys{Gin}{width=0.98\textwidth}
+
+\newcommand{\Rpackage}[1]{\textsf{#1}}
+\newcommand{\code}[1]{\texttt{#1}}
+
+\begin{document}
+
+\maketitle
+
+\raggedright
+
+
+Our goal is to describe the use of Bioconductor software to perform
+some basic tasks in the analysis of ChIP-Seq data.  We will use
+several functions in the as-yet-unreleased \Rpackage{chipseq} package,
+which provides convenient interfaces to other powerful packages such
+as \Rpackage{ShortRead} and \Rpackage{IRanges}.  We will also use the
+\Rpackage{lattice} package for visualization.
+
+<<setup,echo=TRUE,results=hide>>=
+
+library(chipseq)
+library(lattice)
+
+@
+
+\section*{Example data}
+
+\noindent The \code{cstest} data set is included in the
+\Rpackage{chipseq} package to help demonstrate its capabilities.  The
+dataset contains data for three chromosomes from Solexa lanes, one
+from a CTCF mouse ChIP-Seq, and one from a GFP mouse ChIP-Seq.  The
+raw reads were aligned to the reference genome (mouse in this case)
+using an external program (MAQ), and the results read in using the
+\code{readReads} function, which in turn uses the \code{readAligned}
+function in the \Rpackage{ShortRead}.  This step removed all duplicate
+reads and applied a quality score cutoff.  The remaining data were
+reduced to a set of alignment start positions (including orientation).
+<<>>=
+data(cstest)
+cstest
+@ 
+%
+\code{cstest} is an object of class \textit{``GenomeDataList''},
+and has a list-like structure, each component representing data from
+one lane.
+<<>>=
+cstest$ctcf
+@ 
+%
+Each of these are themselves lists containing positive and negative
+strand alignments:
+<<>>=
+str(cstest$ctcf$chr10)
+@
+%
+The aligned position of the first cycle is stored.
+
+
+\section*{The mouse genome}
+
+The data we have refer to alignments to a genome, and only makes sense
+in that context.  Bioconductor has genome packages containing the full
+sequences of several genomes.  The one relevant for us is
+<<>>=
+library(BSgenome.Mmusculus.UCSC.mm9)
+mouse.chromlens <- seqlengths(Mmusculus)
+head(mouse.chromlens)
+@ 
+%
+We will only make use of the chromosome lengths, but the actual
+sequence will be needed for motif finding, etc.
+
+
+
+\section*{Extending reads}
+
+
+Solexa gives us the first few (24 in this example) bases of each
+fragment it sequences, but the actual fragment is longer.  By design,
+the sites of interest (transcription factor binding sites) should be
+somewhere in the fragment, but not necessarily in its initial part.
+Although the actual lengths of fragments vary, extending the alignment
+of the short read by a fixed amount in the appropriate direction,
+depending on whether the alignment was to the positive or negative
+strand, makes it more likely that we cover the actual site of
+interest.
+\\
+
+
+We extend all reads to be 200 bases long.  This is done using the
+\code{extendReads()} function, which can work on data from one
+chromosome in one lane.
+<<>>=
+ext <- extendReads(cstest$ctcf$chr10, seqLen = 200)
+head(ext)
+@ 
+%
+The result is essentially a collection of intervals (ranges) over the
+reference genome.  
+
+
+
+\section*{Coverage, islands, and depth}
+
+A useful summary of this information is the
+\emph{coverage}, that is, how many times each base in the genome was
+covered by one of these intervals.
+<<>>=
+cov <- coverage(ext, width = mouse.chromlens["chr10"])
+cov
+@ 
+%
+For efficiency, the result is stored in a run-length encoded form.
+
+
+\newpage
+
+The regions of interest are contiguous segments of non-zero coverage,
+also known as \emph{islands}.
+<<>>=
+islands <- slice(cov, lower = 1)
+islands
+@ 
+%
+For each island, we can compute the number of reads in the island, and
+the maximum coverage depth within that island.
+<<>>=
+viewSums(head(islands))
+viewMaxs(head(islands))
+
+nread.tab <- table(viewSums(islands) / 200)
+depth.tab <- table(viewMaxs(islands))
+
+head(nread.tab, 10)
+head(depth.tab, 10)
+
+@ 
+
+
+\newpage
+
+\section*{Processing multiple lanes}
+
+Although data from one chromosome within one lane is often the natural
+unit to work with, we typically want to apply any procedure to all
+chromosomes in all lanes.  A function that is useful for this purpose
+is \code{gdapply}, which recursively applies a summary function to a
+full dataset.  If the summary function produces a data frame, the
+result can be coerced into a flat data frame that is often easier to
+work with.  Here is a simple summary function that computes the
+frequency distribution of the number of reads.
+<<>>=
+islandReadSummary <- function(x)
+{
+    g <- extendReads(x, seqLen = 200)
+    s <- slice(coverage(g), lower = 1)
+    tab <- table(viewSums(s) / 200)
+    ans <- data.frame(nread = as.numeric(names(tab)), count = as.numeric(tab))
+    ans
+}
+@
+%
+Applying it to our test-case, we get
+<<>>=
+head(islandReadSummary(cstest$ctcf$chr10))
+@ 
+%
+We can now use it to summarize the full dataset.
+<<>>=
+nread.islands <- gdapply(cstest, islandReadSummary)
+nread.islands <- as(nread.islands, "data.frame")
+head(nread.islands)
+@ 
+
+
+\newpage
+
+<<>>=
+xyplot(log(count) ~ nread | sample, nread.islands, 
+       subset = (chromosome == "chr10" & nread <= 40), 
+       layout = c(1, 2), pch = 16, type = c("p", "g"))
+
+@ 
+
+<<fig=TRUE,height=10,echo=FALSE>>=
+plot(trellis.last.object())
+@ 
+
+\newpage
+
+
+If reads were sampled randomly from the genome, then the null
+distribution number of reads per island would have a geometric
+distribution; that is,
+\[
+P(X = k) = p^{k-1} (1-p)
+\]
+In other words, $\log P(X = k)$ is linear in $k$.  Although our
+samples are not random, the islands with just one or two reads may be
+representative of the null distribution.
+%
+<<>>=
+xyplot(log(count) ~ nread | sample, nread.islands, 
+       subset = (chromosome == "chr10" & nread <= 40), 
+       layout = c(1, 2), pch = 16, type = c("p", "g"),
+       panel = function(x, y, ...) {
+           panel.lmline(x[1:2], y[1:2], col = "black")
+           panel.xyplot(x, y, ...)
+       })
+
+@ 
+
+<<fig=TRUE,height=8,echo=FALSE>>=
+plot(trellis.last.object())
+@ 
+
+\newpage
+
+We can create a similar plot of the distribution of depths.
+%
+<<>>=
+islandDepthSummary <- function(x)
+{
+    g <- extendReads(x, seqLen = 200)
+    s <- slice(coverage(g), lower = 1)
+    tab <- table(viewMaxs(s))
+    ans <- data.frame(depth = as.numeric(names(tab)), count = as.numeric(tab))
+    ans
+}
+
+depth.islands <- gdapply(cstest, islandDepthSummary)
+depth.islands <- as(depth.islands, "data.frame")
+
+xyplot(log(count) ~ depth | sample, depth.islands, 
+       subset = (chromosome == "chr10" & depth <= 20), 
+       layout = c(1, 2), pch = 16, type = c("p", "g"),
+       panel = function(x, y, ...) {
+           lambda <- 2 * exp(y[2]) / exp(y[1])
+           null.est <- function(xx) {
+               xx * log(lambda) - lambda - lgamma(xx + 1)
+           }
+           log.N.hat <- null.est(1) - y[1]
+           panel.lines(1:10, -log.N.hat + null.est(1:10), col = "black")
+           panel.xyplot(x, y, ...)
+       })
+
+## depth.islands <- summarizeReads(cstest, summary.fun = islandDepthSummary)
+
+@ 
+
+<<fig=TRUE,height=10,echo=FALSE>>=
+plot(trellis.last.object())
+@ 
+
+
+\newpage
+
+\section*{Peaks}
+
+Going back to our example of chr10 of the first sample, we can define
+``peaks'' to be regions of the genome where coverage is 8 or more.
+<<>>=
+peaks <- slice(cov, lower = 8)
+peaks
+@ 
+%
+It is meaningful to ask about the contribution of each strand to each
+peak, as the sequenced region of pull-down fragments would be on
+opposite sides of a binding site depending on which strand it matched.
+We can compute strand-specific coverage, and look at the individual
+coverages under the combined peaks as follows:
+<<>>=
+peak.depths <- viewMaxs(peaks)
+
+cov.pos <- coverage(extendReads(cstest$ctcf$chr10, strand = "+", seqLen = 200), 
+                    width = mouse.chromlens["chr10"])
+cov.neg <- coverage(extendReads(cstest$ctcf$chr10, strand = "-", seqLen = 200), 
+                    width = mouse.chromlens["chr10"])
+
+peaks.pos <- copyIRanges(peaks, cov.pos)
+peaks.neg <- copyIRanges(peaks, cov.neg)
+
+wpeaks <- which(peak.depths >= 40)
+wpeaks
+
+@ 
+%
+We plot the four highest peaks below.
+
+\newpage
+
+<<>>=
+plotCoverage(peaks.pos[wpeaks[1]], peaks.neg[wpeaks[1]])
+@ 
+<<fig=TRUE,height=5,echo=FALSE>>=
+plot(trellis.last.object())
+@ 
+
+<<>>=
+plotCoverage(peaks.pos[wpeaks[2]], peaks.neg[wpeaks[2]])
+@ 
+<<fig=TRUE,height=5,echo=FALSE>>=
+plot(trellis.last.object())
+@ 
+
+\newpage
+
+<<>>=
+plotCoverage(peaks.pos[wpeaks[3]], peaks.neg[wpeaks[3]])
+@ 
+<<fig=TRUE,height=5,echo=FALSE>>=
+plot(trellis.last.object())
+@ 
+
+<<>>=
+plotCoverage(peaks.pos[wpeaks[4]], peaks.neg[wpeaks[4]])
+@ 
+<<fig=TRUE,height=5,echo=FALSE>>=
+plot(trellis.last.object())
+@ 
+
+\newpage
+
+\section*{Differential peaks}
+
+
+One common question is: which peaks are different in two samples?  One
+simple strategy is the following: combine data from the two samples,
+find peaks in the combined data, and compare the contributions of the
+two samples.
+<<>>=
+
+extRanges <- gdapply(cstest, extendReads, seqLen = 200)
+
+peakSummary <-
+    diffPeakSummary(extRanges$gfp, extRanges$ctcf,
+                    chrom.lens = mouse.chromlens, lower = 10)
+
+xyplot(asinh(sums2) ~ asinh(sums1) | chromosome,
+       data = peakSummary, 
+       ## subset = (chromosome %in% c("chr1", "chr2")),
+       panel = function(x, y, ...) {
+           panel.xyplot(x, y, ...)
+           panel.abline(median(y - x), 1)
+       },
+       type = c("p", "g"), alpha = 0.5, aspect = "iso")
+
+@ 
+<<fig=TRUE,height=5,echo=FALSE>>=
+plot(trellis.last.object())
+@ 
+
+
+We use a simple cutoff to flag peaks that are different.
+<<>>=
+peakSummary <- 
+    within(peakSummary,
+       {
+           diffs <- asinh(sums2) - asinh(sums1)
+           resids <- (diffs - median(diffs)) / mad(diffs)
+           up <- resids > 2
+           down <- resids < -2
+       })
+head(peakSummary)
+@ 
+
+
+\section*{Placing peaks in genomic context}
+
+
+Locations of individual peaks may be of interest.  Alternatively, a
+global summary might look at classifying the peaks of interest in the
+context of genomic features such as promoters, upstream regions, etc.
+The \code{geneMouse} dataset in the \Rpackage{chipseq} package
+contains gene location information from UCSC.  The
+\code{genomic\_regions} function converts this into a set of ranges
+defining promoters, upstream regions, etc.
+<<>>=
+data(geneMouse)
+gregions <- genomic_regions(genes = geneMouse, proximal = 2000)
+gregions$gene <- as.character(gregions$gene)
+str(gregions)
+@ 
+This can be used to obtain a tabulation of the peaks.
+<<>>=
+ans <- contextDistribution(peakSummary, gregions)
+head(ans)
+@ 
+
+<<>>=
+sumtab <- 
+    as.data.frame(rbind(total = xtabs(total ~ type, ans),
+                        promoter = xtabs(promoter ~ type, ans),
+                        threeprime = xtabs(threeprime ~ type, ans),
+                        upstream = xtabs(upstream ~ type, ans),
+                        downstream = xtabs(downstream ~ type, ans),
+                        gene = xtabs(gene ~ type, ans)))
+
+cbind(sumtab, ratio = round(sumtab[, "down"] /  sumtab[, "up"], 3))
+
+@ 
+
+\section*{Version information}
+
+<<>>=
+sessionInfo()
+@ 
+
+\end{document}
+
+
