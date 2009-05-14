@@ -3,7 +3,7 @@
 % likely to be overwritten.
 %
 % \VignetteIndexEntry{A Sample ChIP-Seq analysis workflow}
-%\VignetteDepends{Biobase, IRanges}
+%\VignetteDepends{Biobase, IRanges, GenomicFeatures}
 %\VignetteSuggests{Rgraphviz}
 %\VignetteKeywords{visualization}
 %\VignettePackage{chipseq}
@@ -42,6 +42,7 @@ as \Rpackage{ShortRead} and \Rpackage{IRanges}.  We will also use the
 <<setup,echo=TRUE,results=hide>>=
 
 library(chipseq)
+library(GenomicFeatures)
 library(lattice)
 
 @
