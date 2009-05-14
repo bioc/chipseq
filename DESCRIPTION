@@ -1,9 +1,9 @@
 Package: chipseq
 Title: chipseq: A package for analyzing chipseq data
-Version: 0.1.15
+Version: 0.1.16
 Author: many
 Description: Tools for helping process short read data for chipseq experiments
-Suggests: 
+Suggests: GenomicFeatures
 Depends: methods, IRanges (>= 1.1.58), BSgenome, ShortRead, lattice
 Maintainer: Biocore Team c/o BioC user list <bioconductor@stat.math.ethz.ch>
 License: Artistic-2.0
