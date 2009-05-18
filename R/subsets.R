@@ -12,11 +12,11 @@ estimate.bg.rate <- function(s, seqLen)
     alpha
 }
 
-
-summary.subsets <-
+subsetSummary <- 
+summary.subsets <- ## FIXME: remove this name (looks like an S3 method)
     function(x,
              chr,
-             nstep,
+             nstep, ## number of reads in each increment for full data
              props = seq(.1, 1, .1),
              chromlens = seqlengths(Mmusculus),
              fg.cutoff = 6, seqLen = 200,
@@ -25,8 +25,15 @@ summary.subsets <-
 {
     g <- extendReads(x[[chr]], seqLen = seqLen)
     if (resample) g <- g[sample(length(g))]
+    ##     if (!missing(nstep) && missing(props))
+    ##         props <- seq(nstep / length(g), 1, by = nstep / length(g))
     if (!missing(nstep) && missing(props))
-        props <- seq(nstep / length(g), 1, by = nstep / length(g))
+    {
+        nreads.total <- sum(unlist(lapply(x, function(u) sum(sapply(u, length)))))
+        num.steps <- floor(nreads.total / nstep)
+        cat(num.steps, " steps\n.")
+        props <- seq(0, 1, length.out = num.steps)[-1]
+    }
     ids <- as.integer(round(props * length(g)))
     if (verbose) message(length(g), " reads in ", chr, ". Increments: ", paste(ids, collapse = ", "))
     old.peaks <- IRanges()
