@@ -1,0 +1,32 @@
+
+## context.R
+export(genomic_regions, genomic_exons, genomic_introns, contextDistribution)
+
+## diffpeaks.R
+export(diffPeakSummary, diffPeakSummaryRef)
+
+## funs.R
+
+## setMethod("as.list", "AlignedRead",
+## setAs("AlignedRead", "GenomeData",
+
+export(readReads, extendReads, copyIRanges, copyIRangesbyChr, laneSubsample, combineLanes)
+
+## intersect.R
+## nothing right now
+
+## islands.R
+## nothing right now
+
+## plots.R
+export(coverageplot, plotCoverage)
+
+## stats.R
+export(sparse.density, basesCovered, correlationProfile, estimate.mean.fraglen)
+
+## subsets.R
+export(subsetSummary, summary.subsets)
+
+
+
+

@@ -3,7 +3,7 @@
 % likely to be overwritten.
 %
 % \VignetteIndexEntry{A Sample ChIP-Seq analysis workflow}
-%\VignetteDepends{Biobase, IRanges, GenomicFeatures}
+%\VignetteDepends{IRanges, GenomicFeatures}
 %\VignetteSuggests{Rgraphviz}
 %\VignetteKeywords{visualization}
 %\VignettePackage{chipseq}
@@ -314,14 +314,14 @@ We plot the four highest peaks below.
 \newpage
 
 <<>>=
-plotCoverage(peaks.pos[wpeaks[1]], peaks.neg[wpeaks[1]])
+coverageplot(peaks.pos[wpeaks[1]], peaks.neg[wpeaks[1]])
 @ 
 <<fig=TRUE,height=5,echo=FALSE>>=
 plot(trellis.last.object())
 @ 
 
 <<>>=
-plotCoverage(peaks.pos[wpeaks[2]], peaks.neg[wpeaks[2]])
+coverageplot(peaks.pos[wpeaks[2]], peaks.neg[wpeaks[2]])
 @ 
 <<fig=TRUE,height=5,echo=FALSE>>=
 plot(trellis.last.object())
@@ -330,14 +330,14 @@ plot(trellis.last.object())
 \newpage
 
 <<>>=
-plotCoverage(peaks.pos[wpeaks[3]], peaks.neg[wpeaks[3]])
+coverageplot(peaks.pos[wpeaks[3]], peaks.neg[wpeaks[3]])
 @ 
 <<fig=TRUE,height=5,echo=FALSE>>=
 plot(trellis.last.object())
 @ 
 
 <<>>=
-plotCoverage(peaks.pos[wpeaks[4]], peaks.neg[wpeaks[4]])
+coverageplot(peaks.pos[wpeaks[4]], peaks.neg[wpeaks[4]])
 @ 
 <<fig=TRUE,height=5,echo=FALSE>>=
 plot(trellis.last.object())

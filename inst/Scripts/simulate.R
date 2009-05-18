@@ -8,7 +8,7 @@
 ## this gives a three way array, rows areq
 
 
-seqQScores <- function(inScores) {
+seqQScores <- function(inScores, abc) {
     ##set up the quality scores
     ##we need to translate to integer from ascii,
     ##then average the integer codes and translate back

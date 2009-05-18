@@ -1,27 +1,4 @@
 
-## useful lattice scale function used in scripts.  Really belongs in
-## latticeExtra or something.
-
-logscale.components <- function(axis = c("x", "y"), base = 2)
-{
-    axis <- match.arg(axis)
-    switch(axis,
-           x = 
-           function(...) {
-               ans <- xscale.components.default(...)
-               ans$bottom$labels$labels <- 
-                   base^(ans$bottom$labels$at)
-               ans
-           },
-           y = 
-           function(...) {
-               ans <- yscale.components.default(...)
-               ans$left$labels$labels <- 
-                   base^(ans$left$labels$at)
-               ans
-           })
-}
-
 ## Useful summary functions for use with gdApply()
 ## e.g., as(gdApply(x, countSummary), "data.frame")
 
@@ -44,6 +21,4 @@ getSingletons <- function(x, ...)
     s <- s[viewMaxs(s) == 1]
     0.5 * (start(s) + end(s))
 }
-
-
 

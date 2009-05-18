@@ -10,6 +10,10 @@
 ## The use-case of interest is Kharchencko et al's density-correlation
 ## method for estimating average fragmet length
 
+## FIXME: the "efficient" summary functions are not as important now
+## because IRanges has improved.  At some point, should consider
+## getting rid of them.
+
 
 dKernel <-
     function(width = 50,
@@ -237,6 +241,8 @@ RleSumProd <- function (e1, e2)
           PACKAGE = "chipseq")
 }
 
+
+## a prototype, should go away.
 
 rle_sum_prod_prototype <- function (x1, n1, s1, x2, n2, s2, len)
 {

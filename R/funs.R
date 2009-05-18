@@ -187,6 +187,8 @@ combineLaneRanges <- function(laneList, chromList = names(laneList[[1]]), keep.u
     GenomeData(lapply(chromList, combineRanges))
 }
 
+
+## exported interface
 combineLanes <- function(x, chromList = names(x[[1]]), keep.unique = FALSE)
 {
     isRange <- is(x[[1]][[chromList[1]]], "IRanges")

@@ -12,8 +12,13 @@ estimate.bg.rate <- function(s, seqLen)
     alpha
 }
 
+summary.subsets <- function(...)
+{
+    .Deprecated("subsetSummary")
+    subsetSummary(...)
+}
+
 subsetSummary <- 
-summary.subsets <- ## FIXME: remove this name (looks like an S3 method)
     function(x,
              chr,
              nstep, ## number of reads in each increment for full data
@@ -31,7 +36,7 @@ summary.subsets <- ## FIXME: remove this name (looks like an S3 method)
     {
         nreads.total <- sum(unlist(lapply(x, function(u) sum(sapply(u, length)))))
         num.steps <- floor(nreads.total / nstep)
-        cat(num.steps, " steps\n.")
+        if (verbose) message(num.steps, " steps\n.")
         props <- seq(0, 1, length.out = num.steps)[-1]
     }
     ids <- as.integer(round(props * length(g)))

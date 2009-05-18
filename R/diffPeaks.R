@@ -28,14 +28,13 @@ diffPeakSummary <-
              lower = 10, extend = 0, 
              peak.fun = NULL, merge = 0L, islands = FALSE,
              viewSummary = list(sums = viewSums, maxs = viewMaxs))
-
+    ## 
     ## 'extend' is unused.  The intent is to extend the peaks by this
     ## amount before summarizing
-
+    ##
 {
     if (!is(ranges1, "list")) ranges1 <- as(ranges1, "list")
     if (!is(ranges2, "list")) ranges2 <- as(ranges2, "list")
-
     if (is.null(peak.fun)) 
         peak.fun <- function(x)
         {
@@ -55,16 +54,13 @@ diffPeakSummary <-
             }
             peaks
         }
-    
     combined <- combineLanes(list(ranges1, ranges2))
     comb.cov <- laneCoverage(combined, chrom.lens)
     comb.peaks <- lapply(comb.cov, peak.fun)
-
     cov1 <- laneCoverage(ranges1, chrom.lens)
     cov2 <- laneCoverage(ranges2, chrom.lens)
     peaks1 <- copyIRangesbyChr(comb.peaks, cov1)
     peaks2 <- copyIRangesbyChr(comb.peaks, cov2)
-
     peakSummary <-
         do.call(rbind,
                 lapply(names(comb.peaks),

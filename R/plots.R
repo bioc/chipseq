@@ -1,7 +1,14 @@
 
 ## FIXME: should generalize to conditional plots if i is a vector
 
-plotCoverage <-
+plotCoverage <- function(...)
+{
+    .Deprecated("coverageplot")
+    coverageplot(...)
+}
+
+    
+coverageplot <-
     function(peaks1, peaks2 = NULL, i = 1,
              xlab = "Position", ylab = "Coverage",
              opposite = TRUE, ## if FALSE, plot both on same side

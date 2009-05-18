@@ -83,9 +83,11 @@ genomic_introns <- function(genes) {
     sub_genes = sub_genes[sub_genes$exonCount > 1,]
     starts = splitEnd(sub_genes$exonEnds)
     ends = splitStart(sub_genes$exonStarts)
-    if( nrow(sub_genes) > 0 )
-        chrom = sub_genes$chrom[1] else
-        chrom = character()
+    chrom <- 
+        if (nrow(sub_genes) > 0) 
+            sub_genes$chrom[1]
+        else
+            character()
     data.frame(chrom = chrom,
                gene = rep(sub_genes$name, sub_genes$exonCount-1),
                start = starts,
