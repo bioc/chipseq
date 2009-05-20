@@ -9,6 +9,9 @@
 ##   i.e. enhancer/silencer regions.
 genomic_regions <- function(genes, proximal = 500L, distal = 10000L) {
 
+  .Deprecated("transcripts", "chipseq",
+              "Deprecated, use 'transcripts' from the GenomicFeatures package")
+
   genomic_regions_chrom <- function(sub_genes) {
     gc()
 
@@ -48,6 +51,10 @@ genomic_regions <- function(genes, proximal = 500L, distal = 10000L) {
 }
 
 genomic_exons <- function(genes) {
+
+  .Deprecated("transcripts", "chipseq",
+              "Deprecated, use 'exons' from the GenomicFeatures package")
+
   splitPos <- function(pos) {
     as.integer(unlist(strsplit(as.character(pos), ",")))
   }
@@ -66,6 +73,10 @@ genomic_exons <- function(genes) {
 ## and that the first intron comes after the first exon
 ##
 genomic_introns <- function(genes) {
+
+  .Deprecated("transcripts", "chipseq",
+              "Deprecated, use 'introns' from the GenomicFeatures package")
+
   ##a couple of helper functions - defined here so we
   ##don't instantiate every time throught he loop
   splitEnd <- function(pos) {
@@ -96,33 +107,13 @@ genomic_introns <- function(genes) {
   do.call(rbind, as.list(by(genes, genes$chrom, genomic_introns_chrom)))
 }
 
-countHits <- function(subject, query)
-{
-    sum(!is.na(overlap(subject, query, multiple = FALSE)))
-}
-
 contextDistributionPeakSet <- function(peaks, gregions)
 {
     query <- with(peaks, IRanges(start, end))
-    irangeByType <-
-        function(type = c("promoter", "threeprime",
-                          "upstream", "downstream", "gene"))
-        {
-            type <- match.arg(type)
-            istarts <- sprintf("%s.start", type)
-            iends <- sprintf("%s.end", type)
-            keep <- !duplicated(gregions[[istarts]]) ## what's the right thing to do here???
-            IRanges(start = gregions[[istarts]][keep],
-                    end = gregions[[iends]][keep])
-        }
-    subject <-
-        list(promoter = irangeByType("promoter"),
-             threeprime = irangeByType("threeprime"),
-             upstream = irangeByType("upstream"),
-             downstream = irangeByType("downstream"),
-             gene = irangeByType("gene"))
+    subject <- values(gregions)
+    subject$gene <- ranges(gregions)[[1]]
     c(total = length(query),
-      sapply(subject, countHits, query = query))
+      sapply(subject, countOverlap, query = query))
 }
 
 
@@ -131,7 +122,7 @@ contextDistributionPeakSet <- function(peaks, gregions)
 
 contextDistributionByChr <- function(chr, peaks, gregions)
 {
-    gregions.sub <- subset(gregions, chrom == chr)
+    gregions.sub <- gregions[chr]
     peaks.sub <- subset(peaks, chromosome == chr)
     all <- contextDistributionPeakSet(peaks.sub, gregions.sub)
     up <- 
@@ -153,6 +144,9 @@ contextDistribution <-
              chroms = unique(as.character(peaks$chromosome)),
              ...)
 {
+    if (!is(gregions, "RangedData"))
+      stop("'gregions' should be a RangedData as returned by 'transcripts'",
+           " in the GenomicFeatures package")
     ans <-
         do.call(lattice::make.groups,
                 sapply(chroms, function(chr) {

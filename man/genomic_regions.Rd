@@ -4,7 +4,14 @@
 \alias{genomic_exons}
 \alias{genomic_introns}
 \title{
-Functions that compute genomic regions of interest. 
+  Functions that compute genomic regions of interest.
+  \strong{
+    These functions are deprecated in favor of
+    \code{\link[GenomicFeatures]{transcripts}},
+    \code{\link[GenomicFeatures]{exons}}, and
+    \code{\link[GenomicFeatures]{introns}} in the \code{GenomicFeatures}
+    package.
+  }
 }
 \description{
 Functions that compute genomic regions of interest such as promotor, 
