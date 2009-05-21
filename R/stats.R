@@ -189,7 +189,7 @@ similarity.corr <- function(pos, neg, center = FALSE)
 
 
 ## this needs chromosome lengths, and includes all the 0-s on either
-## side 
+## side.  Not exported, as 
 
 correlationProfile <-
     function(x, chrom,

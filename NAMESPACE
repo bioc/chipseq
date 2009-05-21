@@ -2,11 +2,12 @@
 ## context.R
 export(genomic_regions, genomic_exons, genomic_introns, contextDistribution)
 
-## diffpeaks.R
-export(diffPeakSummary, diffPeakSummaryRef)
+## diffpeaks.R.  Include diffPeakSummaryRef ?
+export(diffPeakSummary) 
 
 ## funs.R
 
+## FIXME: export
 ## setMethod("as.list", "AlignedRead",
 ## setAs("AlignedRead", "GenomeData",
 
@@ -19,10 +20,10 @@ export(readReads, extendReads, copyIRanges, copyIRangesbyChr, laneSubsample, com
 ## nothing right now
 
 ## plots.R
-export(coverageplot, plotCoverage)
+export(coverageplot)
 
 ## stats.R
-export(sparse.density, basesCovered, correlationProfile, estimate.mean.fraglen)
+export(sparse.density, basesCovered, densityCorr, estimate.mean.fraglen)
 
 ## subsets.R
 export(subsetSummary, summary.subsets)

@@ -12,7 +12,7 @@ combineLanes(x, chromList, keep.unique = FALSE)
 }
 \arguments{
   \item{x}{
-    Typically a code{"GenomeDataList"} object representing multiple
+    Typically a \code{"GenomeDataList"} object representing multiple
     lanes of aligned locations or ranges.  The result will combine the
     locations across lanes on a per-chromosome basis.
   }

@@ -309,7 +309,7 @@ wpeaks
 
 @ 
 %
-We plot the four highest peaks below.
+We plot four high peaks below.
 
 \newpage
 
