@@ -304,12 +304,12 @@ cov.neg <- coverage(extendReads(cstest$ctcf$chr10, strand = "-", seqLen = 200),
 peaks.pos <- copyIRanges(peaks, cov.pos)
 peaks.neg <- copyIRanges(peaks, cov.neg)
 
-wpeaks <- which(peak.depths >= 40)
+wpeaks <- tail(order(peak.depths), 4)
 wpeaks
 
 @ 
 %
-We plot four high peaks below.
+We plot four highest peaks below.
 
 \newpage
 
@@ -401,7 +401,7 @@ contains gene location information from UCSC.  The
 defining promoters, upstream regions, etc.
 <<>>=
 data(geneMouse)
-gregions <- genomic_regions(genes = geneMouse, proximal = 2000)
+gregions <- transcripts(genes = geneMouse, proximal = 2000)
 gregions$gene <- as.character(gregions$gene)
 str(gregions)
 @ 
