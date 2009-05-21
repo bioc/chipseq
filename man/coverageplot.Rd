@@ -1,15 +1,12 @@
 \name{coverageplot}
 \Rdversion{1.1}
 \alias{coverageplot}
-%- Also NEED an '\alias' for EACH other topic documented here.
 \title{
   Plot coverage on a small interval.
 }
 \description{
-  
   A function that plots one or two coverage vectors over a relatively
   small interval in the genome.
-
 }
 \usage{
 coverageplot(peaks1, peaks2 = NULL, i = 1,
@@ -38,15 +35,9 @@ coverageplot(peaks1, peaks2 = NULL, i = 1,
 
 }
 
-\references{
-%% ~put references to the literature/web site here ~
-}
 \author{
   Deepayan Sarkar
 }
 
-\seealso{
-%% ~~objects to See Also as \code{\link{help}}, ~~~
-}
 \keyword{ ~kwd1 }
 

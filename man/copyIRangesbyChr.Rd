@@ -1,68 +1,35 @@
 \name{copyIRangesbyChr}
 \Rdversion{1.1}
+\alias{copyIRanges}
 \alias{copyIRangesbyChr}
-
-%- Also NEED an '\alias' for EACH other topic documented here.
 \title{
-%%  ~~function to do ... ~~
+  Associate ranges to coverage. 
 }
 \description{
-%%  ~~ A concise (1-5 lines) description of what the function does. ~~
+
+  Associate a set of ranges, typically derived using an independent
+  computation, to a coverage as produced by \code{coverage}.  This then
+  allows one to compute various summaries such as maximum coverage in
+  each range.  \code{copyIRangesbyChr} does this over lists of ranges
+  and coverage objects.
+
 }
 \usage{
-copyIRangesbyChr(IR1, newX)
 copyIRanges(IR1, newX)
+copyIRangesbyChr(IR1, newX)
 }
-%- maybe also 'usage' for other objects documented here.
+
 \arguments{
-  \item{IR1}{
-%%     ~~Describe \code{IR1} here~~
-}
-  \item{newX}{
-%%     ~~Describe \code{newX} here~~
-}
-}
-\details{
-%%  ~~ If necessary, more details than the description above ~~
+  \item{IR1}{ The set of ranges (an \code{"IRanges"} object) or a list of
+    such objects (usually one for each chromosome of interest). }
+  \item{newX}{ An \code{"Rle"} object, usually the result of
+    \code{link[IRanges:coverage]{coverage}}, or a list of such objects.  }
 }
 \value{
-%%  ~Describe the value returned
-%%  If it is a LIST, use
-%%  \item{comp1 }{Description of 'comp1'}
-%%  \item{comp2 }{Description of 'comp2'}
-%% ...
-}
-\references{
-%% ~put references to the literature/web site here ~
+  A \code{"View"} object, or a list of such objects.
 }
 \author{
-%%  ~~who you are~~
+  Deepayan Sarkar
 }
-\note{
-%%  ~~further notes~~
-}
-
-%% ~Make other sections like Warning with \section{Warning }{....} ~
-
-\seealso{
-%% ~~objects to See Also as \code{\link{help}}, ~~~
-}
-\examples{
-##---- Should be DIRECTLY executable !! ----
-##-- ==>  Define data, use random,
-##--	or do  help(data=index)  for the standard data sets.
-
-## The function is currently defined as
-function (IR1, newX) 
-{
-    nms = names(IR1)
-    ans = vector("list", length = length(nms))
-    names(ans) = nms
-    for (i in nms) ans[[i]] = Views(newX[[i]], IR1[[i]])
-    ans
-  }
-}
-% Add one or more standard keywords, see file 'KEYWORDS' in the
-% R documentation directory.
 \keyword{ ~kwd1 }
-\keyword{ ~kwd2 }% __ONLY ONE__ keyword per line
+
