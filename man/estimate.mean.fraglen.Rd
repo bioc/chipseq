@@ -118,5 +118,5 @@ sparse.density(x, width = 50, kernel = "epanechnikov",
 \seealso{
   \code{\link[BSgenome:gdapply]{gdapply}}
 }
-\keyword{stat}
+\keyword{univar}
 

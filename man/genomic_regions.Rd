@@ -4,7 +4,12 @@
 \alias{genomic_exons}
 \alias{genomic_introns}
 \title{
-  Functions that compute genomic regions of interest.
+  (Deprecated) Functions that compute genomic regions of interest.
+}
+\description{
+  Functions that compute genomic regions of interest such as promotor, 
+  upstream regions etc, from the genomic locations provided in data like
+  \code{geneMouse}.
   \strong{
     These functions are deprecated in favor of
     \code{\link[GenomicFeatures]{transcripts}},
@@ -12,11 +17,6 @@
     \code{\link[GenomicFeatures]{introns}} in the \code{GenomicFeatures}
     package.
   }
-}
-\description{
-Functions that compute genomic regions of interest such as promotor, 
-upstream regions etc, from the genomic locations provided in data like
-\code{geneMouse}.
 }
 \usage{
 genomic_regions(genes, proximal = 500, distal = 10000)

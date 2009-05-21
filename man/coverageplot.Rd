@@ -39,5 +39,5 @@ coverageplot(peaks1, peaks2 = NULL, i = 1,
   Deepayan Sarkar
 }
 
-\keyword{ ~kwd1 }
+\keyword{hplot}
 

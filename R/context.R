@@ -107,6 +107,8 @@ genomic_introns <- function(genes) {
   do.call(rbind, as.list(by(genes, genes$chrom, genomic_introns_chrom)))
 }
 
+
+
 contextDistributionPeakSet <- function(peaks, gregions)
 {
     query <- with(peaks, IRanges(start, end))

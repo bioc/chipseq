@@ -1,4 +1,6 @@
 
+import(IRanges)
+
 ## context.R
 export(genomic_regions, genomic_exons, genomic_introns, contextDistribution)
 
@@ -26,7 +28,7 @@ export(coverageplot)
 export(sparse.density, basesCovered, densityCorr, estimate.mean.fraglen)
 
 ## subsets.R
-export(subsetSummary, summary.subsets)
+export(subsetSummary)
 
 
 

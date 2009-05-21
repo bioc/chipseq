@@ -31,5 +31,5 @@ copyIRangesbyChr(IR1, newX)
 \author{
   Deepayan Sarkar
 }
-\keyword{ ~kwd1 }
+\keyword{utilities}
 
