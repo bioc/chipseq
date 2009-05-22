@@ -23,7 +23,7 @@ subsetSummary <-
              chr,
              nstep, ## number of reads in each increment for full data
              props = seq(.1, 1, .1),
-             chromlens = seqlengths(Mmusculus),
+             chromlens,
              fg.cutoff = 6, seqLen = 200,
              resample = TRUE, islands = TRUE,
              verbose = getOption("verbose"))
