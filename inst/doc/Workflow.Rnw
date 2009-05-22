@@ -3,7 +3,7 @@
 % likely to be overwritten.
 %
 % \VignetteIndexEntry{A Sample ChIP-Seq analysis workflow}
-%\VignetteDepends{IRanges, GenomicFeatures}
+%\VignetteDepends{IRanges, GenomicFeatures, BSgenome.Mmusculus.UCSC.mm9}
 %\VignetteSuggests{Rgraphviz}
 %\VignetteKeywords{visualization}
 %\VignettePackage{chipseq}
@@ -402,8 +402,8 @@ defining promoters, upstream regions, etc.
 <<>>=
 data(geneMouse)
 gregions <- transcripts(genes = geneMouse, proximal = 2000)
-gregions$gene <- as.character(gregions$gene)
-str(gregions)
+## gregions$gene <- as.character(gregions$gene)
+gregions
 @ 
 This can be used to obtain a tabulation of the peaks.
 <<>>=

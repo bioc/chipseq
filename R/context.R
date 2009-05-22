@@ -112,7 +112,7 @@ genomic_introns <- function(genes) {
 contextDistributionPeakSet <- function(peaks, gregions)
 {
     query <- with(peaks, IRanges(start, end))
-    subject <- values(gregions)
+    subject <- values(gregions)[[1]]
     subject$gene <- ranges(gregions)[[1]]
     c(total = length(query),
       sapply(subject, countOverlap, query = query))
