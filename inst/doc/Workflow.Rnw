@@ -4,8 +4,7 @@
 %
 % \VignetteIndexEntry{A Sample ChIP-Seq analysis workflow}
 %\VignetteDepends{IRanges, GenomicFeatures, BSgenome.Mmusculus.UCSC.mm9}
-%\VignetteSuggests{Rgraphviz}
-%\VignetteKeywords{visualization}
+%\VignetteKeywords{chip-seq, sequencing, visualization}
 %\VignettePackage{chipseq}
 
 

@@ -116,7 +116,7 @@ sparse.density(x, width = 50, kernel = "epanechnikov",
 }
 \examples{
 data(cstest)
-estimate.mean.fraglen(cstest$ctcf$chr10, method = "coverage")
+gdapply(cstest[[1]], estimate.mean.fraglen, method = "coverage")
 }
 \seealso{
   \code{\link[BSgenome:gdapply]{gdapply}}
