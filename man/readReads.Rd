@@ -60,5 +60,10 @@ readReads(srcdir, lane, ...,
 
 \author{ D. Sarkar }
 \examples{
-##None yet
+\dontrun{
+## load reads mapped to chr10 in lane 2 from current working directory
+readReads(".", "s_2_export.txt", include = "chr10")
+## load all chromosomes in lane 1 from Bowtie output (20 quality cutoff)
+readReads(".", "s_1_export.txt", type="Bowtie", minScore=20)
+}
 }

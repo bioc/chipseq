@@ -36,4 +36,12 @@ diffPeakSummary(ranges1, ranges2, chrom.lens,
 }
 \author{ D. Sarkar }
 \examples{
+data(cstest)
+library(BSgenome.Mmusculus.UCSC.mm9)
+mouse.chromlens <- seqlengths(Mmusculus)
+## extend reads, generate peak summary
+extRanges <- gdapply(cstest, extendReads, seqLen = 200)
+peakSummary <-
+    diffPeakSummary(extRanges$gfp, extRanges$ctcf,
+                    chrom.lens = mouse.chromlens, lower = 10)
 }

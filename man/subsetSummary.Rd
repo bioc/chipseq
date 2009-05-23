@@ -46,6 +46,13 @@ subsetSummary(x, chr, nstep, props = seq(0.1, 1, 0.1),
 \value{
   A data frame with various per-subset summaries.
 }
+\examples{
+data(cstest)
+library(BSgenome.Mmusculus.UCSC.mm9)
+## summarize lane 1, chr10 at 0.1, 0.6 and 1.0 proportions
+subsetSummary(cstest[[1]], "chr10", props=seq(0.1, 1, 0.5),
+              chromlens=seqlengths(Mmusculus))
+}
 \author{
   Deepayan Sarkar
 }

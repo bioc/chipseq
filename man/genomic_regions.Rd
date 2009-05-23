@@ -49,5 +49,5 @@ M. Lawrence.
 }
 
 \examples{
-##none yet
+## use functions in GenomicFeatures
 }

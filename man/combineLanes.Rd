@@ -44,6 +44,13 @@ laneSubsample(lane1, lane2, fudge = 0.05)
 \author{
   D. Sarkar
 }
+\examples{
+data(cstest)
+## subsample to compare lanes
+laneSubsample(cstest[[1]], cstest[[2]])
+## two lanes of chr10 become one
+combineLanes(cstest, "chr10")
+}
 \keyword{manip}
 \keyword{utilities} 
 

@@ -15,7 +15,6 @@ contextDistribution(peaks, gregions, chroms, ...)
 }
 \arguments{
   \item{peaks}{
-    
     A data frame with one row for each \dQuote{peak}; the location of
     peaks must be defined by the columns \code{chromosome},
     \code{start}, and \code{end}.  Columns \code{up} and \code{down}, if
@@ -25,7 +24,8 @@ contextDistribution(peaks, gregions, chroms, ...)
   }
   \item{gregions}{
     Locations of genomic regions of interest.  Currently, this must be
-    of the form produced by the function \code{\link{genomic_regions}}.
+    of the form produced by the function
+    \code{\link[GenomicFeatures]{transcripts}}.
   }
   \item{chroms}{
     Which chromosomes to use.  By default, all are used.
@@ -36,15 +36,25 @@ contextDistribution(peaks, gregions, chroms, ...)
 }
 \value{
   A data frame with overlap counts.
-
-  %%  ~Describe the value returned
-  %%  If it is a LIST, use
-  %%  \item{comp1 }{Description of 'comp1'}
-  %%  \item{comp2 }{Description of 'comp2'}
-  %% ...
 }
 \author{
   Deepayan Sarkar
+}
+\examples{
+data(cstest)
+library(BSgenome.Mmusculus.UCSC.mm9)
+mouse.chromlens <- seqlengths(Mmusculus)
+## extend reads, generate peak summary
+extRanges <- gdapply(cstest, extendReads, seqLen = 200)
+peakSummary <-
+    diffPeakSummary(extRanges$gfp, extRanges$ctcf,
+                    chrom.lens = mouse.chromlens, lower = 10)
+## generate transcripts using GenomicFeatures package
+library(GenomicFeatures)
+data(geneMouse)
+gregions <- transcripts(genes = geneMouse, proximal = 2000)
+## finally, calculate context distribution for chr10
+contextDistribution(peakSummary, gregions, "chr10")
 }
 \keyword{manip}
 

@@ -34,7 +34,13 @@ coverageplot(peaks1, peaks2 = NULL, i = 1,
   }
 
 }
-
+\examples{
+cov <- Rle(c(1:10, seq(10, 1, -2), seq(1,5,2), 4:1), rep(1:2, 11))
+peaks <- slice(cov, 3)
+peaks.cov <- copyIRanges(peaks, cov)
+peaks.cov.rev <- rev(peaks.cov)
+coverageplot(peaks.cov, peaks.cov.rev, ylab = "Example")
+}
 \author{
   Deepayan Sarkar
 }

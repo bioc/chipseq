@@ -31,4 +31,6 @@ depending on the input.
 }
 \author{ R. Gentleman}
 \examples{
+data(cstest)
+extRanges <- gdapply(cstest, extendReads, seqLen = 200)
 }
