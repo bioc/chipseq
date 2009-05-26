@@ -53,7 +53,17 @@ sparse.density(x, width = 50, kernel = "epanechnikov",
     For \code{sparse.density}, a numeric or integer vector for which
     density is to be computed.  
   }
-  \item{method}{ Character string giving method to be used. }
+  
+  \item{method}{ Character string giving method to be used.
+    \code{method = "SISSR"} implements the method described in Jothi et
+    al (see References below).  \code{method = "correlation"} implements
+    the method described in Kharchenko et al (see References below),
+    where the idea is to compute the density of tag start positions
+    separately for each strand, and then determine the amount of shift
+    that maximizes the correlation between these two densities.
+    \code{method = "coverage"} computes the optimal shift for which the
+    number of bases covered by any read is minimized.
+  }
   
   \item{shift}{ Integer vector giving amount of shifts to be tried when
     optimizing.  The current algorithm simply evaluates all supplied
@@ -109,7 +119,15 @@ sparse.density(x, width = 50, kernel = "epanechnikov",
   
 }
 \references{
-%% ~put references to the literature/web site here ~
+  
+  R. Jothi, S. Cuddapah, A. Barski, K. Cui, and K. Zhao. Genome-wide
+  identification of in vivo protein-DNA binding sites from ChIP-Seq
+  data.  \emph{Nucleic Acids Research}, 36:5221–31, 2008.
+  
+  P. V. Kharchenko, M. Y. Tolstorukov, and P. J. Park. Design and
+  analysis of chIP experiments for DNA–binding proteins. \emph{Nature
+  Biotechnology}, 26:1351–1359, 2008.
+  
 }
 \author{
   Deepayan Sarkar
