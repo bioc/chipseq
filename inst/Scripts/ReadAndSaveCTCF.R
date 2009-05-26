@@ -18,12 +18,12 @@ function (srcdir, lane, ..., include = "chr[0-9]+$", type = "MAQMapShort",
     ans <-
       ans[!duplicated(data.frame(chromosome(ans), strand(ans), position(ans)))]
     if (simplify) {
-        ans <- XDataFrame(chromosome = Rle(chromosome(ans)),
-                          strand = Rle(strand(ans)),
-                          start = ifelse(strand(ans) == "-",
-                                         position(ans) + width(ans) - 1L,
-                                         position(ans)),
-                          quality = quality(alignQuality(ans)))
+        ans <- DataFrame(chromosome = Rle(chromosome(ans)),
+                         strand = Rle(strand(ans)),
+                         start = ifelse(strand(ans) == "-",
+                                        position(ans) + width(ans) - 1L,
+                                        position(ans)),
+                         quality = quality(alignQuality(ans)))
     } else {
         ans@sread <- DNAStringSet(as.character(ans@sread))
         ans@quality@quality <- BStringSet(as.character(ans@quality@quality))
@@ -39,11 +39,11 @@ names(bowtieMapFiles) <- sprintf("CTCF_%g", seq_len(length(bowtieMapFiles)))
 
 ctcfMaps <-
   list("maq" =
-       do.call(XDataFrameList, lapply(maqMapFiles, function(s)
+       do.call(DataFrameList, lapply(maqMapFiles, function(s)
            readUniqueMappings(srcdir = "/home/jdavison/externalData/ES_CTCF/bases3-26/maq/maps",
                              lane = s, type = "MAQMapShort"))),
        "bowtie"=
-       do.call(XDataFrameList, lapply(bowtieMapFiles, function(s)
+       do.call(DataFrameList, lapply(bowtieMapFiles, function(s)
            readUniqueMappings(srcdir = "/home/paboyoun/externalData/ES_CTCF/bases3-26/bowtie/maps",
                               lane = s, type = "Bowtie"))))
 
@@ -62,11 +62,11 @@ names(bowtieMapFiles) <- sprintf("GFP_%g", seq_len(length(bowtieMapFiles)))
 
 gfpMaps <-
   list("maq" =
-       do.call(XDataFrameList, lapply(maqMapFiles, function(s)
+       do.call(DataFrameList, lapply(maqMapFiles, function(s)
            readUniqueMappings(srcdir = "/home/jdavison/externalData/ES_CTCF/bases3-26/maq/GFP_background/maps",
                               lane = s, type = "MAQMapShort"))),
        "bowtie" =
-       do.call(XDataFrameList, lapply(bowtieMapFiles, function(s)
+       do.call(DataFrameList, lapply(bowtieMapFiles, function(s)
            readUniqueMappings(srcdir = "/home/paboyoun/externalData/ES_CTCF/bases3-26/bowtie/GFP_background/maps",
                               lane = s, type = "Bowtie"))))
 
