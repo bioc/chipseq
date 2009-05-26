@@ -122,11 +122,11 @@ sparse.density(x, width = 50, kernel = "epanechnikov",
   
   R. Jothi, S. Cuddapah, A. Barski, K. Cui, and K. Zhao. Genome-wide
   identification of in vivo protein-DNA binding sites from ChIP-Seq
-  data.  \emph{Nucleic Acids Research}, 36:5221–31, 2008.
+  data.  \emph{Nucleic Acids Research}, 36:5221--31, 2008.
   
   P. V. Kharchenko, M. Y. Tolstorukov, and P. J. Park. Design and
-  analysis of chIP experiments for DNA–binding proteins. \emph{Nature
-  Biotechnology}, 26:1351–1359, 2008.
+  analysis of ChIP experiments for DNA-binding proteins. \emph{Nature
+  Biotechnology}, 26:1351--1359, 2008.
   
 }
 \author{
