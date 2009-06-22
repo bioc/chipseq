@@ -44,7 +44,7 @@ subsetSummary <-
     old.peaks <- IRanges()
     start <- 1L
     ans.cols <-
-        c("bg.rate", "old.bg", "old.fg",
+        c("alpha.hat", "bg.rate", "old.bg", "old.fg",
           "new.bg", "new.fg", "old.fg.area", "old.total.area",
           "reads.converted", "npeaks")
     ans <- matrix(0, nrow = length(ids), ncol = length(ans.cols))
@@ -70,14 +70,16 @@ subsetSummary <-
         if (islands)
         {
             current.peaks <- slice(coverage(cum.reads, width = chromlens[chr]), lower = 1)
-            bg.rate <- estimate.bg.rate(current.peaks, seqLen = seqLen) / ids[i]
+            alpha.hat <- estimate.bg.rate(current.peaks, seqLen = seqLen)
+            bg.rate <- alpha.hat / ids[i]
             current.peaks <- current.peaks[viewMaxs(current.peaks) >= fg.cutoff]
             current.peaks <- as(current.peaks, "IRanges")
         }
         else 
         {
-            bg.rate <- estimate.bg.rate(slice(coverage(cum.reads, width = chromlens[chr]), lower = 1),
-                                        seqLen = seqLen) / ids[i]
+            alpha.hat <- estimate.bg.rate(slice(coverage(cum.reads, width = chromlens[chr]), lower = 1),
+                                          seqLen = seqLen)
+            bg.rate <- alpha.hat / ids[i]
             current.peaks <- as(slice(coverage(head(g, ids[i]), width = chromlens[chr]),
                                       lower = fg.cutoff), "IRanges")
         }
@@ -98,7 +100,7 @@ subsetSummary <-
         new.bg <- sum(old.total.hits.new & !old.peak.hits.new)
         ##print(table(old.total.hits.new, old.peak.hits.new))
         ##browser()
-        ans[i, ] <- c(bg.rate, old.bg, old.fg,
+        ans[i, ] <- c(alpha.hat, bg.rate, old.bg, old.fg,
                       new.bg, new.fg, old.fg.area, old.total.area,
                       reads.converted, length(current.peaks))
         old.peaks <- current.peaks
