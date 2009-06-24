@@ -354,14 +354,28 @@ jothi.estimate <- function(x, maxDist = 500L)
 
 ## point estimates for the other methods
 
-coverage.estimate <- function(x, ...)
+removeIsolated <- function(u, min.close = 500L) 
 {
+    u <- sort(u)
+    du <- diff(u)
+    min.dist <- pmin(c(Inf, du), c(du, Inf))
+    u[min.dist <= min.close]
+}
+
+
+
+coverage.estimate <- function(x, maxDist = 500L, ...)
+{
+    if (!is.null(maxDist))
+        x <- lapply(x, removeIsolated)
     d <- basesCovered(x, ...)
     with(d, mu[which.min(covered)])
 }
 
-correlation.estimate <- function(x, ...)
+correlation.estimate <- function(x, maxDist = 500L, ...)
 {
+    if (!is.null(maxDist))
+        x <- lapply(x, removeIsolated)
     d <- densityCorr(x, ...)
     with(d, mu[which.max(corr)])
 }
