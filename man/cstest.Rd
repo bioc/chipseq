@@ -3,10 +3,10 @@
 \alias{cstest}
 \docType{data}
 \title{
-  A test Chip-Seq dataset
+  A test ChIP-Seq dataset
 }
 \description{
-  A small subset of a Chip-Seq dataset downloaded from the Short-Read
+  A small subset of a ChIP-Seq dataset downloaded from the Short-Read
   Archive.
 }
 \usage{data(cstest)}

@@ -35,7 +35,7 @@ readReads(srcdir, lane, ...,
 \section{Coercion}{
 
   When \code{simplify=TRUE} is specified, the return value is simplified
-  to contain only alignemnt locations (and not associated quality
+  to contain only alignment locations (and not associated quality
   information, etc.).  This simplification can also be done afterwards
   through coercion methods:
   \describe{

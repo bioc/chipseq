@@ -34,7 +34,7 @@ i.e. enhancer/silencer regions.
 }
 }
 \details{
-Fairly simply addtions/subtractions are made.
+Fairly simply additions/subtractions are made.
 The assumption made for introns is that there must be more than one
 exon, and that the introns are between the end of one exon and before
 the start of the next exon.

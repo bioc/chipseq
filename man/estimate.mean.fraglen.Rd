@@ -8,7 +8,7 @@
 
 \title{
   Estimate summaries of the distribution of fragment lengths in a
-  short-read experiment.  The methods are designed for ChiP-Seq
+  short-read experiment.  The methods are designed for ChIP-Seq
   experiments and may not work well in data without peaks.
 }
 

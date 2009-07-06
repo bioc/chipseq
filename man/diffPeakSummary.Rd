@@ -23,7 +23,7 @@ diffPeakSummary(ranges1, ranges2, chrom.lens,
     use of additional arguments \code{merge} and \code{islands}, which
     are otherwise ignored. }
   \item{merge}{ Integer giving the amount of gaps between peaks that
-    shoudl be conidered significant.  Smaller gaps are removed by
+    should be considered significant.  Smaller gaps are removed by
     combining neighbouring peaks.  }
   \item{islands}{ Logical indicating whether or not to use islands
     (coverage > 0) as peaks. }
