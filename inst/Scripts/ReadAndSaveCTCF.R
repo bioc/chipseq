@@ -15,6 +15,8 @@ function (srcdir, lane, ..., include = "chr[0-9]+$", type = "MAQMapShort",
     if (!all(is.na(quality(alignQuality(ans)))))
         ans <- ans[order(chromosome(ans), strand(ans), position(ans),
                          - quality(alignQuality(ans)))]
+    else
+        ans <- ans[order(chromosome(ans), strand(ans), position(ans))]
     ans <-
       ans[!duplicated(data.frame(chromosome(ans), strand(ans), position(ans)))]
     if (simplify) {
