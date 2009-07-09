@@ -2,9 +2,10 @@
 \Rdversion{1.1}
 
 \alias{estimate.mean.fraglen}
-\alias{estimate.mean.fraglen,GenomeData-method}
 \alias{estimate.mean.fraglen,list-method}
 \alias{estimate.mean.fraglen,RangedData-method}
+\alias{estimate.mean.fraglen,AlignedRead-method}
+\alias{estimate.mean.fraglen,GenomeData-method}
 
 \alias{basesCovered}
 \alias{densityCorr}
