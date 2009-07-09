@@ -1,6 +1,23 @@
 useDynLib(chipseq)
 
+## imports
 import(IRanges)
+
+importClassesFrom(BSgenome, GenomeData)
+importClassesFrom(methods, list)
+importClassesFrom(ShortRead, AlignedRead)
+
+importMethodsFrom(BSgenome, gdapply, strand)
+importMethodsFrom(methods, coerce)
+importMethodsFrom(ShortRead, name, readAligned)
+
+importFrom(BSgenome, GenomeData, GenomeDataList)
+importFrom(lattice, panel.abline, panel.polygon, xyplot)
+importFrom(methods, as, is, new)
+importFrom(ShortRead, alignQualityFilter, chromosome, chromosomeFilter,
+           compose, position, strandFilter, uniqueFilter)
+importFrom(stats, density, dnorm, dpois, ppois)
+
 
 ## context.R
 export(genomic_regions, genomic_exons, genomic_introns, contextDistribution)
@@ -27,10 +44,7 @@ export(coverageplot)
 
 ## stats.R
 export(sparse.density, basesCovered, densityCorr, estimate.mean.fraglen)
+exportMethods(estimate.mean.fraglen)
 
 ## subsets.R
 export(subsetSummary)
-
-
-
-

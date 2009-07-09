@@ -1,5 +1,3 @@
-
-
 ## The first set of functions provide a version of density for
 ## 'sparse' data (large stretches of empty space where density is 0;
 ## so large that standard density() would not be able to compute it.
@@ -48,7 +46,6 @@ dKernel <-
 }
 
 
-
 ## pad a 0 in the beginning to fill in stretch of 0's before
 
 doDensity1 <- function(x, kernel, width) ## calls R's density() 
@@ -58,8 +55,6 @@ doDensity1 <- function(x, kernel, width) ## calls R's density()
     to <- x[n] + width
     c(0, n * density(x, kernel = kernel, width = 2 * width, from = from, to = to, n = to - from + 1)$y)
 }
-
-
 
 doDensity2 <- function(x, dk, width) ## explicit looping (but dk not recomputed)
 {
@@ -103,6 +98,10 @@ sparse.density <- function(x, width = 50, kernel = "epanechnikov", experimental 
                            from = start(rix)[1] - 10L,
                            to = end(rix)[length(rix)] + 10L)
 {
+    if (!is.numeric(x))
+        stop("'x' must be an integer vector")
+    if (!is.integer(x))
+        x <- as.integer(x)
     x <- sort(x)
     ix <- IRanges(x-width, x+width)
     rix <- sort(reduce(ix))
@@ -139,9 +138,12 @@ sparse.density <- function(x, width = 50, kernel = "epanechnikov", experimental 
 }
 
 
-
 basesCovered <- function(x, shift = seq(5, 300, 5), seqLen = 35, verbose = FALSE)
 {
+    if (!is.list(x))
+        stop("'x' must be a list object")
+    if (!all(c("+", "-") %in% names(x)))
+        stop("x must have named elements '+' and '-'")
     maxShift <- max(shift)
     rng <- range(unlist(x)) + c(-1, 1) * maxShift
     cov.pos <- coverage(extendReads(x, seqLen = seqLen, strand = "+"), shift = 1-rng[1], width = 1+diff(rng)) > 0
@@ -169,8 +171,6 @@ RleSumAny <- function (e1, e2)
 }
 
 
-
-
 ## correlation from Rle objects.
 
 similarity.corr <- function(pos, neg, center = FALSE)
@@ -183,9 +183,6 @@ similarity.corr <- function(pos, neg, center = FALSE)
     }
     RleSumProd(pos, neg) / sqrt(RleSumProd(pos, pos) * RleSumProd(neg, neg))
 }
-
-
-
 
 
 ## this needs chromosome lengths, and includes all the 0-s on either
@@ -222,8 +219,6 @@ correlationProfile <-
 ##     ok <- e1 != 0 & e2 != 0
 ##     sum(e1[ok] * e2[ok])
 ## }
-
-
 
 ## An efficient version of sum(e1 * e2), where e1 and e2 are Rle objects
 
@@ -272,11 +267,14 @@ rle_sum_prod_prototype <- function (x1, n1, s1, x2, n2, s2, len)
 }
 
 
-
 ## this version only uses the range of the data
 
 densityCorr <- function(x, shift = seq(0, 500, 5), center = FALSE, width = 50, ...)
 {
+    if (!is.list(x))
+        stop("'x' must be a list object")
+    if (!all(c("+", "-") %in% names(x)))
+        stop("x must have named elements '+' and '-'")
     maxShift <- max(shift)
     rng <- range(unlist(x)) + c(-1, 1) * (maxShift +  width)
     dl <- lapply(x, sparse.density, from = rng[1], to = rng[2], ...)
@@ -363,7 +361,6 @@ removeIsolated <- function(u, min.close = 500L)
 }
 
 
-
 coverage.estimate <- function(x, maxDist = 500L, ...)
 {
     if (!is.null(maxDist))
@@ -380,15 +377,32 @@ correlation.estimate <- function(x, maxDist = 500L, ...)
     with(d, mu[which.max(corr)])
 }
 
-estimate.mean.fraglen <-
-    function(x, method = c("SISSR", "coverage", "correlation"),
-             ...)
-{
-    method <- match.arg(method)
-    switch(method,
-           SISSR = jothi.estimate(x, ...),
-           coverage = coverage.estimate(x, ...),
-           correlation = correlation.estimate(x, ...))
-}
+setGeneric("estimate.mean.fraglen", signature = "x",
+           function(x, method = c("SISSR", "coverage", "correlation"), ...)
+               standardGeneric("estimate.mean.fraglen"))
 
-    
+setMethod("estimate.mean.fraglen", "list",
+          function(x, method = c("SISSR", "coverage", "correlation"), ...)
+          {
+              if (!all(c("+", "-") %in% names(x)))
+                  stop("x must have named elements '+' and '-'")
+              method <- match.arg(method)
+              switch(method,
+                     SISSR = jothi.estimate(x, ...),
+                     coverage = coverage.estimate(x, ...),
+                     correlation = correlation.estimate(x, ...))
+          })
+
+setMethod("estimate.mean.fraglen", "GenomeData",
+          function(x, method = c("SISSR", "coverage", "correlation"), ...)
+              unlist(lapply(x, estimate.mean.fraglen, ...)))
+
+setMethod("estimate.mean.fraglen", "RangedData",
+          function(x, method = c("SISSR", "coverage", "correlation"), ...) {
+              unlist(lapply(x,
+                            function(xElt) {
+                                estimate.mean.fraglen(split(start(ranges(xElt)),
+                                                            strand(xElt)),
+                                                      method = method, ...)
+                            }))
+          })
