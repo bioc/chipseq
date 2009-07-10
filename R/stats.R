@@ -401,29 +401,27 @@ setMethod("estimate.mean.fraglen", "RangedData",
           function(x, method = c("SISSR", "coverage", "correlation"), ...) {
               unlist(lapply(x,
                             function(xElt) {
-                                estimate.mean.fraglen(split(start(ranges(xElt)),
+                                estimate.mean.fraglen(split(ifelse(strand(xElt) == "-",
+                                                                   end(ranges(xElt)),
+                                                                   start(ranges(xElt))),
                                                             strand(xElt)),
                                                       method = method, ...)
                             }))
           })
 
 setMethod("estimate.mean.fraglen", "AlignedRead",
-          function(x, method = c("SISSR", "coverage", "correlation"), 
-                   coords = c("leftmost", "fiveprime"), ...) {
-              coords <- match.arg(coords)
-              if (coords == "leftmost") {
-                  rstart <- position(x) -
-                          ifelse(strand(x) == "+", 0L, extend)
-                  rend <- position(x) + width(x) - 1L +
-                          ifelse(strand(x) == "+", extend, 0L)
-              } else {
-                  rstart <- position(x) -
-                          ifelse(strand(x) == "+", 0L, width(x) + extend - 1L)
-                  rend <- position(x) +
-                          ifelse(strand(x) == "+", width(x) + extend - 1L, 0L)
-              }
-              y <-
-                RangedData(IRanges(start = rstart, end = rend),
-                           strand = strand(x), space = chromosome(x))
-              estimate.mean.fraglen(y, method = method, ...)
-          })
+          function(x, method = c("SISSR", "coverage", "correlation"), ...) {
+              splitData <-
+                split(data.frame(strand = strand(x),
+                                 start =
+                                 ifelse(strand(x) == "-",
+                                        position(x) + width(x) - 1L,
+                                        position(x))),
+                      chromosome(x))
+              unlist(lapply(splitData,
+                            function(y) {
+                                estimate.mean.fraglen(split(y[["start"]],
+                                                            y[["strand"]]),
+                                                      method = method, ...)
+                            }))
+           })
