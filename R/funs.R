@@ -33,12 +33,12 @@ readReads <-
 
 setMethod("as.list", "AlignedRead",
           function(x, ...) {
-              readStart <- ifelse(x@strand == "-",
-                                  x@position + width(x) - 1L,
-                                  x@position)
+              readStart <- ifelse(strand(x) == "-",
+                                  position(x) + width(x) - 1L,
+                                  position(x))
               alignLocs <-
-                  split(data.frame(position = readStart, strand = x@strand),
-                        x@chromosome[drop=TRUE])
+                  split(data.frame(position = readStart, strand = strand(x)),
+                        chromosome(x)[drop=TRUE])
               lapply(alignLocs,
                      function(df) with(df, split(position, strand))[c("-", "+")])
           })
@@ -55,7 +55,7 @@ setAs("AlignedRead", "GenomeData",
 ## we support list version? methods?
 
 splitbyChr <- function(x) {
-    split(x@position, paste(x@chromosome, x@strand, sep=""))
+    split(position(x), paste(chromosome(x), strand(x), sep=""))
 }
 
 extendReads <- function(reads, seqLen=200, strand = c("+", "-"))
