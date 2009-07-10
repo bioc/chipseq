@@ -12,8 +12,8 @@
 \usage{
 subsetSummary(x, chr, nstep, props = seq(0.1, 1, 0.1),
               chromlens, fg.cutoff = 6, seqLen = 200,
-              resample = TRUE, islands = TRUE,
-              verbose = getOption("verbose"))
+              fdr.cutoff = 0.001, resample = TRUE,
+              islands = TRUE, verbose = getOption("verbose"))
 }
 
 \arguments{
@@ -36,6 +36,8 @@ subsetSummary(x, chr, nstep, props = seq(0.1, 1, 0.1),
     dividing them up into subsets.  Useful to remove potential order
     effects (for example, if data from two lanes were combined to
     produce \code{x}). }
+  \item{fdr.cutoff}{ The maximum false discovery rate for a region that
+    is considered to be foreground. }
   \item{islands}{ Logical.  If \code{TRUE}, the whole island would be
     considered foreground if the maximum depth equals or exceeds
     \code{fg.cutoff}.  If \code{FALSE}, only the region above the cutoff
