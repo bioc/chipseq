@@ -143,12 +143,24 @@ contextDistributionByChr <- function(chr, peaks, gregions)
 
 contextDistribution <-
     function(peaks, gregions,
-             chroms = unique(as.character(peaks$chromosome)),
+             chroms = unique(as.character(peaks[["chromosome"]])),
              ...)
 {
+    if (!is.data.frame(peaks))
+      stop("'peaks' must be a data.frame")
+    if (!all(c("chromosome", "start", "end") %in% names(peaks)))
+      stop("'peaks' must have column names 'chromosome', 'start', and 'end'")
     if (!is(gregions, "RangedData"))
-      stop("'gregions' should be a RangedData as returned by 'transcripts'",
+      stop("'gregions' must be a RangedData as returned by 'transcripts'",
            " in the GenomicFeatures package")
+    if (!is.character(chroms) || (length(chroms) == 0))
+      stop("'chroms' must be a character vector")
+    if (!all(chroms %in% peaks[["chromosome"]]))
+      stop("'chroms' must be a character vector containing values",
+           " from 'peaks[[\"chromosome\"]]'")
+    if (!all(chroms %in% names(gregions)))
+      stop("'chroms' must be a character vector containing values",
+           " from 'names(gregions)'")
     ans <-
         do.call(lattice::make.groups,
                 sapply(chroms, function(chr) {
@@ -158,7 +170,3 @@ contextDistribution <-
     rownames(ans) <- NULL
     ans
 }
-
-
-
-
