@@ -397,6 +397,15 @@ setMethod("estimate.mean.fraglen", "list",
                      correlation = correlation.estimate(x, ...))
           })
 
+setMethod("estimate.mean.fraglen", "IntegerList",
+          function(x, method = c("SISSR", "coverage", "correlation"), ...)
+          {
+              if (!all(c("+", "-") %in% names(x)))
+                  stop("x must have named elements '+' and '-'")
+              y <- list("+" = x[["+"]], "-" = x[["-"]])
+              estimate.mean.fraglen(y, method = method, ...)
+          })
+
 setMethod("estimate.mean.fraglen", "RangesList",
           function(x, method = c("SISSR", "coverage", "correlation"), ...)
           {
