@@ -389,7 +389,7 @@ setMethod("estimate.mean.fraglen", "list",
               if (is(x[["+"]], "Ranges"))
                   x[["+"]] <- start(x[["+"]])
               if (is(x[["-"]], "Ranges"))
-                  x[["-"]] <- end(x[["+"]])
+                  x[["-"]] <- end(x[["-"]])
               method <- match.arg(method)
               switch(method,
                      SISSR = jothi.estimate(x, ...),
