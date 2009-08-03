@@ -3,6 +3,7 @@
 
 \alias{estimate.mean.fraglen}
 \alias{estimate.mean.fraglen,list-method}
+\alias{estimate.mean.fraglen,RangesList-method}
 \alias{estimate.mean.fraglen,RangedData-method}
 \alias{estimate.mean.fraglen,AlignedRead-method}
 \alias{estimate.mean.fraglen,GenomeData-method}
@@ -41,10 +42,11 @@ sparse.density(x, width = 50, kernel = "epanechnikov",
 }
 \arguments{
   \item{x}{ For \code{estimate.mean.fraglen}, a RangedData object,
-    GenomeData object, or a list with elements \code{"+"} and \code{"-"}
-    representing locations of reads aligned to positive and negative
-    strands (the values should be integers denoting the location where
-    the first sequenced base matched.)
+    GenomeData object, AlignedRead object, RangesList object or a list
+    with elements \code{"+"} and \code{"-"} representing locations of
+    reads aligned to positive and negative strands (the values should
+    be integers denoting the location where the first sequenced base
+    matched.)
 
     For \code{basesCovered}, and \code{densityCorr}, a list with elements
     \code{"+"} and \code{"-"} representing locations of reads aligned to

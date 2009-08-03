@@ -386,6 +386,10 @@ setMethod("estimate.mean.fraglen", "list",
           {
               if (!all(c("+", "-") %in% names(x)))
                   stop("x must have named elements '+' and '-'")
+              if (is(x[["+"]], "Ranges"))
+                  x[["+"]] <- start(x[["+"]])
+              if (is(x[["-"]], "Ranges"))
+                  x[["-"]] <- end(x[["+"]])
               method <- match.arg(method)
               switch(method,
                      SISSR = jothi.estimate(x, ...),
@@ -393,6 +397,15 @@ setMethod("estimate.mean.fraglen", "list",
                      correlation = correlation.estimate(x, ...))
           })
 
+setMethod("estimate.mean.fraglen", "RangesList",
+          function(x, method = c("SISSR", "coverage", "correlation"), ...)
+          {
+              if (!all(c("+", "-") %in% names(x)))
+                  stop("x must have named elements '+' and '-'")
+              y <- list("+" = start(x[["+"]]), "-" = end(x[["-"]]))
+              estimate.mean.fraglen(y, method = method, ...)
+          })
+  
 setMethod("estimate.mean.fraglen", "GenomeData",
           function(x, method = c("SISSR", "coverage", "correlation"), ...)
               unlist(lapply(x, estimate.mean.fraglen, ...)))
