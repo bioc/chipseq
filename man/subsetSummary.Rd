@@ -27,7 +27,7 @@ subsetSummary(x, chr, nstep, props = seq(0.1, 1, 0.1),
   \item{props}{ Alternatively, an increasing sequence of proportions
     determining the size of each subset.  Overrides \code{nstep}. }
   \item{chromlens}{ A named vector of per-chromosome lengths, typically
-    the result of \code{\link[BSgenome:seqlengths]{seqlengths}}. }
+    the result of \code{\link[BSgenome:BSgenome-class]{seqlengths}}. }
   \item{fg.cutoff}{ The coverage depth above which a region would be
     considered foreground. }
   \item{seqLen}{ The number of bases to which to extend each read before

@@ -12,9 +12,9 @@
   \code{geneMouse}.
   \strong{
     These functions are deprecated in favor of
-    \code{\link[GenomicFeatures]{transcripts}},
-    \code{\link[GenomicFeatures]{exons}}, and
-    \code{\link[GenomicFeatures]{introns}} in the \code{GenomicFeatures}
+    \code{\link[GenomicFeatures:regions]{transcripts}},
+    \code{\link[GenomicFeatures:regions]{exons}}, and
+    \code{\link[GenomicFeatures:regions]{introns}} in the \code{GenomicFeatures}
     package.
   }
 }

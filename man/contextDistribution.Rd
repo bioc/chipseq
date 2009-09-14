@@ -25,7 +25,7 @@ contextDistribution(peaks, gregions, chroms, ...)
   \item{gregions}{
     Locations of genomic regions of interest.  Currently, this must be
     of the form produced by the function
-    \code{\link[GenomicFeatures]{transcripts}}.
+    \code{\link[GenomicFeatures:regions]{transcripts}}.
   }
   \item{chroms}{
     Which chromosomes to use.  By default, all are used.
