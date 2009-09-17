@@ -24,8 +24,9 @@ computeOverlap <- function(chr, start, end, tchr, tstart, tend)
     {
         id <- which(chr == chrom)
         ans[id] <-
-            !is.na(overlap(tsplit[[chrom]], 
+            !is.na(findOverlaps(
                            IRanges(start[id], end[id]),
+                           tsplit[[chrom]],
                            multiple = FALSE))
     }
     ans
