@@ -56,7 +56,7 @@ findIntersections <- function(peaks, states)
 {
     ipeaks <- with(peaks, IRanges(start, end))
     istates <- with(states, IRanges(start, end))
-    overlap(istates, ipeaks, multiple = FALSE)
+    findOverlaps(ipeaks, istates, multiple = FALSE)
 }
 
 

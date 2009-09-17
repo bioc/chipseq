@@ -110,7 +110,7 @@ sparse.density <- function(x, width = 50, kernel = "epanechnikov", experimental 
     from0 <- min(from, start(rix)[1] - 1L)
     to0 <- max(to, end(rix)[length(rix)] + 1L)
     if (from > from0 || to < to0) stop("[from, to] smaller than support not implemented yet (but easy to add)")
-    ## ox <- overlap(rix, x, multiple = FALSE)
+    ## ox <- findOverlaps(x, rix, multiple = FALSE)
     ox <- findInterval(x, start(rix)) # equivalent, but a little faster
     island.densities <- 
         if (!experimental)

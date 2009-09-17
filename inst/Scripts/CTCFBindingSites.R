@@ -147,7 +147,7 @@ list("+" =
                           ctcfSegMaqMaps[as.vector(ctcfSegMaqMaps[["chromosome"]] == chr) &
                                          as.vector(ctcfSegMaqMaps[["strand"]] == "+"),"start"],
                           width = readLength)
-                y <- table(overlap(ctcfPWMPotentialReducedRanges[[chr]][["+"]], mapping, multiple = FALSE))
+                y <- table(findOverlaps(mapping, ctcfPWMPotentialReducedRanges[[chr]][["+"]], multiple = FALSE))
                 cbind(count = unname(y),
                       total = width(ctcfPWMPotentialReducedRanges[[chr]][["+"]])[as.integer(names(y))] - readLength + 1L)
             }),
@@ -158,7 +158,7 @@ list("+" =
                           ctcfSegMaqMaps[as.vector(ctcfSegMaqMaps[["chromosome"]] == chr) &
                                          as.vector(ctcfSegMaqMaps[["strand"]] == "-"),"start"],
                           width = readLength)
-                 y <- table(overlap(ctcfPWMPotentialReducedRanges[[chr]][["-"]], mapping, multiple = FALSE))
+                 y <- table(findOverlaps(mapping, ctcfPWMPotentialReducedRanges[[chr]][["-"]], multiple = FALSE))
                  cbind(count = unname(y),
                        total = width(ctcfPWMPotentialReducedRanges[[chr]][["-"]])[as.integer(names(y))] - readLength + 1L)
              }))

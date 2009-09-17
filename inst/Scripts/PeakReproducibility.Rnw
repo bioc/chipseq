@@ -64,7 +64,7 @@ findIntersections <- function(peaks)
                subpeaks <- 
                    with(subset(peaks, lane == x),
                         IRanges(start, end))
-               overlap(subpeaks, allpeaks, multiple = FALSE)
+               findOverlaps(allpeaks, subpeaks, multiple = FALSE)
            }, simplify = TRUE)
 }
 
@@ -89,7 +89,7 @@ captureRecaptureChr <- function(peaks, chr = "chr1")
         peaks1 <- with(subset(peaks, lane == u), IRanges(start, end))
         peaks2 <- with(subset(peaks, lane == v), IRanges(start, end))
         if (length(peaks1) && length(peaks2))
-            sum(!is.na(overlap(peaks1, peaks2, multiple = FALSE)))
+            sum(!is.na(findOverlaps(peaks2, peaks1, multiple = FALSE)))
         else 
             0
     }
@@ -361,9 +361,9 @@ commonPeaks <- function(lower = 10, x = pairedReads$"2", ref.peaks)
         if (length(ref.peaks[[chr]]) && length(x.peaks[[chr]])) 
         {
             ov.fp <- 
-                overlap(ref.peaks[[chr]], x.peaks[[chr]], multiple = FALSE)
+                findOverlaps(x.peaks[[chr]], ref.peaks[[chr]], multiple = FALSE)
             ov.fn <- 
-                overlap(x.peaks[[chr]], ref.peaks[[chr]], multiple = FALSE)
+                findOverlaps(ref.peaks[[chr]], x.peaks[[chr]], multiple = FALSE)
         }
         else ov.fp <- ov.fn <- integer(0)
         c(FP = sum(is.na(ov.fp)), total = length(x.peaks[[chr]]),

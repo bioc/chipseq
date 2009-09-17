@@ -103,10 +103,10 @@ countOverlap <- function(isochore = isochore.df,
         readranges <- s[viewMaxs(s) == 1]
     }
     readranges <- readranges[order(start(readranges))]
-    ans <- overlap(isoranges, readranges, multiple = TRUE)
+    ans <- findOverlaps(readranges, isoranges, multiple = TRUE)
     rowSums(ans@matchMatrix)
     ## almost the same as 
-    ##   table(overlap(isoranges, readranges, multiple = FALSE))
+    ##   table(findOverlaps(readranges, isoranges, multiple = FALSE))
     ## except that 0-count ones will be missing
 }
 

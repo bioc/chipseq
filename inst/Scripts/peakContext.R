@@ -19,10 +19,10 @@ load("peakSummary.rda")
 countHits <- function(subject, query)
 {
 ##     tree <- IntervalTree(subject)
-##     result.nm <- overlap(tree, query, multiple = FALSE)
-##     ## result <- overlap(tree, query)
+##     result.nm <- findOverlaps(query, tree, multiple = FALSE)
+##     ## result <- findOverlaps(query, tree)
 ##     str(result)
-    sum(!is.na(overlap(subject, query, multiple = FALSE)))
+    sum(!is.na(findOverlaps(query, subject, multiple = FALSE)))
 }
 
 

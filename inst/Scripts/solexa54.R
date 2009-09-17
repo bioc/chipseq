@@ -157,8 +157,8 @@ names(gpromoters) <- c("chr", "start", "end", "gene")
 overlap.index <-
     function(object, query)
 {
-    overlap(with(object, IRanges(start, end)),
-            with(query, IRanges(start, end)),
+    findOverlaps(with(query, IRanges(start, end)),
+            with(object, IRanges(start, end)),
             multiple = FALSE)
 }
 

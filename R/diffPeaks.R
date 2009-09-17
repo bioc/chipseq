@@ -18,7 +18,7 @@ laneCoverage <- function(lane, chromLens) {
 
 countOverlappingReads <- function(peaks, reads)
 {
-    as.numeric(as.table(t(overlap(peaks, sort(reads), multiple = TRUE))))
+    as.numeric(as.table(t(findOverlaps(sort(reads), peaks, multiple = TRUE))))
 }
 
 

@@ -141,7 +141,7 @@ library(IRanges)
 
 countHits <- function(subject, query)
 {
-    sum(!is.na(overlap(subject, query, multiple = FALSE)))
+    sum(!is.na(findOverlaps(query, subject, multiple = FALSE)))
 }
 
 doPeakSet <- function(peaks, gregions)

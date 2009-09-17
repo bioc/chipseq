@@ -118,18 +118,18 @@ subsetSummary <-
                                       lower = fg.cutoff), "IRanges")
         }
         ## old reads that hit old peaks
-        old.peak.hits.old <- !is.na(overlap(old.peaks, old.reads, multiple = FALSE))
+        old.peak.hits.old <- !is.na(findOverlaps(old.reads, old.peaks, multiple = FALSE))
         ## old reads that hit current peaks
-        current.peak.hits.old <- !is.na(overlap(current.peaks, old.reads, multiple = FALSE))
+        current.peak.hits.old <- !is.na(findOverlaps(old.reads, current.peaks, multiple = FALSE))
         ## old background hits
         old.bg <- sum(!old.peak.hits.old)
         old.fg <- sum(old.peak.hits.old)
         ## number of old reads that go from bg to fg
         reads.converted <- sum(current.peak.hits.old & !old.peak.hits.old)
         ## new reads that hit old fg
-        old.peak.hits.new <- !is.na(overlap(old.peaks, new.reads, multiple = FALSE))
+        old.peak.hits.new <- !is.na(findOverlaps(new.reads, old.peaks, multiple = FALSE))
         ## new reads that hit old something (that is, not blank)
-        old.total.hits.new <- !is.na(overlap(old.islands, new.reads, multiple = FALSE))
+        old.total.hits.new <- !is.na(findOverlaps(new.reads, old.islands, multiple = FALSE))
         new.fg <- sum(old.peak.hits.new)
         new.bg <- sum(old.total.hits.new & !old.peak.hits.new)
         ##print(table(old.total.hits.new, old.peak.hits.new))
