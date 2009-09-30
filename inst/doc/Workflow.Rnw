@@ -3,7 +3,7 @@
 % likely to be overwritten.
 %
 % \VignetteIndexEntry{A Sample ChIP-Seq analysis workflow}
-%\VignetteDepends{IRanges, GenomicFeatures, BSgenome.Mmusculus.UCSC.mm9}
+%\VignetteDepends{IRanges, GenomicFeatures.Mmusculus.UCSC.mm9, BSgenome.Mmusculus.UCSC.mm9}
 %\VignetteKeywords{chip-seq, sequencing, visualization}
 %\VignettePackage{chipseq}
 
@@ -41,7 +41,7 @@ as \Rpackage{ShortRead} and \Rpackage{IRanges}.  We will also use the
 <<setup,echo=TRUE,results=hide>>=
 
 library(chipseq)
-library(GenomicFeatures)
+library(GenomicFeatures.Mmusculus.UCSC.mm9)
 library(lattice)
 
 @
@@ -394,13 +394,13 @@ head(peakSummary)
 Locations of individual peaks may be of interest.  Alternatively, a
 global summary might look at classifying the peaks of interest in the
 context of genomic features such as promoters, upstream regions, etc.
-The \code{geneMouse} dataset in the \Rpackage{chipseq} package
-contains gene location information from UCSC.  The
+The \code{geneMouse} function defined in the
+\Rpackage{GenomicFeatures.Mmusculus.UCSC.mm9} package
+returns gene location information from UCSC.  The
 \code{genomic\_regions} function converts this into a set of ranges
 defining promoters, upstream regions, etc.
 <<>>=
-data(geneMouse)
-gregions <- transcripts(genes = geneMouse, proximal = 2000)
+gregions <- transcripts(genes = geneMouse(), proximal = 2000)
 ## gregions$gene <- as.character(gregions$gene)
 gregions
 @ 

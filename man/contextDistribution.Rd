@@ -49,10 +49,9 @@ extRanges <- gdapply(cstest, extendReads, seqLen = 200)
 peakSummary <-
     diffPeakSummary(extRanges$gfp, extRanges$ctcf,
                     chrom.lens = mouse.chromlens, lower = 10)
-## generate transcripts using GenomicFeatures package
-library(GenomicFeatures)
-data(geneMouse)
-gregions <- transcripts(genes = geneMouse, proximal = 2000)
+## generate transcripts using GenomicFeatures.Mmusculus.UCSC.mm9 package
+library(GenomicFeatures.Mmusculus.UCSC.mm9)
+gregions <- transcripts(genes = geneMouse(), proximal = 2000)
 ## finally, calculate context distribution for chr10
 contextDistribution(peakSummary, gregions, "chr10")
 }
