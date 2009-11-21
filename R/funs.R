@@ -64,24 +64,14 @@ extendReads <- function(reads, seqLen=200, strand = c("+", "-"))
         gdapply(reads, extendReads, seqLen = seqLen, strand = strand)
     else if (is(reads, "AlignedRead")) 
     {
-        readLen <- width(reads)
-        s1 <- splitbyChr(reads)
-        chrs <- unique(gsub("\\+|-", "", names(s1)))
-        byCIR <- vector("list", length=length(chrs))
-        names(byCIR) <- chrs
-        for(i in chrs) {
-            ipos <-
-                if ("+" %in% strand) grep(paste("^", i, "\\+$", sep=""), names(s1))
-                else character(0)
-            ineg <-
-                if ("-" %in% strand) grep(paste("^", i, "-$", sep=""), names(s1))
-                else character(0)
-            byCIR[[i]] = IRanges(c(s1[[ipos]], s1[[ineg]]-seqLen+readLen),
-                                 c(s1[[ipos]]+seqLen-1, s1[[ineg]]+readLen-1))
-            byCIR
-        }
-        byCIR
-        ## or, extendReads(as.list(reads), seqLen=seqLen)
+        rng <- IRanges(ifelse(strand(reads) == "+",
+                              position(reads),
+                              position(reads) + width(reads) - seqLen),
+                       ifelse(strand(reads) == "+",
+                              position(reads) + seqLen - 1L,
+                              position(reads) + width(reads) - 1L))
+        strandIdx <- strand(reads) %in% strand
+        split(rng[strandIdx], chromosome(reads)[strandIdx])
     }
     else if (is.list(reads)) 
     {
