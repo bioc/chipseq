@@ -32,5 +32,10 @@ depending on the input.
 \author{ R. Gentleman}
 \examples{
 data(cstest)
-extRanges <- gdapply(cstest, extendReads, seqLen = 200)
+extRanges1 <- gdapply(cstest, extendReads, seqLen = 200)
+
+## AlignedRead example
+sp <- SolexaPath(system.file("extdata", package="ShortRead"))
+aln <- readAligned(sp, "s_2_export.txt")
+extRanges2 <- extendReads(aln[!is.na(position(aln))])
 }
