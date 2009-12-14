@@ -145,7 +145,10 @@ basesCovered <- function(x, shift = seq(5, 300, 5), seqLen = 35, verbose = FALSE
     if (!all(c("+", "-") %in% names(x)))
         stop("x must have named elements '+' and '-'")
     maxShift <- max(shift)
-    rng <- range(unlist(x)) + c(-1, 1) * maxShift
+    rng <- range(unlist(x))
+    if (!length(rng))
+      rng <- unlist(x)
+    rng <- rng + c(-1, 1) * maxShift
     cov.pos <- coverage(extendReads(x, seqLen = seqLen, strand = "+"), shift = 1-rng[1], width = 1+diff(rng)) > 0
     cov.neg <- coverage(extendReads(x, seqLen = seqLen, strand = "-"), shift = 1-rng[1], width = 1+diff(rng)) > 0
     n <- diff(rng) + 1L
