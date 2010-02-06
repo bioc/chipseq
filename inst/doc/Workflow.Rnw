@@ -400,7 +400,7 @@ returns gene location information from UCSC.  The
 \code{genomic\_regions} function converts this into a set of ranges
 defining promoters, upstream regions, etc.
 <<>>=
-gregions <- transcripts(genes = geneMouse(), proximal = 2000)
+gregions <- transcripts_deprecated(genes = geneMouse(), proximal = 2000)
 ## gregions$gene <- as.character(gregions$gene)
 gregions
 @ 
