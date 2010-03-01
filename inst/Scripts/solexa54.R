@@ -158,8 +158,8 @@ overlap.index <-
     function(object, query)
 {
     findOverlaps(with(query, IRanges(start, end)),
-            with(object, IRanges(start, end)),
-            multiple = FALSE)
+                 with(object, IRanges(start, end)),
+                 select = "first")
 }
 
 updatePeakSummary <- function(x, promoters = gpromoters)

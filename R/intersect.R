@@ -19,8 +19,8 @@ effective.glength <- function(IR1, IR2, width = 200L)
 
     if (!is(IR1, "IRanges")) IR1 <- IRanges(start = as.integer(IR1 - width/2L), width = width)
     if (!is(IR2, "IRanges")) IR2 <- IRanges(start = as.integer(IR2 - width/2L), width = width)
-    m <- findOverlaps(IR2, IR1, multiple = FALSE)
-    phat <- sum(!is.na(m)) / length(m)
+    m <- IR2 %in% IR1
+    phat <- mean(m)
     Ghat <- 2 * width * length(IR1) / phat
     Ghat
 }
