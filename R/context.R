@@ -115,7 +115,7 @@ contextDistributionPeakSet <- function(peaks, gregions)
     subject <- values(gregions)[[1]]
     subject$gene <- ranges(gregions)[[1]]
     c(total = length(query),
-      sapply(subject, function(x) countOverlaps(query, x)))
+      sapply(subject, function(x) sum(query %in% x)))
 }
 
 
