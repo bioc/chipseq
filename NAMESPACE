@@ -7,7 +7,8 @@ importClassesFrom(BSgenome, GenomeData)
 importClassesFrom(methods, list)
 importClassesFrom(ShortRead, AlignedRead)
 
-importMethodsFrom(BSgenome, gdapply, strand)
+importMethodsFrom(GenomicRanges, strand)
+importMethodsFrom(BSgenome, gdapply)
 importMethodsFrom(methods, coerce)
 importMethodsFrom(ShortRead, name, readAligned)
 

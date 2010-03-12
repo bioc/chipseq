@@ -1,10 +1,10 @@
 Package: chipseq
 Title: chipseq: A package for analyzing chipseq data
-Version: 0.3.4
+Version: 0.3.5
 Author: Deepayan Sarkar, Robert Gentleman, Michael Lawrence, Zizhen Yao
 Description: Tools for helping process short read data for chipseq experiments
-Depends: methods, IRanges (>= 1.5.52), BSgenome, ShortRead, lattice
-Imports: BSgenome, IRanges, lattice, methods, ShortRead, stats
+Depends: methods, IRanges (>= 1.5.52), GenomicRanges, BSgenome, ShortRead, lattice
+Imports: BSgenome, GenomicRanges, IRanges, lattice, methods, ShortRead, stats
 Suggests: GenomicFeatures,
 	GenomicFeatures.Mmusculus.UCSC.mm9, GenomicFeatures.Hsapiens.UCSC.hg18,
 	BSgenome.Mmusculus.UCSC.mm9
