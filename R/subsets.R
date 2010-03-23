@@ -18,14 +18,12 @@ summary.subsets <- function(...)
     subsetSummary(...)
 }
 
-
-
-npeaks.fdr <- function(cov, fdr.cutoff = 0.001, k = 2:20, islands = TRUE)
+cutoff.fdr <- function(cov, fdr.cutoff = 0.001, k = 2:20)
 {
     ## an implementation of the idea in Robertson et al to assess
     ## sufficiency of sampling depth: choose minimum cutoff that gives
     ## an FDR < pre-specified value, then compute number of peaks at
-    ## that cutoff.  
+    ## that cutoff.
     s <- slice(cov, lower = 1)
     y <- table(viewMaxs(s))
     lambda <- 2 * y[2] / y[1]
@@ -40,11 +38,9 @@ npeaks.fdr <- function(cov, fdr.cutoff = 0.001, k = 2:20, islands = TRUE)
     fdr.ok <- which(FDR < fdr.cutoff)
     if (length(fdr.ok) < 1)
         stop("No cutoff with low enough FDR found")
-    fg.cutoff <- k[fdr.ok[1]]
-    if (islands)
-        sum(viewMaxs(s) >= fg.cutoff)
-    else
-        length(slice(cov, lower = fg.cutoff))
+    fdr.chosen <- fdr.ok[1]
+    k[fdr.chosen-1] + (FDR[fdr.chosen-1] - fdr.cutoff) /
+      (FDR[fdr.chosen-1] - FDR[fdr.chosen])
 }
 
 
@@ -56,7 +52,8 @@ subsetSummary <-
              props = seq(.1, 1, .1),
              chromlens,
              fg.cutoff = 6, seqLen = 200,
-             fdr.cutoff = 0.001, 
+             fdr.cutoff = 0.001,
+             use.fdr = FALSE,
              resample = TRUE, islands = TRUE,
              verbose = getOption("verbose"))
 {
@@ -66,19 +63,23 @@ subsetSummary <-
     ##         props <- seq(nstep / length(g), 1, by = nstep / length(g))
     if (!missing(nstep) && missing(props))
     {
-        nreads.total <- sum(unlist(lapply(x, function(u) sum(sapply(u, length)))))
+        nreads.total <-
+          sum(unlist(lapply(x, function(u) sum(sapply(u, length)))))
         num.steps <- floor(nreads.total / nstep)
         if (verbose) message(num.steps, " steps\n.")
         props <- seq(0, 1, length.out = num.steps)[-1]
     }
     ids <- as.integer(round(props * length(g)))
-    if (verbose) message(length(g), " reads in ", chr, ". Increments: ", paste(ids, collapse = ", "))
+    if (verbose)
+      message(length(g), " reads in ", chr, ". Increments: ",
+              paste(ids, collapse = ", "))
     old.peaks <- IRanges()
     start <- 1L
     ans.cols <-
         c("alpha.hat", "bg.rate", "old.bg", "old.fg",
           "new.bg", "new.fg", "old.fg.area", "old.total.area",
-          "reads.converted", "npeaks", "npeaks.fdr")
+          "reads.converted", "npeaks", "npeaks.fdr", "npeaks.fdr.lower",
+          "npeaks.fdr.higher", "fdr.count.cutoff")
     ans <- matrix(0, nrow = length(ids), ncol = length(ans.cols))
     colnames(ans) <- ans.cols
     for (i in seq_along(ids))
@@ -87,7 +88,8 @@ subsetSummary <-
         cum.reads <- head(g, ids[i])
         if (length(old.reads) > 0)
         {
-            old.islands <- slice(coverage(old.reads, width = chromlens[chr]), lower = 1)
+            old.islands <- slice(coverage(old.reads, width = chromlens[chr]),
+                                 lower = 1)
             nreads <- as.integer(viewSums(old.islands) / seqLen)
             old.total.area <- sum(width(old.islands))
         }
@@ -100,23 +102,33 @@ subsetSummary <-
         old.fg.area <- sum(width(old.peaks))
         new.reads <- sort(g[start:(ids[i])]); start <- ids[i] + 1L
         current.cov <- coverage(cum.reads, width = chromlens[chr])
-        npeaks.fdr <- npeaks.fdr(current.cov, fdr.cutoff = fdr.cutoff, islands = islands)
+        fdr.interp <- cutoff.fdr(current.cov, fdr.cutoff = fdr.cutoff)
+        fdr.floor <- floor(fdr.interp)
+        fdr.ceiling <- ceiling(fdr.interp)
+        current.islands <- slice(current.cov, lower = 1)
+        alpha.hat <- estimate.bg.rate(current.islands, seqLen = seqLen)
+        bg.rate <- alpha.hat / ids[i]
         if (islands)
         {
-            current.peaks <- slice(current.cov, lower = 1)
-            alpha.hat <- estimate.bg.rate(current.peaks, seqLen = seqLen)
-            bg.rate <- alpha.hat / ids[i]
-            current.peaks <- current.peaks[viewMaxs(current.peaks) >= fg.cutoff]
-            current.peaks <- as(current.peaks, "IRanges")
+            peaks.fixed <-
+              current.islands[viewMaxs(current.islands) >= fg.cutoff]
+            peaks.fdr.lower <- current.islands[viewMaxs(current.islands) >=
+                                               fdr.ceiling]
+            peaks.fdr.higher <- current.islands[viewMaxs(current.islands) >=
+                                                fdr.floor]
         }
         else 
         {
-            alpha.hat <- estimate.bg.rate(slice(current.cov, lower = 1),
-                                          seqLen = seqLen)
-            bg.rate <- alpha.hat / ids[i]
-            current.peaks <- as(slice(coverage(head(g, ids[i]), width = chromlens[chr]),
-                                      lower = fg.cutoff), "IRanges")
+            peaks.fixed <- slice(current.cov, lower = fg.cutoff)
+            peaks.fdr.lower <- slice(current.cov, lower = fdr.ceiling)
+            peaks.fdr.higher <- slice(current.cov, lower = fdr.floor)
         }
+        peaks.fdr <- peaks.fdr.lower
+        npeaks.fdr <- length(peaks.fdr.lower) + (fdr.ceiling - fdr.interp) *
+          (length(peaks.fdr.higher) - length(peaks.fdr.lower))
+        current.peaks <- peaks.fixed
+        if (use.fdr)
+          current.peaks <- peaks.fdr
         ## old reads that hit old peaks
         old.peak.hits.old <- old.reads %in% old.peaks
         ## old reads that hit current peaks
@@ -136,7 +148,9 @@ subsetSummary <-
         ##browser()
         ans[i, ] <- c(alpha.hat, bg.rate, old.bg, old.fg,
                       new.bg, new.fg, old.fg.area, old.total.area,
-                      reads.converted, length(current.peaks), npeaks.fdr)
+                      reads.converted, length(peaks.fixed), npeaks.fdr,
+                      length(peaks.fdr.lower), length(peaks.fdr.higher),
+                      fdr.ceiling)
         old.peaks <- current.peaks
     }
     ans <- cbind(chromosome = chr, proportion = props, size = diff(c(0, ids)),
