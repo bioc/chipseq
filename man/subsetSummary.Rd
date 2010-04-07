@@ -12,7 +12,7 @@
 \usage{
 subsetSummary(x, chr, nstep, props = seq(0.1, 1, 0.1),
               chromlens, fg.cutoff = 6, seqLen = 200,
-              fdr.cutoff = 0.001, resample = TRUE,
+              fdr.cutoff = 0.001, use.fdr = FALSE, resample = TRUE,
               islands = TRUE, verbose = getOption("verbose"))
 }
 
@@ -38,6 +38,8 @@ subsetSummary(x, chr, nstep, props = seq(0.1, 1, 0.1),
     produce \code{x}). }
   \item{fdr.cutoff}{ The maximum false discovery rate for a region that
     is considered to be foreground. }
+  \item{use.fdr}{ Whether to use the FDR detected peaks when calling
+    foreground and background. }
   \item{islands}{ Logical.  If \code{TRUE}, the whole island would be
     considered foreground if the maximum depth equals or exceeds
     \code{fg.cutoff}.  If \code{FALSE}, only the region above the cutoff
@@ -56,6 +58,6 @@ subsetSummary(cstest[[1]], "chr10", props=seq(0.1, 1, 0.5),
               chromlens=seqlengths(Mmusculus))
 }
 \author{
-  Deepayan Sarkar
+  Deepayan Sarkar, Michael Lawrence
 }
 \keyword{univar}
