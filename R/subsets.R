@@ -18,33 +18,6 @@ summary.subsets <- function(...)
     subsetSummary(...)
 }
 
-cutoff.fdr <- function(cov, fdr.cutoff = 0.001, k = 2:20)
-{
-    ## an implementation of the idea in Robertson et al to assess
-    ## sufficiency of sampling depth: choose minimum cutoff that gives
-    ## an FDR < pre-specified value, then compute number of peaks at
-    ## that cutoff.
-    s <- slice(cov, lower = 1)
-    y <- table(viewMaxs(s))
-    lambda <- 2 * y[2] / y[1]
-    n <- exp(log(y[1]) - dpois(1, lambda, log = TRUE))
-    exp.fd <- n * ppois(k-1, lambda, lower.tail = FALSE)
-    obs.d <- integer(length(k))
-    for (i in seq_along(k))
-    {
-        obs.d[i] <- sum(y[as.integer(names(y)) >= k[i]])
-    }
-    FDR <- ifelse(obs.d == 0, 0, exp.fd / obs.d)
-    fdr.ok <- which(FDR < fdr.cutoff)
-    if (length(fdr.ok) < 1)
-        stop("No cutoff with low enough FDR found")
-    fdr.chosen <- fdr.ok[1]
-    k[fdr.chosen-1] + (FDR[fdr.chosen-1] - fdr.cutoff) /
-      (FDR[fdr.chosen-1] - FDR[fdr.chosen])
-}
-
-
-
 subsetSummary <- 
     function(x,
              chr,
@@ -102,7 +75,7 @@ subsetSummary <-
         old.fg.area <- sum(width(old.peaks))
         new.reads <- sort(g[start:(ids[i])]); start <- ids[i] + 1L
         current.cov <- coverage(cum.reads, width = chromlens[chr])
-        fdr.interp <- cutoff.fdr(current.cov, fdr.cutoff = fdr.cutoff)
+        fdr.interp <- peakCutoff(current.cov, fdr.cutoff = fdr.cutoff)
         fdr.floor <- floor(fdr.interp)
         fdr.ceiling <- ceiling(fdr.interp)
         current.islands <- slice(current.cov, lower = 1)

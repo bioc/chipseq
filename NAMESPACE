@@ -32,13 +32,14 @@ export(diffPeakSummary)
 ## setMethod("as.list", "AlignedRead",
 ## setAs("AlignedRead", "GenomeData",
 
-export(readReads, extendReads, copyIRanges, copyIRangesbyChr, laneSubsample, combineLanes)
+export(chipseqFilter, readReads, extendReads, copyIRanges, copyIRangesbyChr,
+       laneSubsample, combineLanes)
 
 ## intersect.R
 ## nothing right now
 
 ## islands.R
-## nothing right now
+export(islandDepthPlot)
 
 ## plots.R
 export(coverageplot)
@@ -48,4 +49,4 @@ export(sparse.density, basesCovered, densityCorr, estimate.mean.fraglen)
 exportMethods(estimate.mean.fraglen)
 
 ## subsets.R
-export(subsetSummary)
+export(subsetSummary, peakCutoff)

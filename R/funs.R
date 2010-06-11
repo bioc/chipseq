@@ -1,23 +1,48 @@
-##FIXME: exclude should be used, and the chromosomeFilter
 
-readReads <-
-    function(srcdir, lane, ...,
-             include = "chr[0-9]+$", type = "MAQMapShort",
-             simplify = TRUE, minScore=15)
+## A srFilter for use with e.g. readAligned()
+chipseqFilter <- function(exclude = "[_MXY]",
+                          uniqueness = c("location", "sequence",
+                            "location*sequence", "none"),
+                          hasStrand = TRUE)
 {
-    filt <-
-        compose(strandFilter(strandLevels=c("-", "+")),
-                chromosomeFilter(regex = include),
-                uniqueFilter(withSread = FALSE),
-                alignQualityFilter(minScore),
-                ...)
-    message(sprintf("reading data from lane %s [%s], using filter %s", lane, 
-         srcdir, name(filt)))
-    ans <- readAligned(srcdir, lane, type = type, filter = filt)
-    if (simplify) as(ans, "GenomeData")
-    else ans
+  if (!is.null(exclude) && (!is.character(exclude) || any(is.na(exclude))))
+    stop("'exclude' must be character without NA's")
+  uniqueness <- match.arg(uniqueness)
+  if (!IRanges:::isTRUEorFALSE(hasStrand))
+    stop("'hasStrand' must be TRUE or FALSE")
+  filt <- srFilter()
+  if (hasStrand)
+    filt <- compose(filt, strandFilter(strandLevels=c("-", "+")))
+  if (!is.null(exclude))
+    filt <- compose(filt, chromosomeFilter(exclude, exclude = TRUE))
+  if (uniqueness != "none") {
+    withSread <- switch(uniqueness, location = FALSE, sequence = NA,
+                        `location*sequence` = TRUE)
+    ofilt <-
+      occurrenceFilter(withSread = withSread)
+    filt <- compose(filt, ofilt)
+  }
+  filt
 }
 
+readReads <-
+  function(srcdir, lane, ...,
+           include = "chr[09]+$", type = "MAQMapShort",
+           simplify = TRUE, minScore=15)
+{
+  .Deprecated("readAligned() with chipseqFilter()")
+  filt <-
+    compose(strandFilter(strandLevels=c("-", "+")),
+            chromosomeFilter(regex = include),
+            uniqueFilter(withSread = FALSE),
+            alignQualityFilter(minScore),
+            ...)
+  message(sprintf("reading data from lane %s [%s], using filter %s", lane, 
+                  srcdir, name(filt)))
+  ans <- readAligned(srcdir, lane, type = type, filter = filt)
+  if (simplify) as(ans, "GenomeData")
+  else ans
+}
 
 ## summarize an "AlignedRead" as a nested list; may be useful as an
 ## intermediate form for storage etc.  Return value is of the form:
@@ -31,8 +56,13 @@ readReads <-
 ##   ..$ +: int [1:95154] 3009910 3010789 3017043 ...
 ##  $ ...
 
+.useRanges <- function() {
+  .Deprecated(msg = "Storing reads only by their start positions is deprecated. Please use a range representation like GRanges.")
+}
+
 setMethod("as.list", "AlignedRead",
           function(x, ...) {
+              .useRanges()
               readStart <- ifelse(strand(x) == "-",
                                   position(x) + width(x) - 1L,
                                   position(x))
@@ -45,6 +75,7 @@ setMethod("as.list", "AlignedRead",
 
 setAs("AlignedRead", "GenomeData",
       function(from) {
+          .useRanges()
           GenomeData(as.list(from))
       })
 
@@ -60,6 +91,7 @@ splitbyChr <- function(x) {
 
 extendReads <- function(reads, seqLen=200, strand = c("+", "-"))
 {
+    .Deprecated("resize,GRanges method")
     if (is(reads, "GenomeDataList") || is(reads, "GenomeData"))
         gdapply(reads, extendReads, seqLen = seqLen, strand = strand)
     else if (is(reads, "AlignedRead")) 
@@ -95,9 +127,13 @@ extendReads <- function(reads, seqLen=200, strand = c("+", "-"))
 ## we improve the interface?
 
 
-copyIRanges <- function(IR1, newX) Views(newX, IR1)
+copyIRanges <- function(IR1, newX) {
+  .Deprecated("Views(newX, IR1)")
+  Views(newX, IR1)
+}
 
 copyIRangesbyChr <- function(IR1, newX) {
+    .Deprecated("Views(newX, IR1)")
     nms = names(IR1)
     ans = vector("list", length=length(nms))
     names(ans) = nms
@@ -105,10 +141,6 @@ copyIRangesbyChr <- function(IR1, newX) {
         ans[[i]] = Views(newX[[i]], IR1[[i]])
     ans
 }
-
-
-
-
 
 ## Subsampling two "lanes", so that on a per chromosome basis they
 ## have the same number of reads; let's not do this if we are
@@ -132,7 +164,6 @@ laneSubsample <- function(lane1, lane2, fudge = 0.05)
 
 
 
-
 ## Take an IRanges object and merge all Ranges that are less than
 ## maxgap apart.  FIXME: make this a merge() method?
 
@@ -147,15 +178,18 @@ merge <- function(IR, maxgap)
 ## should be unified with combineLanes below (which works on extended
 ## reads)
 
-combineLaneReads <- function(laneList, chromList = names(laneList[[1]]), keep.unique = FALSE)
+combineLaneReads <- function(laneList, chromList = names(laneList[[1]]),
+                             keep.unique = FALSE)
 {
     my.unlist <-
         if(keep.unique) function(x, ...) { unique(unlist(x, ...)) }
         else unlist
     combineReads <- function(chr)
     {
-        list("+" = my.unlist(lapply(laneList, function(x) x[[chr]][["+"]]), use.names = FALSE),
-             "-" = my.unlist(lapply(laneList, function(x) x[[chr]][["-"]]), use.names = FALSE))
+        list("+" = my.unlist(lapply(laneList, function(x) x[[chr]][["+"]]),
+               use.names = FALSE),
+             "-" = my.unlist(lapply(laneList, function(x) x[[chr]][["-"]]),
+               use.names = FALSE))
     }
     names(chromList) = chromList ##to get the return value named
     GenomeData(lapply(chromList, combineReads))
@@ -181,6 +215,7 @@ combineLaneRanges <- function(laneList, chromList = names(laneList[[1]]), keep.u
 ## exported interface
 combineLanes <- function(x, chromList = names(x[[1]]), keep.unique = FALSE)
 {
+    .Deprecated("c (with GRanges), possibly followed by unique()")
     isRange <- is(x[[1]][[chromList[1]]], "IRanges")
     if (isRange)
         combineLaneRanges(laneList = x, chromList = chromList, keep.unique = keep.unique)

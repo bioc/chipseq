@@ -224,7 +224,7 @@ correlationProfile <-
 ## }
 
 ## An efficient version of sum(e1 * e2), where e1 and e2 are Rle objects
-
+## About twice as fast as direct interaction with Rle
 RleSumProd <- function (e1, e2)
 {
     len <- length(e1)
@@ -380,29 +380,41 @@ correlation.estimate <- function(x, maxDist = 500L, ...)
     with(d, mu[which.max(corr)])
 }
 
+.estimate.mean.fraglen <-
+  function(x, method = c("SISSR", "coverage", "correlation"), ...)
+{
+  method <- match.arg(method)
+  switch(method,
+         SISSR = jothi.estimate(x, ...),
+         coverage = coverage.estimate(x, ...),
+         correlation = correlation.estimate(x, ...))
+}
+
 setGeneric("estimate.mean.fraglen", signature = "x",
            function(x, method = c("SISSR", "coverage", "correlation"), ...)
                standardGeneric("estimate.mean.fraglen"))
 
+.needFormalStrand <- function() {
+  .Deprecated("the method for a class with formal strand information, like GRanges or AlignedRead")
+}
+
 setMethod("estimate.mean.fraglen", "list",
           function(x, method = c("SISSR", "coverage", "correlation"), ...)
           {
+              .needFormalStrand()
               if (!all(c("+", "-") %in% names(x)))
                   stop("x must have named elements '+' and '-'")
               if (is(x[["+"]], "Ranges"))
                   x[["+"]] <- start(x[["+"]])
               if (is(x[["-"]], "Ranges"))
                   x[["-"]] <- end(x[["-"]])
-              method <- match.arg(method)
-              switch(method,
-                     SISSR = jothi.estimate(x, ...),
-                     coverage = coverage.estimate(x, ...),
-                     correlation = correlation.estimate(x, ...))
+              .estimate.mean.fraglen(x, method = method, ...)
           })
 
 setMethod("estimate.mean.fraglen", "IntegerList",
           function(x, method = c("SISSR", "coverage", "correlation"), ...)
           {
+              .needFormalStrand()
               if (!all(c("+", "-") %in% names(x)))
                   stop("x must have named elements '+' and '-'")
               y <- list("+" = x[["+"]], "-" = x[["-"]])
@@ -412,6 +424,7 @@ setMethod("estimate.mean.fraglen", "IntegerList",
 setMethod("estimate.mean.fraglen", "RangesList",
           function(x, method = c("SISSR", "coverage", "correlation"), ...)
           {
+              .needFormalStrand()
               if (!all(c("+", "-") %in% names(x)))
                   stop("x must have named elements '+' and '-'")
               y <- list("+" = start(x[["+"]]), "-" = end(x[["-"]]))
@@ -420,33 +433,35 @@ setMethod("estimate.mean.fraglen", "RangesList",
   
 setMethod("estimate.mean.fraglen", "GenomeData",
           function(x, method = c("SISSR", "coverage", "correlation"), ...)
-              unlist(lapply(x, estimate.mean.fraglen, ...)))
+              unlist(lapply(x, estimate.mean.fraglen, method = method, ...)))
 
 setMethod("estimate.mean.fraglen", "RangedData",
           function(x, method = c("SISSR", "coverage", "correlation"), ...) {
-              unlist(lapply(x,
-                            function(xElt) {
-                                estimate.mean.fraglen(split(ifelse(strand(xElt) == "-",
-                                                                   end(ranges(xElt)),
-                                                                   start(ranges(xElt))),
-                                                            strand(xElt)),
-                                                      method = method, ...)
-                            }))
+            .needFormalStrand()
+            unlist(lapply(x, function(xElt) {
+              estimate.mean.fraglen(split(ifelse(strand(xElt) == "-",
+                                                 end(ranges(xElt)),
+                                                 start(ranges(xElt))),
+                                          strand(xElt)),
+                                    method = method, ...)
+            }))
           })
 
 setMethod("estimate.mean.fraglen", "AlignedRead",
           function(x, method = c("SISSR", "coverage", "correlation"), ...) {
-              splitData <-
-                split(data.frame(strand = strand(x),
-                                 start =
-                                 ifelse(strand(x) == "-",
-                                        position(x) + width(x) - 1L,
-                                        position(x))),
-                      chromosome(x))
-              unlist(lapply(splitData,
-                            function(y) {
-                                estimate.mean.fraglen(split(y[["start"]],
-                                                            y[["strand"]]),
-                                                      method = method, ...)
-                            }))
-           })
+            estimate.mean.fraglen(as(x, "GRanges"), method = method, ...)
+          })
+
+setMethod("estimate.mean.fraglen", "GRanges",
+          function(x, method = c("SISSR", "coverage", "correlation"), ...) {
+            splitData <-
+              split(data.frame(pos =
+                               ifelse(strand(x) == "+", start(x), end(x)),
+                               strand = strand(x)))
+            unlist(lapply(splitData,
+                   function(y) {
+                     .estimate.mean.fraglen(split(y[["start"]],
+                                                  y[["strand"]]),
+                                            method = method, ...)
+                   }))
+          })
