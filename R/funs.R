@@ -1,30 +1,4 @@
 
-## A srFilter for use with e.g. readAligned()
-chipseqFilter <- function(exclude = "[_MXY]",
-                          uniqueness = c("location", "sequence",
-                            "location*sequence", "none"),
-                          hasStrand = TRUE)
-{
-  if (!is.null(exclude) && (!is.character(exclude) || any(is.na(exclude))))
-    stop("'exclude' must be character without NA's")
-  uniqueness <- match.arg(uniqueness)
-  if (!IRanges:::isTRUEorFALSE(hasStrand))
-    stop("'hasStrand' must be TRUE or FALSE")
-  filt <- srFilter()
-  if (hasStrand)
-    filt <- compose(filt, strandFilter(strandLevels=c("-", "+")))
-  if (!is.null(exclude))
-    filt <- compose(filt, chromosomeFilter(exclude, exclude = TRUE))
-  if (uniqueness != "none") {
-    withSread <- switch(uniqueness, location = FALSE, sequence = NA,
-                        `location*sequence` = TRUE)
-    ofilt <-
-      occurrenceFilter(withSread = withSread)
-    filt <- compose(filt, ofilt)
-  }
-  filt
-}
-
 readReads <-
   function(srcdir, lane, ...,
            include = "chr[09]+$", type = "MAQMapShort",
@@ -141,28 +115,6 @@ copyIRangesbyChr <- function(IR1, newX) {
         ans[[i]] = Views(newX[[i]], IR1[[i]])
     ans
 }
-
-## Subsampling two "lanes", so that on a per chromosome basis they
-## have the same number of reads; let's not do this if we are
-## reasonably close - when fudge
-
-laneSubsample <- function(lane1, lane2, fudge = 0.05)
-{
-    chromList = names(lane1) ##lane2 should have the same names
-    l1Len = unlist(lapply(lane1, length)) # sapply doesn't work for "GenomeData"
-    l2Len = unlist(sapply(lane2, length)) 
-    for(i in seq_len(length(l1Len)))
-    {
-        if(abs(l1Len[i]-l2Len[i])/l1Len[i] < fudge) next
-        if(l1Len[i] < l2Len[i])
-            lane2[[i]] <- sample(lane2[[i]], l1Len[i])
-        if(l1Len[i] > l2Len[i])
-            lane1[[i]] <- sample(lane1[[i]], l2Len[i])
-    }
-    GenomeDataList(list(lane1=lane1, lane2=lane2))
-}
-
-
 
 ## Take an IRanges object and merge all Ranges that are less than
 ## maxgap apart.  FIXME: make this a merge() method?

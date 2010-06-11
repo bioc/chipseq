@@ -143,5 +143,23 @@ diffPeakSummaryRef <-
     peakSummary
 }
 
+## Subsampling two "lanes", so that on a per chromosome basis they
+## have the same number of reads; let's not do this if we are
+## reasonably close - when fudge
 
+laneSubsample <- function(lane1, lane2, fudge = 0.05)
+{
+  chromList = names(lane1) ##lane2 should have the same names
+  l1Len = unlist(lapply(lane1, length)) # sapply doesn't work for "GenomeData"
+  l2Len = unlist(sapply(lane2, length)) 
+  for(i in seq_len(length(l1Len)))
+    {
+      if(abs(l1Len[i]-l2Len[i])/l1Len[i] < fudge) next
+      if(l1Len[i] < l2Len[i])
+        lane2[[i]] <- sample(lane2[[i]], l1Len[i])
+      if(l1Len[i] > l2Len[i])
+        lane1[[i]] <- sample(lane1[[i]], l2Len[i])
+    }
+  GenomeDataList(list(lane1=lane1, lane2=lane2))
+}
                     
