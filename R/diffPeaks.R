@@ -6,93 +6,53 @@
 ## RG thinks it would be good to also have a diffSummary list that one
 ## could specify which summaries of the differences are wanted
 
+## ML: it would be more flexible to have a function that takes a set
+## of "interesting" intervals and summarizes them over the coverage of
+## any number of samples. Actually, 'coverage' could be generalized to
+## any quantitative track. Really, that would amount to summarizing a
+## list of Views(List) objects and putting it all in one data frame.
+## Ideally, we could have a MultiViews object, i.e., a single set of
+## intervals on multiple subjects. Calling viewSums() would return a
+## DataFrame, instead of a vector. Anyway, let us wait for a use case,
+## for now, the chipseq package will do this:
 
-laneCoverage <- function(lane, chromLens) {
-    sapply(names(lane),
-           function(chr) {
-               coverage(lane[[chr]], width = chromLens[chr])
-           }, 
-           simplify = FALSE)
-}
+setGeneric("diffPeakSummary",
+           function(ranges1, ranges2,
+                    viewSummary = list(sums = viewSums, maxs = viewMaxs))
+           standardGeneric("diffPeakSummary"))
 
-
-countOverlappingReads <- function(peaks, reads)
+setMethod("diffPeakSummary", c("RleViewsList", "RleViewsList"), 
+          function(ranges1, ranges2, 
+                   viewSummary = list(sums = viewSums, maxs = viewMaxs))
+          ## 
+          ## 'extend' is unused.  The intent is to extend the peaks by this
+          ## amount before summarizing
+          ##
 {
-    as.numeric(as.table(t(findOverlaps(sort(reads), peaks))))
-}
+    cov1 <- subject(ranges1)
+    cov2 <- subject(ranges2)
+    all.peaks <- union(ranges1, ranges2)
+    peaks1 <- Views(cov1, all.peaks)
+    peaks2 <- Views(cov2, all.peaks)
+    peaks.comb <- Views(cov1 + cov2, all.peaks)
 
+    ans <- RangedData(all.peaks)
+    
+    ans$comb.max <- unlist(viewMaxs(peaks.comb))
+    
+    if (is.list(viewSummary)) {
+      for (nm in names(viewSummary)) {
+        ans[[paste(nm, "1", sep = "")]] <- unlist(viewSummary[[nm]](peaks1))
+        ans[[paste(nm, "2", sep = "")]] <- unlist(viewSummary[[nm]](peaks2))
+      }
+    }
+    else {
+      ans[["summary1"]] <- unlist(viewSummary(peaks1))
+      ans[["summary2"]] <- unlist(viewSummary(peaks2))
+    }
 
-
-diffPeakSummary <-
-    function(ranges1, ranges2, chrom.lens,
-             lower = 10, extend = 0, 
-             peak.fun = NULL, merge = 0L, islands = FALSE,
-             viewSummary = list(sums = viewSums, maxs = viewMaxs))
-    ## 
-    ## 'extend' is unused.  The intent is to extend the peaks by this
-    ## amount before summarizing
-    ##
-{
-    if (!is(ranges1, "list")) ranges1 <- as(ranges1, "list")
-    if (!is(ranges2, "list")) ranges2 <- as(ranges2, "list")
-    if (is.null(peak.fun)) 
-        peak.fun <- function(x)
-        {
-            peaks <-
-                if (islands)
-                {
-                    s <- slice(x, lower = 1)
-                    s[viewMaxs(s) >= lower]
-                }
-                else 
-                    slice(x, lower = lower)
-            if (merge > 0)
-            {
-                end(peaks) <- end(peaks) + merge
-                peaks <- reduce(peaks)
-                end(peaks) <- end(peaks) - merge
-            }
-            peaks
-        }
-    combined <- combineLanes(list(ranges1, ranges2))
-    comb.cov <- laneCoverage(combined, chrom.lens)
-    comb.peaks <- lapply(comb.cov, peak.fun)
-    cov1 <- laneCoverage(ranges1, chrom.lens)
-    cov2 <- laneCoverage(ranges2, chrom.lens)
-    peaks1 <- copyIRangesbyChr(comb.peaks, cov1)
-    peaks2 <- copyIRangesbyChr(comb.peaks, cov2)
-    peakSummary <-
-        do.call(rbind,
-                lapply(names(comb.peaks),
-                       function(chr) {
-                           if (length(peaks1[[chr]]) == 0) return(NULL)
-                           ans <-
-                               data.frame(chromosome = chr,
-                                          start = start(comb.peaks[[chr]]),
-                                          end = end(comb.peaks[[chr]]),
-                                          comb.max = viewMaxs(comb.peaks[[chr]]),
-                                          overlap1 = countOverlappingReads(comb.peaks[[chr]], ranges1[[chr]]),
-                                          overlap2 = countOverlappingReads(comb.peaks[[chr]], ranges2[[chr]]),
-                                          stringsAsFactors = FALSE)
-                           if (is.list(viewSummary))
-                           {
-                               for (nm in names(viewSummary))
-                               {
-                                   ans[[paste(nm, "1", sep = "")]] <- viewSummary[[nm]](peaks1[[chr]])
-                                   ans[[paste(nm, "2", sep = "")]] <- viewSummary[[nm]](peaks2[[chr]])
-                               }
-                           }
-                           else 
-                           {
-                               ans[["summary1"]] <- viewSummary(peaks1[[chr]])
-                               ans[["summary2"]] <- viewSummary(peaks2[[chr]])
-                           }
-                           ans
-                       }))
-    ## names(peakSummary)[names(peakSummary) == "which"] <- "chromosome"
-    rownames(peakSummary) <- NULL
-    peakSummary
-}
+    ans
+})
 
 
 ## version with respect to a reference
