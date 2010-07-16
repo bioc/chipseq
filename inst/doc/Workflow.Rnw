@@ -3,7 +3,7 @@
 % likely to be overwritten.
 %
 % \VignetteIndexEntry{A Sample ChIP-Seq analysis workflow}
-%\VignetteDepends{IRanges, GenomicFeatures.Mmusculus.UCSC.mm9, BSgenome.Mmusculus.UCSC.mm9}
+%\VignetteDepends{IRanges, BSgenome.Mmusculus.UCSC.mm9, lattice}
 %\VignetteKeywords{chip-seq, sequencing, visualization}
 %\VignettePackage{chipseq}
 
@@ -16,7 +16,7 @@
 \usepackage[text={178mm,230mm},centering]{geometry}
 \usepackage{Sweave}
 
-\date{January 23, 2009}
+\date{July 12, 2010}
 
 \SweaveOpts{keep.source=TRUE,eps=FALSE,pdf=TRUE,width=9,height=6,prefix.string=figs-islands}
 \setkeys{Gin}{width=0.98\textwidth}
@@ -41,7 +41,7 @@ as \Rpackage{ShortRead} and \Rpackage{IRanges}.  We will also use the
 <<setup,echo=TRUE,results=hide>>=
 
 library(chipseq)
-library(GenomicFeatures.Mmusculus.UCSC.mm9)
+library(GenomicFeatures)
 library(lattice)
 
 @
@@ -53,31 +53,36 @@ library(lattice)
 dataset contains data for three chromosomes from Solexa lanes, one
 from a CTCF mouse ChIP-Seq, and one from a GFP mouse ChIP-Seq.  The
 raw reads were aligned to the reference genome (mouse in this case)
-using an external program (MAQ), and the results read in using the
-\code{readReads} function, which in turn uses the \code{readAligned}
-function in the \Rpackage{ShortRead}.  This step removed all duplicate
-reads and applied a quality score cutoff.  The remaining data were
-reduced to a set of alignment start positions (including orientation).
+using an external program (MAQ), and the results read in using the the
+\code{readAligned} function in the \Rpackage{ShortRead}, in
+conjunction with a filter produced by the \code{chipseqFilter}
+function.  This step removed all duplicate reads and applied a quality
+score cutoff.  The remaining data were reduced to a set of aligned
+intervals (including orientation).
+
 <<>>=
 data(cstest)
 cstest
+@
+%
+<<convert-cstest, echo=FALSE, eval=FALSE>>=
+## code used to convert the GenomeDataList to a GRangesList
+cstest <- seqapply(cstest, function(gd) {
+  gr <- do.call(c, lapply(names(gd), function(chr) {
+    starts <- gd[[chr]]
+    GRanges(chr, IRanges(unlist(starts), width = 24), 
+            rep(names(starts), elementLengths(starts)))
+  }))
+})
 @ 
 %
-\code{cstest} is an object of class \textit{``GenomeDataList''},
-and has a list-like structure, each component representing data from
-one lane.
+\code{cstest} is an object of class \textit{GRangesList}, and has a
+list-like structure, each component representing the alignments from
+one lane, as a \textit{GRanges} object of stranded intervals.
 <<>>=
 cstest$ctcf
 @ 
 %
-Each of these are themselves lists containing positive and negative
-strand alignments:
-<<>>=
-str(cstest$ctcf$chr10)
-@
-%
-The aligned position of the first cycle is stored.
-
 
 \section*{The mouse genome}
 
@@ -86,8 +91,7 @@ in that context.  Bioconductor has genome packages containing the full
 sequences of several genomes.  The one relevant for us is
 <<>>=
 library(BSgenome.Mmusculus.UCSC.mm9)
-mouse.chromlens <- seqlengths(Mmusculus)
-head(mouse.chromlens)
+seqlengths(cstest) <- seqlengths(Mmusculus)
 @ 
 %
 We will only make use of the chromosome lengths, but the actual
@@ -111,17 +115,15 @@ interest.
 
 
 We extend all reads to be 200 bases long.  This is done using the
-\code{extendReads()} function, which can work on data from one
-chromosome in one lane.
+\code{resize} function, which considers the strand to determine the
+direction of extension:
 <<>>=
-ext <- extendReads(cstest$ctcf$chr10, seqLen = 200)
-head(ext)
+ctcf.ext <- resize(cstest$ctcf, width = 200)
+ctcf.ext
 @ 
 %
-The result is essentially a collection of intervals (ranges) over the
-reference genome.  
-
-
+We now have intervals for the CTCF lane that represent the original
+fragments that were precipitated.
 
 \section*{Coverage, islands, and depth}
 
@@ -129,7 +131,7 @@ A useful summary of this information is the
 \emph{coverage}, that is, how many times each base in the genome was
 covered by one of these intervals.
 <<>>=
-cov <- coverage(ext, width = mouse.chromlens["chr10"])
+cov <- coverage(ctcf.ext)
 cov
 @ 
 %
@@ -148,15 +150,14 @@ islands
 For each island, we can compute the number of reads in the island, and
 the maximum coverage depth within that island.
 <<>>=
-viewSums(head(islands))
-viewMaxs(head(islands))
+viewSums(islands)
+viewMaxs(islands)
 
 nread.tab <- table(viewSums(islands) / 200)
 depth.tab <- table(viewMaxs(islands))
 
-head(nread.tab, 10)
-head(depth.tab, 10)
-
+nread.tab[,1:10]
+depth.tab[,1:10]
 @ 
 
 
@@ -164,45 +165,47 @@ head(depth.tab, 10)
 
 \section*{Processing multiple lanes}
 
-Although data from one chromosome within one lane is often the natural
-unit to work with, we typically want to apply any procedure to all
-chromosomes in all lanes.  A function that is useful for this purpose
-is \code{gdapply}, which recursively applies a summary function to a
-full dataset.  If the summary function produces a data frame, the
-result can be coerced into a flat data frame that is often easier to
-work with.  Here is a simple summary function that computes the
-frequency distribution of the number of reads.
+Although data from one lane is often a natural analytical unit, we
+typically want to apply any procedure to all lanes.  A function that
+is useful for this purpose is \code{seqapply}, which applies a
+function to a \class{Sequence} and returns the result as another
+\class{Sequence}, if possible. In this case, our input
+\class{Sequence} is \class{GRangesList}, and our expected output is a
+\class{DataFrameList}.  Here is a simple summary function that
+computes the frequency distribution of the number of reads.
 <<>>=
 islandReadSummary <- function(x)
 {
-    g <- extendReads(x, seqLen = 200)
+    g <- resize(x, 200)
     s <- slice(coverage(g), lower = 1)
     tab <- table(viewSums(s) / 200)
-    ans <- data.frame(nread = as.numeric(names(tab)), count = as.numeric(tab))
-    ans
+    df <- DataFrame(tab)
+    colnames(df) <- c("chromosome", "nread", "count")
+    df$nread <- as.integer(df$nread)
+    df
 }
 @
 %
 Applying it to our test-case, we get
 <<>>=
-head(islandReadSummary(cstest$ctcf$chr10))
+head(islandReadSummary(cstest$ctcf))
 @ 
 %
-We can now use it to summarize the full dataset.
+We can now use it to summarize the full dataset, flattening the
+returned \class{DataFrameList} with the \code{stack} function.
 <<>>=
-nread.islands <- gdapply(cstest, islandReadSummary)
-nread.islands <- as(nread.islands, "data.frame")
-head(nread.islands)
+nread.islands <- seqapply(cstest, islandReadSummary)
+nread.islands <- stack(nread.islands, "sample")
+nread.islands
 @ 
 
 
 \newpage
 
 <<>>=
-xyplot(log(count) ~ nread | sample, nread.islands, 
+xyplot(log(count) ~ nread | sample, as.data.frame(nread.islands), 
        subset = (chromosome == "chr10" & nread <= 40), 
        layout = c(1, 2), pch = 16, type = c("p", "g"))
-
 @ 
 
 <<fig=TRUE,height=10,echo=FALSE>>=
@@ -223,14 +226,13 @@ samples are not random, the islands with just one or two reads may be
 representative of the null distribution.
 %
 <<>>=
-xyplot(log(count) ~ nread | sample, nread.islands, 
+xyplot(log(count) ~ nread | sample, as.data.frame(nread.islands), 
        subset = (chromosome == "chr10" & nread <= 40), 
        layout = c(1, 2), pch = 16, type = c("p", "g"),
        panel = function(x, y, ...) {
            panel.lmline(x[1:2], y[1:2], col = "black")
            panel.xyplot(x, y, ...)
        })
-
 @ 
 
 <<fig=TRUE,height=8,echo=FALSE>>=
@@ -244,17 +246,19 @@ We can create a similar plot of the distribution of depths.
 <<>>=
 islandDepthSummary <- function(x)
 {
-    g <- extendReads(x, seqLen = 200)
-    s <- slice(coverage(g), lower = 1)
-    tab <- table(viewMaxs(s))
-    ans <- data.frame(depth = as.numeric(names(tab)), count = as.numeric(tab))
-    ans
+  g <- resize(x, 200)
+  s <- slice(coverage(g), lower = 1)
+  tab <- table(viewMaxs(s) / 200)
+  df <- DataFrame(tab)
+  colnames(df) <- c("chromosome", "depth", "count")
+  df$depth <- as.integer(df$depth)
+  df
 }
 
-depth.islands <- gdapply(cstest, islandDepthSummary)
-depth.islands <- as(depth.islands, "data.frame")
+depth.islands <- seqapply(cstest, islandDepthSummary)
+depth.islands <- stack(depth.islands, "sample")
 
-xyplot(log(count) ~ depth | sample, depth.islands, 
+xyplot(log(count) ~ depth | sample, as.data.frame(depth.islands), 
        subset = (chromosome == "chr10" & depth <= 20), 
        layout = c(1, 2), pch = 16, type = c("p", "g"),
        panel = function(x, y, ...) {
@@ -280,11 +284,11 @@ plot(trellis.last.object())
 
 \section*{Peaks}
 
-Going back to our example of chr10 of the first sample, we can define
+Going back to our example of the coverage for the CTCF sample, we can define
 ``peaks'' to be regions of the genome where coverage is 8 or more.
 <<>>=
-peaks <- slice(cov, lower = 8)
-peaks
+peaks.ctcf <- slice(cov, lower = 8)
+peaks.ctcf
 @ 
 %
 It is meaningful to ask about the contribution of each strand to each
@@ -293,34 +297,32 @@ opposite sides of a binding site depending on which strand it matched.
 We can compute strand-specific coverage, and look at the individual
 coverages under the combined peaks as follows:
 <<>>=
-peak.depths <- viewMaxs(peaks)
+peak.depths <- viewMaxs(peaks.ctcf)
 
-cov.pos <- coverage(extendReads(cstest$ctcf$chr10, strand = "+", seqLen = 200), 
-                    width = mouse.chromlens["chr10"])
-cov.neg <- coverage(extendReads(cstest$ctcf$chr10, strand = "-", seqLen = 200), 
-                    width = mouse.chromlens["chr10"])
+cov.pos <- coverage(ctcf.ext[strand(ctcf.ext) == "+"])
+cov.neg <- coverage(ctcf.ext[strand(ctcf.ext) == "-"])
 
-peaks.pos <- copyIRanges(peaks, cov.pos)
-peaks.neg <- copyIRanges(peaks, cov.neg)
+peaks.pos <- Views(cov.pos, peaks.ctcf)
+peaks.neg <- Views(cov.neg, peaks.ctcf)
 
-wpeaks <- tail(order(peak.depths), 4)
+wpeaks <- tail(order(peak.depths$chr10), 4)
 wpeaks
 
 @ 
 %
-We plot four highest peaks below.
+Below, we plot the four highest peaks on chromosome 10.
 
 \newpage
 
 <<>>=
-coverageplot(peaks.pos[wpeaks[1]], peaks.neg[wpeaks[1]])
+coverageplot(peaks.pos$chr10[wpeaks[1]], peaks.neg$chr10[wpeaks[1]])
 @ 
 <<fig=TRUE,height=5,echo=FALSE>>=
 plot(trellis.last.object())
 @ 
 
 <<>>=
-coverageplot(peaks.pos[wpeaks[2]], peaks.neg[wpeaks[2]])
+coverageplot(peaks.pos$chr10[wpeaks[2]], peaks.neg$chr10[wpeaks[2]])
 @ 
 <<fig=TRUE,height=5,echo=FALSE>>=
 plot(trellis.last.object())
@@ -329,14 +331,14 @@ plot(trellis.last.object())
 \newpage
 
 <<>>=
-coverageplot(peaks.pos[wpeaks[3]], peaks.neg[wpeaks[3]])
+coverageplot(peaks.pos$chr10[wpeaks[3]], peaks.neg$chr10[wpeaks[3]])
 @ 
 <<fig=TRUE,height=5,echo=FALSE>>=
 plot(trellis.last.object())
 @ 
 
 <<>>=
-coverageplot(peaks.pos[wpeaks[4]], peaks.neg[wpeaks[4]])
+coverageplot(peaks.pos$chr10[wpeaks[4]], peaks.neg$chr10[wpeaks[4]])
 @ 
 <<fig=TRUE,height=5,echo=FALSE>>=
 plot(trellis.last.object())
@@ -348,20 +350,18 @@ plot(trellis.last.object())
 
 
 One common question is: which peaks are different in two samples?  One
-simple strategy is the following: combine data from the two samples,
-find peaks in the combined data, and compare the contributions of the
-two samples.
+simple strategy is the following: combine the two peak sets, and
+compare the two samples by calculating summary statistics for
+the combined peaks on top of each coverage vector.
 <<>>=
 
-extRanges <- gdapply(cstest, extendReads, seqLen = 200)
+## find peaks for GFP control
+peaks.gfp <- slice(coverage(resize(cstest$gfp, 200)), lower = 8)
 
-peakSummary <-
-    diffPeakSummary(extRanges$gfp, extRanges$ctcf,
-                    chrom.lens = mouse.chromlens, lower = 10)
+peakSummary <- diffPeakSummary(peaks.gfp, peaks.ctcf)
 
-xyplot(asinh(sums2) ~ asinh(sums1) | chromosome,
-       data = peakSummary, 
-       ## subset = (chromosome %in% c("chr1", "chr2")),
+xyplot(asinh(sums2) ~ asinh(sums1) | space,
+       data = as.data.frame(peakSummary), 
        panel = function(x, y, ...) {
            panel.xyplot(x, y, ...)
            panel.abline(median(y - x), 1)
@@ -383,8 +383,8 @@ peakSummary <-
            resids <- (diffs - median(diffs)) / mad(diffs)
            up <- resids > 2
            down <- resids < -2
+           change <- ifelse(up, "up", ifelse(down, "down", "flat"))
        })
-head(peakSummary)
 @ 
 
 
@@ -394,33 +394,42 @@ head(peakSummary)
 Locations of individual peaks may be of interest.  Alternatively, a
 global summary might look at classifying the peaks of interest in the
 context of genomic features such as promoters, upstream regions, etc.
-The \code{geneMouse} function defined in the
-\Rpackage{GenomicFeatures.Mmusculus.UCSC.mm9} package
-returns gene location information from UCSC.  The
-\code{genomic\_regions} function converts this into a set of ranges
-defining promoters, upstream regions, etc.
+The \Rpackage{GenomicFeatures} package facilitates obtaining gene
+annotations from different data sources. Below, we download the UCSC
+gene predictions for the mouse genome and generate a \Rclass{GRanges}
+object with the transcript regions (from the first to last exon,
+contiguous).
 <<>>=
-gregions <- transcripts_deprecated(genes = geneMouse(), proximal = 2000)
-## gregions$gene <- as.character(gregions$gene)
+db <- makeTranscriptDbFromUCSC("mm9")
+gregions <- transcripts(db)
 gregions
-@ 
-This can be used to obtain a tabulation of the peaks.
+@
+
+We can now estimate the promoter for each transcript: 
 <<>>=
-ans <- contextDistribution(peakSummary, gregions)
-head(ans)
+promoters <- flank(gregions, 1000, both = TRUE)
+@ 
+%
+And count the peaks that fall into a promoter:
+<<>>=
+peakSummary$inPromoter <- peakSummary %in% promoters
+xtabs(~ inPromoter + change, peakSummary)
+@ 
+Or somewhere upstream or in a gene:
+<<>>=
+peakSummary$inUpstream <- peakSummary %in% flank(gregions, 20000)
+peakSummary$inGene <- peakSummary %in% gregions
 @ 
 
 <<>>=
 sumtab <- 
-    as.data.frame(rbind(total = xtabs(total ~ type, ans),
-                        promoter = xtabs(promoter ~ type, ans),
-                        threeprime = xtabs(threeprime ~ type, ans),
-                        upstream = xtabs(upstream ~ type, ans),
-                        downstream = xtabs(downstream ~ type, ans),
-                        gene = xtabs(gene ~ type, ans)))
-
-cbind(sumtab, ratio = round(sumtab[, "down"] /  sumtab[, "up"], 3))
-
+    as.data.frame(rbind(total = xtabs(~ change, peakSummary),
+                        promoter = xtabs(~ change, 
+                          subset(peakSummary, inPromoter)),
+                        upstream = xtabs(~ change, 
+                          subset(peakSummary, inUpstream)),
+                        gene = xtabs(~ change, subset(peakSummary, inGene))))
+##cbind(sumtab, ratio = round(sumtab[, "down"] /  sumtab[, "up"], 3))
 @ 
 
 \section*{Version information}
