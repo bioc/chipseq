@@ -22,6 +22,7 @@
 \setkeys{Gin}{width=0.98\textwidth}
 
 \newcommand{\Rpackage}[1]{\textsf{#1}}
+\newcommand{\Rclass}[1]{{\textit{#1}}}
 \newcommand{\code}[1]{\texttt{#1}}
 
 \begin{document}
@@ -168,10 +169,10 @@ depth.tab[,1:10]
 Although data from one lane is often a natural analytical unit, we
 typically want to apply any procedure to all lanes.  A function that
 is useful for this purpose is \code{seqapply}, which applies a
-function to a \class{Sequence} and returns the result as another
-\class{Sequence}, if possible. In this case, our input
-\class{Sequence} is \class{GRangesList}, and our expected output is a
-\class{DataFrameList}.  Here is a simple summary function that
+function to a \Rclass{Sequence} and returns the result as another
+\Rclass{Sequence}, if possible. In this case, our input
+\Rclass{Sequence} is \Rclass{GRangesList}, and our expected output is a
+\Rclass{DataFrameList}.  Here is a simple summary function that
 computes the frequency distribution of the number of reads.
 <<>>=
 islandReadSummary <- function(x)
@@ -192,7 +193,7 @@ head(islandReadSummary(cstest$ctcf))
 @ 
 %
 We can now use it to summarize the full dataset, flattening the
-returned \class{DataFrameList} with the \code{stack} function.
+returned \Rclass{DataFrameList} with the \code{stack} function.
 <<>>=
 nread.islands <- seqapply(cstest, islandReadSummary)
 nread.islands <- stack(nread.islands, "sample")
