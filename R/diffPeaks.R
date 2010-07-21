@@ -109,6 +109,23 @@ diffPeakSummaryRef <-
 
 laneSubsample <- function(lane1, lane2, fudge = 0.05)
 {
+  .quickAndDirtyCoercionFromGRangesToGenomeData <- function(x)
+  {
+    if ("*" %in% unique(strand(x)))
+        stop("cannot coerce 'x' if 'strand(x)' contains \"*\"")
+    y <- split(x, seqnames(x))
+    listData <- lapply(seq_len(length(y)),
+                    function(i) {
+                        split(start(y[[i]]),
+                              as.character(strand(y[[i]])))
+                    })
+    names(listData) <- names(y)
+    GenomeData(listData)
+  }
+  if (is(lane1, "GRanges"))
+    lane1 <- .quickAndDirtyCoercionFromGRangesToGenomeData(lane1)
+  if (is(lane2, "GRanges"))
+    lane2 <- .quickAndDirtyCoercionFromGRangesToGenomeData(lane2)
   chromList = names(lane1) ##lane2 should have the same names
   l1Len = unlist(lapply(lane1, length)) # sapply doesn't work for "GenomeData"
   l2Len = unlist(sapply(lane2, length)) 
