@@ -168,6 +168,26 @@ combineLaneRanges <- function(laneList, chromList = names(laneList[[1]]), keep.u
 combineLanes <- function(x, chromList = names(x[[1]]), keep.unique = FALSE)
 {
     .Deprecated("c (with GRanges), possibly followed by unique()")
+    .quickAndDirtyCoercionFromGRangesToGenomeData <- function(x)
+    {
+      if ("*" %in% unique(strand(x)))
+          stop("cannot coerce 'x' if 'strand(x)' contains \"*\"")
+      y <- split(x, seqnames(x))
+      listData <- lapply(seq_len(length(y)),
+                      function(i) {
+                          split(start(y[[i]]),
+                                as.character(strand(y[[i]])))
+                      })
+      names(listData) <- names(y)
+      GenomeData(listData)
+    }
+    if (is(x, "GRangesList")) {
+      ## turn 'x' into a GenomeDataList object.
+      listData <- lapply(seq_len(length(x)),
+                      function(i)
+                        .quickAndDirtyCoercionFromGRangesToGenomeData(x[[i]]))
+      x <- GenomeDataList(listData)
+    }
     isRange <- is(x[[1]][[chromList[1]]], "IRanges")
     if (isRange)
         combineLaneRanges(laneList = x, chromList = chromList, keep.unique = keep.unique)
