@@ -70,9 +70,10 @@ cstest
 ## code used to convert the GenomeDataList to a GRangesList
 cstest <- seqapply(cstest, function(gd) {
   gr <- do.call(c, lapply(names(gd), function(chr) {
-    starts <- gd[[chr]]
-    GRanges(chr, IRanges(unlist(starts), width = 24), 
-            rep(names(starts), elementLengths(starts)))
+    pos <- gd[[chr]]
+    starts <- c(pos[["+"]], pos[["-"]] - 23L)
+    GRanges(chr, IRanges(starts, width = 24), 
+            rep(names(pos), elementLengths(pos)))
   }))
 })
 @ 
