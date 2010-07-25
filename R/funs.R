@@ -1,7 +1,7 @@
 
 readReads <-
   function(srcdir, lane, ...,
-           include = "chr[09]+$", type = "MAQMapShort",
+           include = "chr[0-9]+$", type = "MAQMapShort",
            simplify = TRUE, minScore=15)
 {
   .Deprecated("readAligned() with chipseqFilter()")

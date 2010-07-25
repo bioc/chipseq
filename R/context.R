@@ -5,12 +5,6 @@
 ### is not that difficult. From there, an analysis might take many
 ### paths.
 
-setGeneric("genomicContext", function(x, ...) standardGeneric("genomicContext"))
-
-setGeneric("genomicContext<-",
-           function(x, ...) standardGeneric("genomicContext<-"))
-
-
 contextDistributionPeakSet <- function(peaks, gregions)
 {
     query <- with(peaks, IRanges(start, end))

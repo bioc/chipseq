@@ -7,6 +7,11 @@
   This is a helper function for reading in aligned reads with a number
   of parameters preset at values we have found useful for analyzing
   ChIP-seq data.
+
+  \strong{DEPRECATED}: Given the filter support that now exists for
+  \code{\link[ShortRead]{readAligned}}, one should
+  now create a ChIP-Seq appropriate filter with
+  \code{\link{chipseqFilter}} and pass it to \code{readAligned}.
 }
 \usage{
 readReads(srcdir, lane, ...,

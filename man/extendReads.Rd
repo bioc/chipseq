@@ -3,8 +3,10 @@
 \title{ A function to extend short reads. }
 \description{
   Since the short read is typically represents one end of a longer
-fragment there are situations where extending it to the approximate length
-of the fragment can be useful.
+fragment there are situations where extending it to the approximate
+length of the fragment can be useful.
+\strong{DEPRECATED}: use the \code{resize} method on
+the \code{\link[GenomicRanges:GRanges-class]{GRanges}} class.
 }
 \usage{
 extendReads(reads, seqLen = 200, strand = c("+", "-"))
@@ -32,10 +34,16 @@ depending on the input.
 \author{ R. Gentleman}
 \examples{
 data(cstest)
-extRanges1 <- gdapply(cstest, extendReads, seqLen = 200)
+## deprecated:
+##extRanges1 <- gdapply(cstest, extendReads, seqLen = 200)
+## instead:
+extRanges1 <- endoapply(cstest, resize, width = 200)
 
 ## AlignedRead example
 sp <- SolexaPath(system.file("extdata", package="ShortRead"))
-aln <- readAligned(sp, "s_2_export.txt")
-extRanges2 <- extendReads(aln[!is.na(position(aln))])
+aln <- readAligned(sp, "s_2_export.txt", filter=chipseqFilter())
+## deprecated:
+## extRanges2 <- extendReads(aln)
+## instead:
+resize(as(aln, "GRanges"), width = 200)
 }

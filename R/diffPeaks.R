@@ -109,8 +109,9 @@ diffPeakSummaryRef <-
 
 laneSubsample <- function(lane1, lane2, fudge = 0.05)
 {
-  chromList = names(lane1) ##lane2 should have the same names
-  l1Len = unlist(lapply(lane1, length)) # sapply doesn't work for "GenomeData"
+  lane1 <- split(lane1, seqnames(lane1))
+  lane2 <- split(lane2, seqnames(lane2))
+  l1Len = unlist(lapply(lane1, length))
   l2Len = unlist(sapply(lane2, length)) 
   for(i in seq_len(length(l1Len)))
     {
@@ -120,6 +121,6 @@ laneSubsample <- function(lane1, lane2, fudge = 0.05)
       if(l1Len[i] > l2Len[i])
         lane1[[i]] <- sample(lane1[[i]], l2Len[i])
     }
-  GenomeDataList(list(lane1=lane1, lane2=lane2))
+  GRangesList(lane1=unlist(lane1,use.names=FALSE),
+              lane2=unlist(lane2,use.names=FALSE))
 }
-                    

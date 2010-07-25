@@ -50,3 +50,6 @@ exportMethods(estimate.mean.fraglen)
 
 ## subsets.R
 export(subsetSummary, peakCutoff)
+
+## peaks.R
+export(peakSummary)

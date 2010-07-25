@@ -16,7 +16,7 @@
 \usepackage[text={178mm,230mm},centering]{geometry}
 \usepackage{Sweave}
 
-\date{July 12, 2010}
+\date{July 23, 2010}
 
 \SweaveOpts{keep.source=TRUE,eps=FALSE,pdf=TRUE,width=9,height=6,prefix.string=figs-islands}
 \setkeys{Gin}{width=0.98\textwidth}
@@ -37,7 +37,7 @@ some basic tasks in the analysis of ChIP-Seq data.  We will use
 several functions in the as-yet-unreleased \Rpackage{chipseq} package,
 which provides convenient interfaces to other powerful packages such
 as \Rpackage{ShortRead} and \Rpackage{IRanges}.  We will also use the
-\Rpackage{lattice} package for visualization.
+\Rpackage{lattice} and \Rpackage{rtracklayer} packages for visualization.
 
 <<setup,echo=TRUE,results=hide>>=
 
@@ -57,10 +57,26 @@ raw reads were aligned to the reference genome (mouse in this case)
 using an external program (MAQ), and the results read in using the the
 \code{readAligned} function in the \Rpackage{ShortRead}, in
 conjunction with a filter produced by the \code{chipseqFilter}
-function.  This step removed all duplicate reads and applied a quality
-score cutoff.  The remaining data were reduced to a set of aligned
-intervals (including orientation).
+function.  This step filtered the reads to remove duplicates, to
+restrict mappings to the canonical, autosomal chromosomes and
+ensure that only a single read maps to a given position. A quality
+score cutoff was also applied.  The remaining data were reduced to a
+set of aligned intervals (including orientation). This saves a great
+deal of memory, as the sequences, which are unnecessary, are
+discarded. Finally, we subset the data for chr10 to chr12, simply for
+convenience in this vignette.
 
+We outline this process with this unevaluated code block:
+<<preprocess, eval=FALSE>>=
+filter <- compose(chipseqFilter(), alignQualityFilter(15))
+cstest <- seqapply(sampleFiles, function(file) {
+  as(readAligned(file, filter), "GRanges")
+})
+cstest <- cstest[seqnames(cstest) %in% c("chr10", "chr11", "chr12")]
+@ 
+%
+The above step has been performed in advance, and the output has been
+included as a dataset in this package. We load it now:
 <<>>=
 data(cstest)
 cstest
@@ -115,10 +131,19 @@ strand, makes it more likely that we cover the actual site of
 interest.
 \\
 
-
-We extend all reads to be 200 bases long.  This is done using the
-\code{resize} function, which considers the strand to determine the
-direction of extension:
+It is possible to estimate the fragment length, through a variety of
+methods. There are several implemented by the
+\Rfunction{estimate.mean.fraglen} function. Generally, this only needs
+to be done for one sample from each experimental protocol. Here, we
+use SSISR, the default method:
+<<estimate.mean.fraglen>>=
+fraglen <- estimate.mean.fraglen(cstest$ctcf)
+fraglen[!is.na(fraglen)]
+@
+%
+Given the suggestion of $~190$ nucleotides, we extend all reads to be
+200 bases long.  This is done using the \code{resize} function, which
+considers the strand to determine the direction of extension:
 <<>>=
 ctcf.ext <- resize(cstest$ctcf, width = 200)
 ctcf.ext
@@ -133,8 +158,8 @@ A useful summary of this information is the
 \emph{coverage}, that is, how many times each base in the genome was
 covered by one of these intervals.
 <<>>=
-cov <- coverage(ctcf.ext)
-cov
+cov.ctcf <- coverage(ctcf.ext)
+cov.ctcf
 @ 
 %
 For efficiency, the result is stored in a run-length encoded form.
@@ -145,7 +170,7 @@ For efficiency, the result is stored in a run-length encoded form.
 The regions of interest are contiguous segments of non-zero coverage,
 also known as \emph{islands}.
 <<>>=
-islands <- slice(cov, lower = 1)
+islands <- slice(cov.ctcf, lower = 1)
 islands
 @ 
 %
@@ -281,18 +306,45 @@ xyplot(log(count) ~ depth | sample, as.data.frame(depth.islands),
 plot(trellis.last.object())
 @ 
 
+The above plot is very useful for detecting peaks, discussed in the
+next section. As a convenience, it can be created for the coverage
+over all chromosomes for a single sample by calling the
+\code{islandDepthPlot} function:
+<<islandDepthPlot>>=
+islandDepthPlot(cov.ctcf)
+@
 
 \newpage
 
 \section*{Peaks}
 
-Going back to our example of the coverage for the CTCF sample, we can define
-``peaks'' to be regions of the genome where coverage is 8 or more.
-<<>>=
-peaks.ctcf <- slice(cov, lower = 8)
-peaks.ctcf
+To obtain a set of putative binding sites, i.e., peaks, we need to
+find those regions that are significantly above the noise level.
+Using the same poisson-based approach for estimating the noise
+distribution as in the plot above, the \Rfunction{peakCutoff} function
+returns a cutoff value for a specific FDR:
+<<peakCutoff>>=
+peakCutoff(cov.ctcf, fdr = 0.0001)
 @ 
 %
+Considering the above calculation of $7$ at an FDR of $0.0001$, and
+looking at the above plot, we might choose $8$ as a conservative peak
+cutoff:
+<<>>=
+peaks.ctcf <- slice(cov.ctcf, lower = 8)
+peaks.ctcf
+@ 
+
+To summarize the peaks for exploratory analysis, we call the
+\Rfunction{peakSummary} function:
+<<peakSummary>>=
+peaks <- peakSummary(peaks.ctcf)
+@ 
+%
+The result is a \Rclass{RangedData} object with two columns: the view
+maxs and the view sums. Beyond that, this object is often useful as a
+scaffold for adding additional statistics.
+
 It is meaningful to ask about the contribution of each strand to each
 peak, as the sequenced region of pull-down fragments would be on
 opposite sides of a binding site depending on which strand it matched.
@@ -358,7 +410,8 @@ the combined peaks on top of each coverage vector.
 <<>>=
 
 ## find peaks for GFP control
-peaks.gfp <- slice(coverage(resize(cstest$gfp, 200)), lower = 8)
+cov.gfp <- coverage(resize(cstest$gfp, 200))
+peaks.gfp <- slice(cov.gfp, lower = 8)
 
 peakSummary <- diffPeakSummary(peaks.gfp, peaks.ctcf)
 
@@ -432,6 +485,45 @@ sumtab <-
                           subset(peakSummary, inUpstream)),
                         gene = xtabs(~ change, subset(peakSummary, inGene))))
 ##cbind(sumtab, ratio = round(sumtab[, "down"] /  sumtab[, "up"], 3))
+@ 
+
+\section*{Visualizing peaks in genomic context}
+
+While it is generally informative to calculate statistics
+incorporating the genomic context, eventually one wants a picture. The
+traditional genome browser view is an effective method of visually
+integrating multiple annotations with experimental data along the
+genome. 
+
+Using the \Rpackage{rtracklayer} package, we can upload our coverage
+and peaks for both samples to the UCSC Genome Browser:
+<<rtracklayer-upload, eval=FALSE>>=
+library(rtracklayer)
+session <- browserSession()
+genome(session) <- "mm9"
+session$gfpCov <- cov.gfp
+session$gfpPeaks <- peaks.gfp
+session$ctcfCov <- cov.ctcf
+session$ctcfPeaks <- peaks.ctcf
+@ 
+%
+Once the tracks are uploaded, we can choose a region to view, such as
+the tallest peak on chr10 in the CTCF data:
+<<rtracklayer-view, eval=FALSE>>=
+peak.ord <- order(unlist(peak.depths), decreasing=TRUE)
+peak.sort <- as(peaks.ctcf, "GRanges")[peak.ord]
+view <- browserView(session, peak.sort[1], full = c("gfpCov", "ctcfCov"))
+@ 
+%
+We coerce to \Rclass{GRanges} so that we can sort the ranges across
+chromosomes.  By passing the \code{full} parameter to
+\Rfunction{browserView} we instruct UCSC to display the coverage
+tracks as a bar chart.  Next, we might programmatically display a view
+for the top 5 tallest peaks:
+<<rtracklayer-view-10, eval=FALSE>>=
+top10 <- head(peak.sort, 10)
+for (i in seq(length(top10)))
+  browserView(session, top10[i])
 @ 
 
 \section*{Version information}

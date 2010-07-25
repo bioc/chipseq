@@ -8,6 +8,7 @@
 \alias{estimate.mean.fraglen,RangedData-method}
 \alias{estimate.mean.fraglen,AlignedRead-method}
 \alias{estimate.mean.fraglen,GenomeData-method}
+\alias{estimate.mean.fraglen,GRanges-method}
 
 \alias{basesCovered}
 \alias{densityCorr}
@@ -74,9 +75,8 @@ sparse.density(x, width = 50, kernel = "epanechnikov",
     values and reports the one giving minimum coverage or maximum
     correlation. }
   
-  \item{seqLen}{ For the \code{"coverage"} method, the amount by which
-    each read should be extended before computing the coverage.
-    Typically the read length. }
+  \item{seqLen}{ For the \code{"coverage"} method, the assumed length of
+    each read for computing the coverage.  Typically the read length. }
 
   \item{verbose}{ Logical specifying whether progress information should
     be printed during execution. }

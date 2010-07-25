@@ -18,19 +18,26 @@ summary.subsets <- function(...)
     subsetSummary(...)
 }
 
+### FIXME: simplify/update this function:
+## 'chr' is unncessary (why always limit to one chromosome?)
+## 'chromlens' comes from our GRanges
+## 'seqLen' is unnecessary (just resize first)
+##
+### OR: just remove it -- have we ever seen saturation?
 subsetSummary <- 
     function(x,
              chr,
              nstep, ## number of reads in each increment for full data
              props = seq(.1, 1, .1),
-             chromlens,
+             chromlens = seqlengths(x),
              fg.cutoff = 6, seqLen = 200,
              fdr.cutoff = 0.001,
              use.fdr = FALSE,
              resample = TRUE, islands = TRUE,
              verbose = getOption("verbose"))
 {
-    g <- extendReads(x[[chr]], seqLen = seqLen)
+    g <- GRanges(chr, ranges(resize(x[seqnames(x) == chr], width=seqLen)))
+    seqlengths(g) <- chromlens[chr]
     if (resample) g <- g[sample(length(g))]
     ##     if (!missing(nstep) && missing(props))
     ##         props <- seq(nstep / length(g), 1, by = nstep / length(g))
@@ -46,7 +53,7 @@ subsetSummary <-
     if (verbose)
       message(length(g), " reads in ", chr, ". Increments: ",
               paste(ids, collapse = ", "))
-    old.peaks <- IRanges()
+    old.peaks <- RangesList()
     start <- 1L
     ans.cols <-
         c("alpha.hat", "bg.rate", "old.bg", "old.fg",
@@ -57,24 +64,26 @@ subsetSummary <-
     colnames(ans) <- ans.cols
     for (i in seq_along(ids))
     {
-        old.reads <- sort(head(g, start-1L))
+        old.reads <- head(g, start-1L)
+        old.reads <- old.reads[order(start(old.reads))]
         cum.reads <- head(g, ids[i])
         if (length(old.reads) > 0)
         {
-            old.islands <- slice(coverage(old.reads, width = chromlens[chr]),
-                                 lower = 1)
+            old.islands <- slice(coverage(old.reads), lower = 1)
             nreads <- as.integer(viewSums(old.islands) / seqLen)
             old.total.area <- sum(width(old.islands))
+            old.fg.area <- sum(width(old.peaks))
         }
         else
         {
             old.total.area <- 0
-            old.islands <- IRanges()
+            old.fg.area <- 0
+            old.islands <- RangesList()
         }
-        ## old fg area
-        old.fg.area <- sum(width(old.peaks))
-        new.reads <- sort(g[start:(ids[i])]); start <- ids[i] + 1L
-        current.cov <- coverage(cum.reads, width = chromlens[chr])
+        new.reads <- g[start:(ids[i])]
+        new.reads <- new.reads[order(start(new.reads))]
+        start <- ids[i] + 1L
+        current.cov <- coverage(cum.reads)
         fdr.interp <- peakCutoff(current.cov, fdr.cutoff = fdr.cutoff)
         fdr.floor <- floor(fdr.interp)
         fdr.ceiling <- ceiling(fdr.interp)
@@ -97,8 +106,10 @@ subsetSummary <-
             peaks.fdr.higher <- slice(current.cov, lower = fdr.floor)
         }
         peaks.fdr <- peaks.fdr.lower
-        npeaks.fdr <- length(peaks.fdr.lower) + (fdr.ceiling - fdr.interp) *
-          (length(peaks.fdr.higher) - length(peaks.fdr.lower))
+        npeaks.fdr <- sum(elementLengths(peaks.fdr.lower)) +
+          (fdr.ceiling - fdr.interp) *
+          (sum(elementLengths(peaks.fdr.higher)) -
+           sum(elementLengths(peaks.fdr.lower)))
         current.peaks <- peaks.fixed
         if (use.fdr)
           current.peaks <- peaks.fdr
@@ -121,8 +132,10 @@ subsetSummary <-
         ##browser()
         ans[i, ] <- c(alpha.hat, bg.rate, old.bg, old.fg,
                       new.bg, new.fg, old.fg.area, old.total.area,
-                      reads.converted, length(peaks.fixed), npeaks.fdr,
-                      length(peaks.fdr.lower), length(peaks.fdr.higher),
+                      reads.converted, sum(elementLengths(peaks.fixed)),
+                      npeaks.fdr,
+                      sum(elementLengths(peaks.fdr.lower)),
+                      sum(elementLengths(peaks.fdr.higher)),
                       fdr.ceiling)
         old.peaks <- current.peaks
     }

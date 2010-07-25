@@ -138,7 +138,8 @@ sparse.density <- function(x, width = 50, kernel = "epanechnikov", experimental 
 }
 
 
-basesCovered <- function(x, shift = seq(5, 300, 5), seqLen = 35, verbose = FALSE)
+basesCovered <- function(x, shift = seq(5, 300, 5), seqLen = 35,
+                         verbose = FALSE)
 {
     if (!is.list(x))
         stop("'x' must be a list object")
@@ -149,8 +150,10 @@ basesCovered <- function(x, shift = seq(5, 300, 5), seqLen = 35, verbose = FALSE
     if (!length(rng))
       rng <- unlist(x)
     rng <- rng + c(-1, 1) * maxShift
-    cov.pos <- coverage(extendReads(x, seqLen = seqLen, strand = "+"), shift = 1-rng[1], width = 1+diff(rng)) > 0
-    cov.neg <- coverage(extendReads(x, seqLen = seqLen, strand = "-"), shift = 1-rng[1], width = 1+diff(rng)) > 0
+    cov.pos <- coverage(IRanges(x[["+"]], width = seqLen), shift = 1-rng[1],
+                        width = 1+diff(rng)) > 0
+    cov.neg <- coverage(IRanges(end = x[["-"]], width = seqLen),
+                        shift = 1-rng[1], width = 1+diff(rng)) > 0
     n <- diff(rng) + 1L
     ## ans <- shiftApply(shift, cov.pos, cov.neg, function(x, y) sum(x | y), verbose = verbose)
     ans <- shiftApply(shift, cov.pos, cov.neg, RleSumAny, verbose = verbose)
@@ -454,13 +457,14 @@ setMethod("estimate.mean.fraglen", "AlignedRead",
 
 setMethod("estimate.mean.fraglen", "GRanges",
           function(x, method = c("SISSR", "coverage", "correlation"), ...) {
+            strand <- as.vector(strand(x))
             splitData <-
-              split(data.frame(pos =
-                               ifelse(strand(x) == "+", start(x), end(x)),
-                               strand = strand(x)))
+              split(data.frame(pos = ifelse(strand == "+", start(x), end(x)),
+                               strand = strand),
+                    as.vector(seqnames(x)))
             unlist(lapply(splitData,
                    function(y) {
-                     .estimate.mean.fraglen(split(y[["start"]],
+                     .estimate.mean.fraglen(split(y[["pos"]],
                                                   y[["strand"]]),
                                             method = method, ...)
                    }))

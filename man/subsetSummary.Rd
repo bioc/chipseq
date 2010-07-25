@@ -11,7 +11,7 @@
 }
 \usage{
 subsetSummary(x, chr, nstep, props = seq(0.1, 1, 0.1),
-              chromlens, fg.cutoff = 6, seqLen = 200,
+              chromlens = seqlengths(x), fg.cutoff = 6, seqLen = 200,
               fdr.cutoff = 0.001, use.fdr = FALSE, resample = TRUE,
               islands = TRUE, verbose = getOption("verbose"))
 }
@@ -49,6 +49,11 @@ subsetSummary(x, chr, nstep, props = seq(0.1, 1, 0.1),
 }
 \value{
   A data frame with various per-subset summaries.
+}
+\note{
+  This function should be considered preliminary, in that it might
+  change significantly or simply be removed in a subsequent version.
+  If you like it the way it is, please notify the maintainer.
 }
 \examples{
 data(cstest)
