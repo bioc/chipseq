@@ -1,4 +1,4 @@
-
+## NOTE: not exported or used anywhere
 
 effective.glength <- function(IR1, IR2, width = 200L)
 {

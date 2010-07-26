@@ -3,7 +3,7 @@
 \alias{copyIRanges}
 \alias{copyIRangesbyChr}
 \title{
-  Associate ranges to coverage. 
+  Associate ranges to coverage.
 }
 \description{
 
@@ -13,6 +13,9 @@
   each range.  \code{copyIRangesbyChr} does this over lists of ranges
   and coverage objects.
 
+  \strong{DEPRECATED}: Instead, construct
+  an \code{\link[IRanges:RleViewsList-class]{RleViewsList}} using
+  the \code{Views} function.
 }
 \usage{
 copyIRanges(IR1, newX)
@@ -34,7 +37,10 @@ copyIRangesbyChr(IR1, newX)
 \examples{
 cov <- Rle(c(1:10, seq(10, 1, -2), seq(1,5,2), 4:1), rep(1:2, 11))
 peaks <- slice(cov, 3)
-peaks.cov <- copyIRanges(peaks, cov)
+## deprecated:
+##peaks.cov <- copyIRanges(peaks, cov)
+## instead:
+peaks.cov <- Views(cov, peaks)
 }
 \keyword{utilities}
 

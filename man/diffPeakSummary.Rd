@@ -1,33 +1,22 @@
 \name{diffPeakSummary}
 \alias{diffPeakSummary}
+\alias{diffPeakSummary,RleViewsList,RleViewsList-method}
+
 \title{ A function to identify and produce summary statistics for differentially expressed peaks. }
 \description{
-  Given two sets of reads this function identifies all peaks in the
-  combined data with height larger than \code{lower} and then uses those
-  regions to compute summary statistics for each of the sets separately.
+  Given two sets of peaks, this function combines them and summarizes
+  the individual coverage vectors under the combined peak set.
 }
 \usage{
-diffPeakSummary(ranges1, ranges2, chrom.lens,
-                lower = 10, extend = 0, 
-                peak.fun = NULL, merge = 0L, islands = FALSE,
+diffPeakSummary(ranges1, ranges2,
                 viewSummary = list(sums = viewSums, maxs = viewMaxs))
 }
 \arguments{
-  \item{ranges1}{ First set of reads (as IRanges).}
-  \item{ranges2}{ Second set of reads (as IRanges). }
-  \item{chrom.lens}{ The lengths of the chromosomes for the organism. }
-  \item{lower}{ The height used to declare a peak in the combined samples. }
-  \item{extend}{ Currently unused. The intent is to extend peaks by this
-    amount before summarizing. }
-  \item{peak.fun}{ Function use to use to find peaks.  The default makes
-    use of additional arguments \code{merge} and \code{islands}, which
-    are otherwise ignored. }
-  \item{merge}{ Integer giving the amount of gaps between peaks that
-    should be considered significant.  Smaller gaps are removed by
-    combining neighbouring peaks.  }
-  \item{islands}{ Logical indicating whether or not to use islands
-    (coverage > 0) as peaks. }
-  \item{viewSummary}{ A list of the per peak summaries. }
+  \item{ranges1}{ First set of peaks (typically
+  an \code{\link[IRanges:RleViewsList-class]{RleViewsList}}).}
+  \item{ranges2}{ Second set of peaks (typically
+  an \code{\link[IRanges:RleViewsList-class]{RleViewsList}}).}
+  \item{viewSummary}{ A list of the per peak summary functions. }
 }
 \value{
   A \code{data.frame} with one row for each peak in the combined data.
@@ -38,10 +27,11 @@ diffPeakSummary(ranges1, ranges2, chrom.lens,
 \examples{
 data(cstest)
 library(BSgenome.Mmusculus.UCSC.mm9)
-mouse.chromlens <- seqlengths(Mmusculus)
-## extend reads, generate peak summary
-extRanges <- gdapply(cstest, extendReads, seqLen = 200)
-peakSummary <-
-    diffPeakSummary(extRanges$gfp, extRanges$ctcf,
-                    chrom.lens = mouse.chromlens, lower = 10)
+seqlengths(cstest) <- seqlengths(Mmusculus)
+## find peaks
+findPeaks <- function(reads) {
+  reads.ext <- resize(reads, width = 200)
+  slice(coverage(reads.ext), lower = 8)
+}
+peakSummary <- diffPeakSummary(findPeaks(cstest$gfp), findPeaks(cstest$ctcf))
 }

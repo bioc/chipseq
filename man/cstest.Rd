@@ -38,6 +38,5 @@
 data(cstest)
 names(cstest)
 cstest$gfp
-str(cstest$ctcf$chr10)
 }
 \keyword{datasets}

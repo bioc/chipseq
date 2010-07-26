@@ -8,7 +8,11 @@
   Given two sets of intervals defined on a genome, tabulates overlap of
   one set with the other.  The first set typically represents
   \dQuote{peak} locations, and the second represents types of genomic
-  regions such as promoters, downstream regions, genes, etc. 
+  regions such as promoters, downstream regions, genes, etc.
+  
+  \strong{DEPRECATED}: The user is likely better off using the
+  GenomicFeatures package to explore the relationship between peaks and
+  genomic annotations. See the vignette for an example.
 }
 \usage{
 contextDistribution(peaks, gregions, chroms, ...)
@@ -39,21 +43,6 @@ contextDistribution(peaks, gregions, chroms, ...)
 }
 \author{
   Deepayan Sarkar
-}
-\examples{
-data(cstest)
-library(BSgenome.Mmusculus.UCSC.mm9)
-mouse.chromlens <- seqlengths(Mmusculus)
-## extend reads, generate peak summary
-extRanges <- gdapply(cstest, extendReads, seqLen = 200)
-peakSummary <-
-    diffPeakSummary(extRanges$gfp, extRanges$ctcf,
-                    chrom.lens = mouse.chromlens, lower = 10)
-## generate transcripts using GenomicFeatures.Mmusculus.UCSC.mm9 package
-library(GenomicFeatures.Mmusculus.UCSC.mm9)
-gregions <- transcripts_deprecated(genes = geneMouse(), proximal = 2000)
-## finally, calculate context distribution for chr10
-contextDistribution(peakSummary, gregions, "chr10")
 }
 \keyword{manip}
 
