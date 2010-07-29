@@ -9,7 +9,7 @@
 
 
 \documentclass[11pt]{article}
-\title{Some Basic Analyis of ChIP-Seq Data}
+\title{Some Basic Analysis of ChIP-Seq Data}
 
 
 \usepackage{times}
@@ -22,6 +22,7 @@
 \setkeys{Gin}{width=0.98\textwidth}
 
 \newcommand{\Rpackage}[1]{\textsf{#1}}
+\newcommand{\Rfunction}[1]{\texttt{#1}}
 \newcommand{\Rclass}[1]{{\textit{#1}}}
 \newcommand{\code}[1]{\texttt{#1}}
 
@@ -320,7 +321,7 @@ islandDepthPlot(cov.ctcf)
 
 To obtain a set of putative binding sites, i.e., peaks, we need to
 find those regions that are significantly above the noise level.
-Using the same poisson-based approach for estimating the noise
+Using the same Poisson-based approach for estimating the noise
 distribution as in the plot above, the \Rfunction{peakCutoff} function
 returns a cutoff value for a specific FDR:
 <<peakCutoff>>=
@@ -520,8 +521,10 @@ chromosomes.  By passing the \code{full} parameter to
 \Rfunction{browserView} we instruct UCSC to display the coverage
 tracks as a bar chart.  Next, we might programmatically display a view
 for the top 5 tallest peaks:
-<<rtracklayer-view-5, eval=FALSE>>=
-views <- browserView(session, head(peak.sort, 5), full = c("gfpCov", "ctcfCov"))
+<<rtracklayer-view-10, eval=FALSE>>=
+top10 <- head(peak.sort, 10)
+for (i in seq(length(top10)))
+  browserView(session, top10[i])
 @ 
 
 \section*{Version information}
@@ -531,5 +534,3 @@ sessionInfo()
 @ 
 
 \end{document}
-
-

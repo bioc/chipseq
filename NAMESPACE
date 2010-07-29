@@ -38,7 +38,7 @@ export(readReads, extendReads, copyIRanges, copyIRangesbyChr, laneSubsample, com
 ## nothing right now
 
 ## islands.R
-## nothing right now
+export(islandDepthPlot)
 
 ## plots.R
 export(coverageplot)
@@ -48,4 +48,7 @@ export(sparse.density, basesCovered, densityCorr, estimate.mean.fraglen)
 exportMethods(estimate.mean.fraglen)
 
 ## subsets.R
-export(subsetSummary)
+export(subsetSummary, peakCutoff)
+
+## peaks.R
+export(peakSummary)
