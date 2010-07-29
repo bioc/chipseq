@@ -9,7 +9,7 @@
 
 
 \documentclass[11pt]{article}
-\title{Some Basic Analyis of ChIP-Seq Data}
+\title{Some Basic Analysis of ChIP-Seq Data}
 
 
 \usepackage{times}
@@ -22,6 +22,7 @@
 \setkeys{Gin}{width=0.98\textwidth}
 
 \newcommand{\Rpackage}[1]{\textsf{#1}}
+\newcommand{\Rfunction}[1]{\texttt{#1}}
 \newcommand{\Rclass}[1]{{\textit{#1}}}
 \newcommand{\code}[1]{\texttt{#1}}
 
@@ -320,7 +321,7 @@ islandDepthPlot(cov.ctcf)
 
 To obtain a set of putative binding sites, i.e., peaks, we need to
 find those regions that are significantly above the noise level.
-Using the same poisson-based approach for estimating the noise
+Using the same Poisson-based approach for estimating the noise
 distribution as in the plot above, the \Rfunction{peakCutoff} function
 returns a cutoff value for a specific FDR:
 <<peakCutoff>>=
@@ -533,5 +534,3 @@ sessionInfo()
 @ 
 
 \end{document}
-
-
