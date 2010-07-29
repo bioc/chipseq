@@ -21,7 +21,7 @@ importFrom(stats, density, dnorm, dpois, ppois)
 
 
 ## context.R
-export(genomic_regions, genomic_exons, genomic_introns, contextDistribution)
+export(contextDistribution)
 
 ## diffpeaks.R.  Include diffPeakSummaryRef ?
 export(diffPeakSummary) 
