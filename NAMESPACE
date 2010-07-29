@@ -32,7 +32,8 @@ export(diffPeakSummary)
 ## setMethod("as.list", "AlignedRead",
 ## setAs("AlignedRead", "GenomeData",
 
-export(readReads, extendReads, copyIRanges, copyIRangesbyChr, laneSubsample, combineLanes)
+export(chipseqFilter, readReads, extendReads, copyIRanges, copyIRangesbyChr,
+       laneSubsample, combineLanes)
 
 ## intersect.R
 ## nothing right now
