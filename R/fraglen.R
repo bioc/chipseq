@@ -105,6 +105,8 @@ sparse.density <- function(x, width = 50, kernel = "epanechnikov", experimental 
     x <- sort(x)
     ix <- IRanges(x-width, x+width)
     rix <- sort(reduce(ix))
+    if (!length(x))
+      return(Rle(0, to - from - 1L))
     ## we will calculate density on a range containing the data.  If
     ## necessary, we will subset later (FIXME: TODO).
     from0 <- min(from, start(rix)[1] - 1L)
@@ -145,14 +147,20 @@ basesCovered <- function(x, shift = seq(5, 300, 5), seqLen = 35,
         stop("'x' must be a list object")
     if (!all(c("+", "-") %in% names(x)))
         stop("x must have named elements '+' and '-'")
+    if (!any(sapply(x, length) > 0))
+      return(data.frame(mu = seqLen + shift, covered = NA))
+    
     maxShift <- max(shift)
     rng <- range(unlist(x))
     if (!length(rng))
       rng <- unlist(x)
     rng <- rng + c(-1, 1) * maxShift
-    cov.pos <- coverage(IRanges(x[["+"]], width = seqLen), shift = 1-rng[1],
-                        width = 1+diff(rng)) > 0
-    cov.neg <- coverage(IRanges(end = x[["-"]], width = seqLen),
+    
+    cov.pos <- coverage(IRanges(x[["+"]],
+                                width = rep(seqLen, length(x[["+"]]))),
+                        shift = 1-rng[1], width = 1+diff(rng)) > 0
+    cov.neg <- coverage(IRanges(end = x[["-"]],
+                                width = rep(seqLen, length(x[["-"]]))),
                         shift = 1-rng[1], width = 1+diff(rng)) > 0
     n <- diff(rng) + 1L
     ## ans <- shiftApply(shift, cov.pos, cov.neg, function(x, y) sum(x | y), verbose = verbose)
@@ -281,6 +289,8 @@ densityCorr <- function(x, shift = seq(0, 500, 5), center = FALSE, width = 50, .
         stop("'x' must be a list object")
     if (!all(c("+", "-") %in% names(x)))
         stop("x must have named elements '+' and '-'")
+    if (!any(sapply(x, length) > 0))
+      return(data.frame(mu = shift, corr = NA))
     maxShift <- max(shift)
     rng <- range(unlist(x)) + c(-1, 1) * (maxShift +  width)
     dl <- lapply(x, sparse.density, from = rng[1], to = rng[2], ...)
@@ -398,7 +408,7 @@ setGeneric("estimate.mean.fraglen", signature = "x",
                standardGeneric("estimate.mean.fraglen"))
 
 .needFormalStrand <- function() {
-  .Deprecated("the method for a class with formal strand information, like GRanges or AlignedRead")
+  evalq(.Deprecated("the method for a class with formal strand information, like GRanges or AlignedRead"), parent.frame())
 }
 
 setMethod("estimate.mean.fraglen", "list",
