@@ -293,7 +293,8 @@ densityCorr <- function(x, shift = seq(0, 500, 5), center = FALSE, width = 50, .
       return(data.frame(mu = shift, corr = NA))
     maxShift <- max(shift)
     rng <- range(unlist(x)) + c(-1, 1) * (maxShift +  width)
-    dl <- lapply(x, sparse.density, from = rng[1], to = rng[2], ...)
+    dl <- lapply(x, sparse.density, width = width,
+                 from = rng[1], to = rng[2], ...)
     if (center) dl <- lapply(dl, function(x) { x - mean(x) })
     len <- length(dl[[1]])
     wid <- len - max(shift)
@@ -453,8 +454,8 @@ setMethod("estimate.mean.fraglen", "RangedData",
             .needFormalStrand()
             unlist(lapply(x, function(xElt) {
               estimate.mean.fraglen(split(ifelse(strand(xElt) == "-",
-                                                 end(ranges(xElt)),
-                                                 start(ranges(xElt))),
+                                                 end(ranges(xElt))[[1]],
+                                                 start(ranges(xElt))[[1]]),
                                           strand(xElt)),
                                     method = method, ...)
             }))
