@@ -54,8 +54,9 @@ sparse.density(x, width = 50, kernel = "epanechnikov",
     strands (the values should be integers denoting the location where
     the first sequenced base matched.) Supported (but again, deprecated)
     list types include: \link[IRanges:RangesList-class]{RangesList},
-    \link[BSgenome:GenomeData-class]{GenomeData},
-    \link[IRanges:IntegerList-class]{IntegerList} or an ordinary R list.
+    \link[IRanges:IntegerList-class]{IntegerList} or an ordinary R
+    list. Also a \link[BSgenome:GenomeData-class]{GenomeData} where the
+    per-chromosome elements are one of the above list types.
 
     For \code{basesCovered}, and \code{densityCorr}, a list with elements
     \code{"+"} and \code{"-"} representing locations of reads aligned to
