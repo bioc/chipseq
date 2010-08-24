@@ -69,6 +69,9 @@ convenience in this vignette.
 
 We outline this process with this unevaluated code block:
 <<preprocess, eval=FALSE>>=
+qa_list <- lapply(sampleFiles, qa)
+report(do.call(rbind, qa_list))
+## spend some time evaluating the QA report, then procede
 filter <- compose(chipseqFilter(), alignQualityFilter(15))
 cstest <- seqapply(sampleFiles, function(file) {
   as(readAligned(file, filter), "GRanges")
@@ -88,7 +91,7 @@ cstest
 cstest <- seqapply(cstest, function(gd) {
   gr <- do.call(c, lapply(names(gd), function(chr) {
     pos <- gd[[chr]]
-    starts <- c(pos[["+"]], pos[["-"]] - 23L)
+    starts <- c(pos[["-"]] - 23L, pos[["+"]])
     GRanges(chr, IRanges(starts, width = 24), 
             rep(names(pos), elementLengths(pos)))
   }))
@@ -521,10 +524,8 @@ chromosomes.  By passing the \code{full} parameter to
 \Rfunction{browserView} we instruct UCSC to display the coverage
 tracks as a bar chart.  Next, we might programmatically display a view
 for the top 5 tallest peaks:
-<<rtracklayer-view-10, eval=FALSE>>=
-top10 <- head(peak.sort, 10)
-for (i in seq(length(top10)))
-  browserView(session, top10[i])
+<<rtracklayer-view-5, eval=FALSE>>=
+views <- browserView(session, head(peak.sort, 5), full = c("gfpCov", "ctcfCov"))
 @ 
 
 \section*{Version information}
