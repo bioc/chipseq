@@ -1,9 +1,9 @@
 Package: chipseq
 Title: chipseq: A package for analyzing chipseq data
-Version: 0.99.1
+Version: 0.99.2
 Author: Deepayan Sarkar, Robert Gentleman, Michael Lawrence, Zizhen Yao
 Description: Tools for helping process short read data for chipseq experiments
-Depends: methods, IRanges (>= 1.7.13), GenomicRanges (>= 1.1.19), BSgenome, ShortRead
+Depends: methods, IRanges (>= 1.7.13), GenomicRanges (>= 1.1.29), BSgenome, ShortRead
 Imports: BSgenome, GenomicRanges, IRanges, lattice, methods, ShortRead, stats
 Suggests: GenomicFeatures, BSgenome.Mmusculus.UCSC.mm9
 Maintainer: Biocore Team c/o BioC user list <bioconductor@stat.math.ethz.ch>
