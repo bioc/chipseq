@@ -27,6 +27,7 @@ diffPeakSummary(ranges1, ranges2,
 \examples{
 data(cstest)
 library(BSgenome.Mmusculus.UCSC.mm9)
+seqlevels(cstest) <- seqlevels(Mmusculus)
 seqlengths(cstest) <- seqlengths(Mmusculus)
 ## find peaks
 findPeaks <- function(reads) {

@@ -113,6 +113,7 @@ in that context.  Bioconductor has genome packages containing the full
 sequences of several genomes.  The one relevant for us is
 <<>>=
 library(BSgenome.Mmusculus.UCSC.mm9)
+seqlevels(cstest) <- seqlevels(Mmusculus)
 seqlengths(cstest) <- seqlengths(Mmusculus)
 @ 
 %
