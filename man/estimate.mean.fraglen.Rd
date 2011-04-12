@@ -2,10 +2,6 @@
 \Rdversion{1.1}
 
 \alias{estimate.mean.fraglen}
-\alias{estimate.mean.fraglen,list-method}
-\alias{estimate.mean.fraglen,IntegerList-method}
-\alias{estimate.mean.fraglen,RangesList-method}
-\alias{estimate.mean.fraglen,RangedData-method}
 \alias{estimate.mean.fraglen,AlignedRead-method}
 \alias{estimate.mean.fraglen,GenomeData-method}
 \alias{estimate.mean.fraglen,GRanges-method}
@@ -84,7 +80,10 @@ sparse.density(x, width = 50, kernel = "epanechnikov",
     correlation. }
   
   \item{seqLen}{ For the \code{"coverage"} method, the assumed length of
-    each read for computing the coverage.  Typically the read length. }
+    each read for computing the coverage.  Typically the read
+    length. This is added to the shift estimated by \code{"coverage"}
+    and \code{"correlation"} to come up with the actual fragment
+    length.}
 
   \item{verbose}{ Logical specifying whether progress information should
     be printed during execution. }
@@ -136,7 +135,7 @@ sparse.density(x, width = 50, kernel = "epanechnikov",
   Biotechnology}, 26:1351--1359, 2008.
 }
 \author{
-  Deepayan Sarkar
+  Deepayan Sarkar, Michael Lawrence
 }
 \examples{
 data(cstest)

@@ -87,14 +87,7 @@ doDensity3 <- function(x, dk, width) ## loop in C
 }
 
 
-## experimental=FALSE calls R's density() within each "island".
-## experimental=TRUE pre-computes the kernel function for the given
-## width and contructs the density by looping in R.  This gives a ~60x
-## speedup (most islands have few reads, and the loops are short
-## there).  This (the tapply part) can easily be ported to C to be
-## even faster.
-
-sparse.density <- function(x, width = 50, kernel = "epanechnikov", experimental = TRUE,
+sparse.density <- function(x, width = 50, kernel = "epanechnikov",
                            from = start(rix)[1] - 10L,
                            to = end(rix)[length(rix)] + 10L)
 {
@@ -115,13 +108,6 @@ sparse.density <- function(x, width = 50, kernel = "epanechnikov", experimental 
     ## ox <- findOverlaps(x, rix, select = "arbitrary")
     ox <- findInterval(x, start(rix)) # equivalent, but a little faster
     island.densities <- 
-        if (!experimental)
-        {
-            ## tapply(x, ox, doDensity1, kernel = kernel, width = width, simplify = FALSE) # really slow
-            dk <- dKernel(width = width, kernel = kernel)
-            tapply(x, ox, doDensity2, dk = dk, width = width, simplify = FALSE)
-        }
-        else 
         {
             dk <- dKernel(width = width, kernel = kernel)
             tapply(x, ox, doDensity3, dk = dk, width = width, simplify = FALSE)
@@ -140,7 +126,7 @@ sparse.density <- function(x, width = 50, kernel = "epanechnikov", experimental 
 }
 
 
-basesCovered <- function(x, shift = seq(5, 300, 5), seqLen = 35,
+basesCovered <- function(x, shift = seq(5, 300, 5), seqLen = 100,
                          verbose = FALSE)
 {
     if (!is.list(x))
@@ -165,7 +151,7 @@ basesCovered <- function(x, shift = seq(5, 300, 5), seqLen = 35,
     n <- diff(rng) + 1L
     ## ans <- shiftApply(shift, cov.pos, cov.neg, function(x, y) sum(x | y), verbose = verbose)
     ans <- shiftApply(shift, cov.pos, cov.neg, RleSumAny, verbose = verbose)
-    data.frame(mu = seqLen + shift, covered = ans / ans[1])
+    data.frame(mu = seqLen + shift * 2L, covered = ans / ans[1])
 }
 
 
@@ -283,7 +269,9 @@ rle_sum_prod_prototype <- function (x1, n1, s1, x2, n2, s2, len)
 
 ## this version only uses the range of the data
 
-densityCorr <- function(x, shift = seq(0, 500, 5), center = FALSE, width = 50, ...)
+densityCorr <- function(x, shift = seq(0, 500, 5), center = FALSE,
+                        width = seqLen * 2L, seqLen = 100L,
+                        ...)
 {
     if (!is.list(x))
         stop("'x' must be a list object")
@@ -296,21 +284,10 @@ densityCorr <- function(x, shift = seq(0, 500, 5), center = FALSE, width = 50, .
     dl <- lapply(x, sparse.density, width = width,
                  from = rng[1], to = rng[2], ...)
     if (center) dl <- lapply(dl, function(x) { x - mean(x) })
-    len <- length(dl[[1]])
-    wid <- len - max(shift)
-    ## cl <- shiftApply(shift[1:10], dl$"+", dl$"-", FUN = similarity.corr, simplify = TRUE)
-    ## cl <- shiftApply(shift[1:10], dl$"+", dl$"-", FUN = function(x, y) sum(x * y), simplify = TRUE)
     cl <- shiftApply(shift, dl$"+", dl$"-", FUN = RleSumProd, simplify = TRUE)
-    ##     cl <-
-    ##         sapply(shift,
-    ##                function(s) {
-    ##                    sumxy <- 
-    ##                        with(dl,
-    ##                             RleSumProd(subseq(`+`, start = 1L, width = wid),
-    ##                                        subseq(`-`, start = 1L + s, width = wid)))
-    ##                    sumxy
-    ##                })
-    data.frame(mu = shift, corr = cl / with(dl, sqrt( RleSumProd(`+`, `+`) * RleSumProd(`-`, `-`)  ) ))
+    data.frame(mu = seqLen + shift * 2L,
+               corr = cl / with(dl, sqrt( RleSumProd(`+`, `+`) *
+                 RleSumProd(`-`, `-`)  ) ))
 }
 
 
@@ -408,58 +385,9 @@ setGeneric("estimate.mean.fraglen", signature = "x",
            function(x, method = c("SISSR", "coverage", "correlation"), ...)
                standardGeneric("estimate.mean.fraglen"))
 
-.needFormalStrand <- function() {
-  evalq(.Deprecated("the method for a class with formal strand information, like GRanges or AlignedRead"), parent.frame())
-}
-
-setMethod("estimate.mean.fraglen", "list",
-          function(x, method = c("SISSR", "coverage", "correlation"), ...)
-          {
-              .needFormalStrand()
-              if (!all(c("+", "-") %in% names(x)))
-                  stop("x must have named elements '+' and '-'")
-              if (is(x[["+"]], "Ranges"))
-                  x[["+"]] <- start(x[["+"]])
-              if (is(x[["-"]], "Ranges"))
-                  x[["-"]] <- end(x[["-"]])
-              .estimate.mean.fraglen(x, method = method, ...)
-          })
-
-setMethod("estimate.mean.fraglen", "IntegerList",
-          function(x, method = c("SISSR", "coverage", "correlation"), ...)
-          {
-              .needFormalStrand()
-              if (!all(c("+", "-") %in% names(x)))
-                  stop("x must have named elements '+' and '-'")
-              y <- list("+" = x[["+"]], "-" = x[["-"]])
-              estimate.mean.fraglen(y, method = method, ...)
-          })
-
-setMethod("estimate.mean.fraglen", "RangesList",
-          function(x, method = c("SISSR", "coverage", "correlation"), ...)
-          {
-              .needFormalStrand()
-              if (!all(c("+", "-") %in% names(x)))
-                  stop("x must have named elements '+' and '-'")
-              y <- list("+" = start(x[["+"]]), "-" = end(x[["-"]]))
-              estimate.mean.fraglen(y, method = method, ...)
-          })
-  
 setMethod("estimate.mean.fraglen", "GenomeData",
           function(x, method = c("SISSR", "coverage", "correlation"), ...)
               unlist(lapply(x, estimate.mean.fraglen, method = method, ...)))
-
-setMethod("estimate.mean.fraglen", "RangedData",
-          function(x, method = c("SISSR", "coverage", "correlation"), ...) {
-            .needFormalStrand()
-            unlist(lapply(x, function(xElt) {
-              estimate.mean.fraglen(split(ifelse(strand(xElt) == "-",
-                                                 end(ranges(xElt))[[1]],
-                                                 start(ranges(xElt))[[1]]),
-                                          strand(xElt)),
-                                    method = method, ...)
-            }))
-          })
 
 setMethod("estimate.mean.fraglen", "AlignedRead",
           function(x, method = c("SISSR", "coverage", "correlation"), ...) {
