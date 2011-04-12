@@ -93,7 +93,7 @@ cstest <- seqapply(cstest, function(gd) {
     pos <- gd[[chr]]
     starts <- c(pos[["-"]] - 23L, pos[["+"]])
     GRanges(chr, IRanges(starts, width = 24), 
-            rep(names(pos), elementLengths(pos)))
+            rep(c("-", "+"), elementLengths(pos)))
   }))
 })
 @ 
