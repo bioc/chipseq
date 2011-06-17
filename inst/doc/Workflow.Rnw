@@ -114,7 +114,7 @@ sequences of several genomes.  The one relevant for us is
 <<>>=
 library(BSgenome.Mmusculus.UCSC.mm9)
 seqlevels(cstest) <- seqlevels(Mmusculus)
-seqlengths(cstest) <- seqlengths(Mmusculus)
+seqinfo(cstest) <- seqinfo(Mmusculus)
 @ 
 %
 We will only make use of the chromosome lengths, but the actual
