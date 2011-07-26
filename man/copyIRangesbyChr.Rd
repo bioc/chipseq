@@ -40,7 +40,7 @@ peaks <- slice(cov, 3)
 ## deprecated:
 ##peaks.cov <- copyIRanges(peaks, cov)
 ## instead:
-peaks.cov <- Views(cov, peaks)
+peaks.cov <- Views(cov, ranges(peaks))
 }
 \keyword{utilities}
 
