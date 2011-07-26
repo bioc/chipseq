@@ -31,7 +31,7 @@ setMethod("diffPeakSummary", c("RleViewsList", "RleViewsList"),
 {
     cov1 <- subject(ranges1)
     cov2 <- subject(ranges2)
-    all.peaks <- union(ranges1, ranges2)
+    all.peaks <- union(ranges(ranges1), ranges(ranges2))
     peaks1 <- Views(cov1, all.peaks)
     peaks2 <- Views(cov2, all.peaks)
     peaks.comb <- Views(cov1 + cov2, all.peaks)

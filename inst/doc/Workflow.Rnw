@@ -114,7 +114,7 @@ sequences of several genomes.  The one relevant for us is
 <<>>=
 library(BSgenome.Mmusculus.UCSC.mm9)
 seqlevels(cstest) <- seqlevels(Mmusculus)
-seqlengths(cstest) <- seqlengths(Mmusculus)
+seqinfo(cstest) <- seqinfo(Mmusculus)
 @ 
 %
 We will only make use of the chromosome lengths, but the actual
@@ -361,8 +361,8 @@ peak.depths <- viewMaxs(peaks.ctcf)
 cov.pos <- coverage(ctcf.ext[strand(ctcf.ext) == "+"])
 cov.neg <- coverage(ctcf.ext[strand(ctcf.ext) == "-"])
 
-peaks.pos <- Views(cov.pos, peaks.ctcf)
-peaks.neg <- Views(cov.neg, peaks.ctcf)
+peaks.pos <- Views(cov.pos, ranges(peaks.ctcf))
+peaks.neg <- Views(cov.neg, ranges(peaks.ctcf))
 
 wpeaks <- tail(order(peak.depths$chr10), 4)
 wpeaks
