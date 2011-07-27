@@ -21,7 +21,6 @@ importFrom(stats, density, dnorm, dpois, ppois)
 
 
 ## context.R
-export(contextDistribution)
 exportMethods(addNearestTss, addGenomicContext)
 
 ## diffpeaks.R.  Include diffPeakSummaryRef ?
