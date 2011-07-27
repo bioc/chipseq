@@ -24,10 +24,6 @@ setGeneric("diffPeakSummary",
 setMethod("diffPeakSummary", c("RleViewsList", "RleViewsList"), 
           function(ranges1, ranges2, 
                    viewSummary = list(sums = viewSums, maxs = viewMaxs))
-          ## 
-          ## 'extend' is unused.  The intent is to extend the peaks by this
-          ## amount before summarizing
-          ##
 {
     cov1 <- subject(ranges1)
     cov2 <- subject(ranges2)
