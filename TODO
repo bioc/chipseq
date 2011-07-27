@@ -1,0 +1,35 @@
+Short-term TODO
+
+Long-term TODO
+
+- Provide a clean, high-level pipeline for chipseq pre-processing.
+  Steps:
+  - Estimate fragment length (estimate.mean.fraglen) on an AlignedRead
+  - For each sample:
+    - Read samples with readGappedAlignments
+      - Port chipSeqFilter() to FilterRules stuff in IRanges?
+    - Call coverage() on GappedAlignments to get RleViews
+    - Use some method to choose a peak cutoff
+    - slice() to RleViewsList
+    - Summarize to RangedData
+  - Result is RangedDataList, stack to single RangedData
+  - If we had GenomicRangesList, we could do the same with GRanges
+- Include more peak-level analysis routines
+  Currently, we have:
+  - addNearestTss()/addGenomicContext(), annotate by genomic context
+  - diffPeakSummary(), for comparing peaks/coverage between samples
+  - peakSummary(), for simple sums and maxs of views
+    - this should probably go to IRanges as viewSummary
+  - subsetSummary(), for rarefaction analysis -- is this really useful?
+    - need to make more convenient, add plotting functions
+  We might want to add:
+  - Association with PWM hits, TF binding sequence refinement
+    - Consensus sequences and such probably belong in Biostrings
+  - Inter-peak/motif spacing - any patterns?
+- More plot functions, based on lattice
+- Evaluate other ChIP-seq packages in R/BioC
+  - CSAR
+  - ChIPseqR (mostly aimed at simulation)
+  - PICS - just calls peaks using a Bayesian model
+  - SPP (unfortunately, not based on core infrastructure)
+  - BayesPeak (vaporware?)
