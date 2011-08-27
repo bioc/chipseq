@@ -4,8 +4,8 @@
 #include <Rmath.h>
 
 SEXP
-rle_sum_prod(SEXP px1, SEXP pn1, SEXP ps1,
-	     SEXP px2, SEXP pn2, SEXP ps2,
+rle_sum_prod(SEXP px1, SEXP ps1,
+	     SEXP px2, SEXP ps2,
 	     SEXP plen)
 {
     double
@@ -21,18 +21,18 @@ rle_sum_prod(SEXP px1, SEXP pn1, SEXP ps1,
     ans = 0;
     while (k < len) {
         if (x1[i1] == 0 || x2[i2] == 0) { /* either 0, no contribution */
-            i1 = i1++;
-            i2 = i2++;
+            ++i1;
+            ++i2;
             /* move lagging pointer ahead to location of the one ahead */
-            while (s1[i1-1] < s2[i2-1]) i1 = i1++;
-            while (s1[i1-1] > s2[i2-1]) i2 = i2++;
+            while (s1[i1-1] < s2[i2-1]) ++i1;
+            while (s1[i1-1] > s2[i2-1]) ++i2;
             k = 1 + imax2(s1[i1-1], s2[i2-1]);
         }
         else {
 	    next_k = 1 + imin2(s1[i1], s2[i2]);
 	    ans += (next_k - k) * x1[i1] * x2[i2];
-	    if (s1[i1] == (next_k - 1)) i1 = i1++;
-	    if (s2[i2] == (next_k - 1)) i2 = i2++;
+	    if (s1[i1] == (next_k - 1)) ++i1;
+	    if (s2[i2] == (next_k - 1)) ++i2;
 	    k = next_k;
         }
     }
@@ -42,8 +42,8 @@ rle_sum_prod(SEXP px1, SEXP pn1, SEXP ps1,
 
 
 SEXP
-rle_sum_any(SEXP px1, SEXP pn1, SEXP ps1,
-	    SEXP px2, SEXP pn2, SEXP ps2,
+rle_sum_any(SEXP px1, SEXP ps1,
+	    SEXP px2, SEXP ps2,
 	    SEXP plen)
 {
     int
@@ -58,8 +58,8 @@ rle_sum_any(SEXP px1, SEXP pn1, SEXP ps1,
     while (k < len) {
 	next_k = 1 + imin2(s1[i1], s2[i2]);
 	if (x1[i1] || x2[i2]) ans += (next_k - k);
-	if (s1[i1] == (next_k - 1)) i1 = i1++;
-	if (s2[i2] == (next_k - 1)) i2 = i2++;
+	if (s1[i1] == (next_k - 1)) ++i1;
+	if (s2[i2] == (next_k - 1)) ++i2;
 	k = next_k;
     }
     return ScalarInteger(ans);

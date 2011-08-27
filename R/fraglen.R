@@ -161,11 +161,11 @@ RleSumAny <- function (e1, e2)
 {
     len <- length(e1)
     stopifnot(len == length(e2))
-    x1 <- runValue(e1); n1 <- runLength(e1); s1 <- cumsum(n1)
-    x2 <- runValue(e2); n2 <- runLength(e2); s2 <- cumsum(n2)
+    x1 <- runValue(e1); s1 <- cumsum(runLength(e1))
+    x2 <- runValue(e2); s2 <- cumsum(runLength(e2))
     .Call("rle_sum_any",
-          as.integer(x1), as.integer(n1), as.integer(s1),
-          as.integer(x2), as.integer(n2), as.integer(s2),
+          as.integer(x1), as.integer(s1),
+          as.integer(x2), as.integer(s2),
           as.integer(len),
           PACKAGE = "chipseq")
 }
@@ -226,12 +226,12 @@ RleSumProd <- function (e1, e2)
 {
     len <- length(e1)
     stopifnot(len == length(e2))
-    x1 <- runValue(e1); n1 <- runLength(e1); s1 <- cumsum(n1)
-    x2 <- runValue(e2); n2 <- runLength(e2); s2 <- cumsum(n2)
+    x1 <- runValue(e1); s1 <- cumsum(runLength(e1))
+    x2 <- runValue(e2); s2 <- cumsum(runLength(e2))
     ## rle_sum_prod_prototype(x1, n1, s1, x2, n2, s2, len)
     .Call("rle_sum_prod",
-          as.double(x1), as.integer(n1), as.integer(s1),
-          as.double(x2), as.integer(n2), as.integer(s2),
+          as.double(x1), as.integer(s1),
+          as.double(x2), as.integer(s2),
           as.integer(len),
           PACKAGE = "chipseq")
 }

@@ -105,18 +105,23 @@ diffPeakSummaryRef <-
 
 laneSubsample <- function(lane1, lane2, fudge = 0.05)
 {
-  lane1 <- split(lane1, seqnames(lane1))
-  lane2 <- split(lane2, seqnames(lane2))
-  l1Len = unlist(lapply(lane1, length))
-  l2Len = unlist(sapply(lane2, length)) 
-  for(i in seq_len(length(l1Len)))
-    {
-      if(abs(l1Len[i]-l2Len[i])/l1Len[i] < fudge) next
-      if(l1Len[i] < l2Len[i])
-        lane2[[i]] <- sample(lane2[[i]], l1Len[i])
-      if(l1Len[i] > l2Len[i])
-        lane1[[i]] <- sample(lane1[[i]], l2Len[i])
+    idx1 <- split(seq_along(lane1), as.character(seqnames(lane1)))
+    idx2 <- split(seq_along(lane2), as.character(seqnames(lane2)))
+    keep <- intersect(names(idx1), names(idx2))
+    idx1 <- idx1[keep]
+    idx2 <- idx2[keep]
+
+    len1 <- sapply(idx1, length)
+    len2 <- sapply(idx2, length)
+
+    samp <- names(idx1)[abs(len1 - len2) >= fudge * len1]
+    for (i in samp) {
+        if (len1[i] < len2[i])
+            idx2[[i]] <- sample(idx2[[i]], len1[i])
+        else
+            idx1[[i]] <- sample(idx1[[i]], len2[i])
     }
-  GRangesList(lane1=unlist(lane1,use.names=FALSE),
-              lane2=unlist(lane2,use.names=FALSE))
+
+    GRangesList(lane1=lane1[sort(unlist(idx1, use.names=FALSE))],
+                lane2=lane2[sort(unlist(idx2, use.names=FALSE))])
 }

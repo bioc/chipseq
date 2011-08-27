@@ -31,12 +31,14 @@
 estimate.mean.fraglen(x, method = c("SISSR", "coverage", "correlation"),
                       \dots)
 
-basesCovered(x, shift = seq(5, 300, 5), seqLen = 35, verbose = FALSE)
+basesCovered(x, shift = seq(5, 300, 5), seqLen = 100, verbose = FALSE)
 
-densityCorr(x, shift = seq(0, 500, 5), center = FALSE, width = 50, \dots)
+densityCorr(x, shift = seq(0, 500, 5), center = FALSE,
+            width = seqLen *2L, seqLen=100L, \dots)
 
 sparse.density(x, width = 50, kernel = "epanechnikov",
-               experimental = TRUE, from, to)
+               from = start(rix)[1] - 10L,
+               to = end(rix)[length(rix)] + 10L)
 }
 \arguments{
   \item{x}{
@@ -98,8 +100,6 @@ sparse.density(x, width = 50, kernel = "epanechnikov",
     be specified as an integer, data-driven rules are not supported. }
   
   \item{kernel}{ A character string giving the density kernel. }
-
-  \item{experimental}{ logical.  If \code{TRUE} }
 
   \item{from, to}{ specifies range over which the density is to be
     computed. }
