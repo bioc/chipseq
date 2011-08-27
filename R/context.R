@@ -25,7 +25,7 @@ setMethod("addNearestTss", "GenomicRanges", function(x, txdb) {
   strand(tx_no_strand) <- "*"
   x_no_strand <- x
   strand(x_no_strand) <- "*"
-  DataFrame(in.cds = x %in% cds_tx,
+  DataFrame(in.cds = x %in% cdsBy(txdb),
             in.3utr = x %in% threeUTRsByTranscript(txdb),
             in.5utr = x %in% fiveUTRsByTranscript(txdb),
             in.intron = x %in% intronsByTranscript(txdb),
