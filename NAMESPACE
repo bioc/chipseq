@@ -24,16 +24,11 @@ importFrom(stats, density, dnorm, dpois, ppois)
 exportMethods(addNearestTss, addGenomicContext)
 
 ## diffpeaks.R.  Include diffPeakSummaryRef ?
-export(diffPeakSummary) 
+export(diffPeakSummary, laneSubsample) 
 
 ## funs.R
 
-## FIXME: export
-## setMethod("as.list", "AlignedRead",
-## setAs("AlignedRead", "GenomeData",
-
-export(chipseqFilter, readReads, extendReads, copyIRanges, copyIRangesbyChr,
-       laneSubsample, combineLanes)
+export(chipseqFilter)
 
 ## intersect.R
 ## nothing right now

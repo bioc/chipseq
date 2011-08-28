@@ -12,12 +12,6 @@ estimate.bg.rate <- function(s, seqLen)
     alpha
 }
 
-summary.subsets <- function(...)
-{
-    .Deprecated("subsetSummary")
-    subsetSummary(...)
-}
-
 ### FIXME: simplify/update this function:
 ## 'chr' is unncessary (why always limit to one chromosome?)
 ## 'chromlens' comes from our GRanges
@@ -36,6 +30,7 @@ subsetSummary <-
              resample = TRUE, islands = TRUE,
              verbose = getOption("verbose"))
 {
+    warning("Deprecated: If you need this, please notify the maintainer")
     g <- GRanges(chr, ranges(resize(x[seqnames(x) == chr], width=seqLen)))
     seqlengths(g) <- chromlens[chr]
     if (resample) g <- g[sample(length(g))]

@@ -53,51 +53,51 @@ setMethod("diffPeakSummary", c("RleViewsList", "RleViewsList"),
 
 ## version with respect to a reference
 
-diffPeakSummaryRef <-
-    function(obs.ranges, ref.ranges, chrom.lens,
-             lower = 10, extend = 0,
-             peak.fun = function(x) slice(x, lower = lower),
-             viewSummary = list(sums = viewSums, maxs = viewMaxs))
+## diffPeakSummaryRef <-
+##     function(obs.ranges, ref.ranges, chrom.lens,
+##              lower = 10, extend = 0,
+##              peak.fun = function(x) slice(x, lower = lower),
+##              viewSummary = list(sums = viewSums, maxs = viewMaxs))
 
-    ## 'extend' is unused.  The intent is to extend the peaks by this
-    ## amount before summarizing
+##     ## 'extend' is unused.  The intent is to extend the peaks by this
+##     ## amount before summarizing
 
-{
-    if (!is(obs.ranges, "list")) obs.ranges <- as(obs.ranges, "list")
-    if (!is(ref.ranges, "list")) ref.ranges <- as(ref.ranges, "list")
+## {
+##     if (!is(obs.ranges, "list")) obs.ranges <- as(obs.ranges, "list")
+##     if (!is(ref.ranges, "list")) ref.ranges <- as(ref.ranges, "list")
 
-    obs.cov <- laneCoverage(obs.ranges, chrom.lens)
-    ref.cov <- laneCoverage(ref.ranges, chrom.lens)
-    ref.peaks <- lapply(ref.cov, peak.fun)
-    ref.peaks.in.obs <- copyIRangesbyChr(ref.peaks, obs.cov)
+##     obs.cov <- laneCoverage(obs.ranges, chrom.lens)
+##     ref.cov <- laneCoverage(ref.ranges, chrom.lens)
+##     ref.peaks <- lapply(ref.cov, peak.fun)
+##     ref.peaks.in.obs <- copyIRangesbyChr(ref.peaks, obs.cov)
 
-    peakSummary <-
-        do.call(rbind,
-                sapply(names(ref.peaks),
-                       function(chr) {
-                           ans <-
-                               data.frame(start = start(ref.peaks[[chr]]),
-                                          end = end(ref.peaks[[chr]]),
-                                          stringsAsFactors = FALSE)
-                           if (is.list(viewSummary))
-                           {
-                               for (nm in names(viewSummary))
-                               {
-                                   ans[[paste("ref", nm, sep = ".")]] <- viewSummary[[nm]](ref.peaks[[chr]])
-                                   ans[[paste("obs", nm, sep = ".")]] <- viewSummary[[nm]](ref.peaks.in.obs[[chr]])
-                               }
-                           }
-                           else 
-                           {
-                               ans[["ref.summary"]] <- viewSummary(ref.peaks[[chr]])
-                               ans[["obs.summary"]] <- viewSummary(ref.peaks.in.obs[[chr]])
-                           }
-                           ans
-                       },
-                       simplify = FALSE))
-    rownames(peakSummary) <- NULL
-    peakSummary
-}
+##     peakSummary <-
+##         do.call(rbind,
+##                 sapply(names(ref.peaks),
+##                        function(chr) {
+##                            ans <-
+##                                data.frame(start = start(ref.peaks[[chr]]),
+##                                           end = end(ref.peaks[[chr]]),
+##                                           stringsAsFactors = FALSE)
+##                            if (is.list(viewSummary))
+##                            {
+##                                for (nm in names(viewSummary))
+##                                {
+##                                    ans[[paste("ref", nm, sep = ".")]] <- viewSummary[[nm]](ref.peaks[[chr]])
+##                                    ans[[paste("obs", nm, sep = ".")]] <- viewSummary[[nm]](ref.peaks.in.obs[[chr]])
+##                                }
+##                            }
+##                            else 
+##                            {
+##                                ans[["ref.summary"]] <- viewSummary(ref.peaks[[chr]])
+##                                ans[["obs.summary"]] <- viewSummary(ref.peaks.in.obs[[chr]])
+##                            }
+##                            ans
+##                        },
+##                        simplify = FALSE))
+##     rownames(peakSummary) <- NULL
+##     peakSummary
+## }
 
 ## Subsampling two "lanes", so that on a per chromosome basis they
 ## have the same number of reads; let's not do this if we are
