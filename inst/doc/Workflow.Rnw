@@ -3,7 +3,8 @@
 % likely to be overwritten.
 %
 % \VignetteIndexEntry{A Sample ChIP-Seq analysis workflow}
-%\VignetteDepends{IRanges, BSgenome.Mmusculus.UCSC.mm9, lattice}
+%\VignetteDepends{IRanges, BSgenome.Mmusculus.UCSC.mm9, lattice, 
+%    TxDb.Mmusculus.UCSC.mm9.knownGene}
 %\VignetteKeywords{chip-seq, sequencing, visualization}
 %\VignettePackage{chipseq}
 
@@ -113,8 +114,6 @@ in that context.  Bioconductor has genome packages containing the full
 sequences of several genomes.  The one relevant for us is
 <<>>=
 library(BSgenome.Mmusculus.UCSC.mm9)
-seqlevels(cstest) <- seqlevels(Mmusculus)
-seqinfo(cstest) <- seqinfo(Mmusculus)
 @ 
 %
 We will only make use of the chromosome lengths, but the actual
@@ -455,13 +454,14 @@ Locations of individual peaks may be of interest.  Alternatively, a
 global summary might look at classifying the peaks of interest in the
 context of genomic features such as promoters, upstream regions, etc.
 The \Rpackage{GenomicFeatures} package facilitates obtaining gene
-annotations from different data sources. Below, we download the UCSC
+annotations from different data sources. We could download the UCSC
 gene predictions for the mouse genome and generate a \Rclass{GRanges}
 object with the transcript regions (from the first to last exon,
-contiguous).
+contiguous) using \Rfunction{makeTranscriptDbFromUCSC}; here we use
+a library containing a recent snapshot.
 <<>>=
-db <- makeTranscriptDbFromUCSC("mm9")
-gregions <- transcripts(db)
+library(TxDb.Mmusculus.UCSC.mm9.knownGene)
+gregions <- transcripts(Mmusculus_UCSC_mm9_knownGene_TxDb)
 gregions
 @
 
