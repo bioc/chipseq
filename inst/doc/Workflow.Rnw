@@ -461,7 +461,7 @@ contiguous) using \Rfunction{makeTranscriptDbFromUCSC}; here we use
 a library containing a recent snapshot.
 <<>>=
 library(TxDb.Mmusculus.UCSC.mm9.knownGene)
-gregions <- transcripts(Mmusculus_UCSC_mm9_knownGene_TxDb)
+gregions <- transcripts(TxDb.Mmusculus.UCSC.mm9.knownGene)
 gregions
 @
 
