@@ -21,7 +21,8 @@ importFrom(stats, density, dnorm, dpois, ppois)
 
 
 ## context.R
-exportMethods(addNearestTss, addGenomicContext)
+## think these should be stuck into GenomicFeatures
+##exportMethods(addNearestTss, addGenomicContext)
 
 ## diffpeaks.R.  Include diffPeakSummaryRef ?
 export(diffPeakSummary, laneSubsample) 
