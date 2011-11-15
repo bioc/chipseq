@@ -1,20 +1,21 @@
 useDynLib(chipseq)
 
 ## imports
+import(BiocGenerics)
 import(IRanges)
 
-importClassesFrom(BSgenome, GenomeData)
 importClassesFrom(methods, list)
+importClassesFrom(BSgenome, GenomeData)
 importClassesFrom(ShortRead, AlignedRead)
 
+importMethodsFrom(methods, coerce)
 importMethodsFrom(GenomicRanges, strand)
 importMethodsFrom(BSgenome, gdapply)
-importMethodsFrom(methods, coerce)
 importMethodsFrom(ShortRead, name, readAligned)
 
+importFrom(methods, as, is, new)
 importFrom(BSgenome, GenomeData, GenomeDataList)
 importFrom(lattice, panel.abline, panel.polygon, xyplot)
-importFrom(methods, as, is, new)
 importFrom(ShortRead, alignQualityFilter, chromosome, chromosomeFilter,
            compose, position, strandFilter, uniqueFilter)
 importFrom(stats, density, dnorm, dpois, ppois)
