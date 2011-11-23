@@ -62,15 +62,13 @@ subsetSummary <-
         old.reads <- head(g, start-1L)
         old.reads <- old.reads[order(start(old.reads))]
         cum.reads <- head(g, ids[i])
-        if (length(old.reads) > 0)
-        {
+        if (length(old.reads) > 0) {
             old.islands <- slice(coverage(old.reads), lower = 1)
-            nreads <- as.integer(viewSums(old.islands) / seqLen)
+            nreads <- as.integer(unlist(viewSums(old.islands) / seqLen,
+                                        use.names=FALSE))
             old.total.area <- sum(width(old.islands))
             old.fg.area <- sum(width(old.peaks))
-        }
-        else
-        {
+        } else {
             old.total.area <- 0
             old.fg.area <- 0
             old.islands <- RangesList()
