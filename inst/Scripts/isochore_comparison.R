@@ -104,7 +104,7 @@ countOverlap <- function(isochore = isochore.df,
     }
     readranges <- readranges[order(start(readranges))]
     ans <- findOverlaps(readranges, isoranges)
-    rowSums(ans@matchMatrix)
+    rowSums(as.matrix(ans))
     ## almost the same as 
     ##   table(findOverlaps(readranges, isoranges, select = "first"))
     ## except that 0-count ones will be missing
