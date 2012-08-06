@@ -18,7 +18,7 @@ importFrom(BSgenome, GenomeData, GenomeDataList)
 importFrom(lattice, panel.abline, panel.polygon, xyplot)
 importFrom(ShortRead, alignQualityFilter, chromosome, chromosomeFilter,
            compose, position, strandFilter, uniqueFilter)
-importFrom(stats, density, dnorm, dpois, ppois)
+importFrom(stats, dnorm, dpois, ppois)
 
 
 ## context.R
