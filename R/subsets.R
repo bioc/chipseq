@@ -66,6 +66,7 @@ subsetSummary <-
             old.islands <- slice(coverage(old.reads), lower = 1)
             nreads <- as.integer(unlist(viewSums(old.islands) / seqLen,
                                         use.names=FALSE))
+            old.islands <- ranges(old.islands)
             old.total.area <- sum(width(old.islands))
             old.fg.area <- sum(width(old.peaks))
         } else {
@@ -107,18 +108,23 @@ subsetSummary <-
         if (use.fdr)
           current.peaks <- peaks.fdr
         ## old reads that hit old peaks
-        old.peak.hits.old <- old.reads %in% old.peaks
+        old.peak.hits.old <- !is.na(findOverlaps(old.reads, old.peaks,
+                                                 select="first"))
         ## old reads that hit current peaks
-        current.peak.hits.old <- old.reads %in% current.peaks
+        current.peak.hits.old <- !is.na(findOverlaps(old.reads,
+                                                     ranges(current.peaks),
+                                                     select="first"))
         ## old background hits
         old.bg <- sum(!old.peak.hits.old)
         old.fg <- sum(old.peak.hits.old)
         ## number of old reads that go from bg to fg
         reads.converted <- sum(current.peak.hits.old & !old.peak.hits.old)
         ## new reads that hit old fg
-        old.peak.hits.new <- new.reads %in% old.peaks
+        old.peak.hits.new <- !is.na(findOverlaps(new.reads, old.peaks,
+                                                 select="first"))
         ## new reads that hit old something (that is, not blank)
-        old.total.hits.new <- new.reads %in% old.islands
+        old.total.hits.new <- !is.na(findOverlaps(new.reads, old.islands,
+                                                  select="first"))
         new.fg <- sum(old.peak.hits.new)
         new.bg <- sum(old.total.hits.new & !old.peak.hits.new)
         ##print(table(old.total.hits.new, old.peak.hits.new))
@@ -130,7 +136,7 @@ subsetSummary <-
                       sum(elementLengths(peaks.fdr.lower)),
                       sum(elementLengths(peaks.fdr.higher)),
                       fdr.ceiling)
-        old.peaks <- current.peaks
+        old.peaks <- ranges(current.peaks)
     }
     ans <- cbind(chromosome = chr, proportion = props, size = diff(c(0, ids)),
                  cumsize = ids, as.data.frame(ans))
