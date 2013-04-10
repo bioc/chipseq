@@ -25,17 +25,17 @@ setMethod("addNearestTss", "GenomicRanges", function(x, txdb) {
   strand(tx_no_strand) <- "*"
   x_no_strand <- x
   strand(x_no_strand) <- "*"
-  DataFrame(in.cds = x %in% cdsBy(txdb),
-            in.3utr = x %in% threeUTRsByTranscript(txdb),
-            in.5utr = x %in% fiveUTRsByTranscript(txdb),
-            in.intron = x %in% intronsByTranscript(txdb),
-            in.promoter = x %in% flank(tx, start=TRUE, width = proximal),
-            in.3prime = x %in% flank(tx, start=FALSE, width = proximal),
-            in.upstream = x %in% flank(tx_ext, start=TRUE,
+  DataFrame(in.cds = x %over% cdsBy(txdb),
+            in.3utr = x %over% threeUTRsByTranscript(txdb),
+            in.5utr = x %over% fiveUTRsByTranscript(txdb),
+            in.intron = x %over% intronsByTranscript(txdb),
+            in.promoter = x %over% flank(tx, start=TRUE, width = proximal),
+            in.3prime = x %over% flank(tx, start=FALSE, width = proximal),
+            in.upstream = x %over% flank(tx_ext, start=TRUE,
               width=stream_width),
-            in.downstream = x %in% flank(tx_ext, start=FALSE,
+            in.downstream = x %over% flank(tx_ext, start=FALSE,
               width=stream_width),
-            in.intergenic = x_no_strand %in% gaps(tx_no_strand + distal))
+            in.intergenic = x_no_strand %over% gaps(tx_no_strand + distal))
 }
 
 setGeneric("addGenomicContext",
