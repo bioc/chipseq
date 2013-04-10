@@ -18,7 +18,7 @@ load("peakSummary.rda")
 
 countHits <- function(subject, query)
 {
-    sum(query %in% subject)
+    sum(query %over% subject)
 }
 
 

@@ -161,7 +161,7 @@ summarizeData <-
                    print(chr)
                    chrpeaks <- peaks[[chr]]
                    in.promoter <-
-                     chrpeaks %in% with(gpromoters.split[[chr]], IRanges(start, end))
+                     chrpeaks %over% with(gpromoters.split[[chr]], IRanges(start, end))
                    countOverlapping <- function(x)
                    {
                        as.numeric(as.table(t(findOverlaps(edata[[x]][[chr]], chrpeaks))))

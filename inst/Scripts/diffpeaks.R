@@ -23,7 +23,7 @@ computeOverlap <- function(chr, start, end, tchr, tstart, tend)
     for (chrom in names(tsplit))
     {
         id <- which(chr == chrom)
-        ans[id] <- IRanges(start[id], end[id]) %in% tsplit[[chrom]]
+        ans[id] <- IRanges(start[id], end[id]) %over% tsplit[[chrom]]
     }
     ans
 }    

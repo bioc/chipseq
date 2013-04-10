@@ -76,7 +76,7 @@ PeakSummary <-
                 print(chr)
                 peaks <- combinedPeaks[[chr]]
                 in.promoter <-
-                  peaks %in% with(gpromoters.split[[chr]], IRanges(start, end))
+                  peaks %over% with(gpromoters.split[[chr]], IRanges(start, end))
                 countOverlapping <- function(x)
                 {
                     as.numeric(as.table(t(findOverlaps(ereads[[x]][[chr]], peaks))))
