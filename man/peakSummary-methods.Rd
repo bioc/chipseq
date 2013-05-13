@@ -25,8 +25,8 @@ peakSummary(x, ...)
 }
 
 \seealso{
-  View summary \code{\link[IRanges:Views-utils]{utilities}}
-  like \code{viewMaxs} and \code{viewSums}.
+  \link[IRanges]{view-summarization-methods} in the IRanges package
+  for view summarization methods like \code{viewMaxs} and \code{viewSums}.
 }
 
 \keyword{methods}
