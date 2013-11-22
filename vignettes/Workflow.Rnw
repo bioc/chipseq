@@ -107,20 +107,6 @@ cstest$ctcf
 @ 
 %
 
-\section*{The mouse genome}
-
-The data we have refer to alignments to a genome, and only makes sense
-in that context.  Bioconductor has genome packages containing the full
-sequences of several genomes.  The one relevant for us is
-<<>>=
-library(BSgenome.Mmusculus.UCSC.mm9)
-@ 
-%
-We will only make use of the chromosome lengths, but the actual
-sequence will be needed for motif finding, etc.
-
-
-
 \section*{Extending reads}
 
 
