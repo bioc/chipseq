@@ -8,6 +8,8 @@
 
 \alias{basesCovered}
 \alias{densityCorr}
+\alias{densityCorr,list}
+\alias{densityCorr,GenomicRanges}
 \alias{sparse.density}
 
 \title{
@@ -34,7 +36,7 @@ estimate.mean.fraglen(x, method = c("SISSR", "coverage", "correlation"),
 basesCovered(x, shift = seq(5, 300, 5), seqLen = 100, verbose = FALSE)
 
 densityCorr(x, shift = seq(0, 500, 5), center = FALSE,
-            width = seqLen *2L, seqLen=100L, \dots)
+            width = seqLen *2L, seqLen=100L, maxDist = 500L, \dots)
 
 sparse.density(x, width = 50, kernel = "epanechnikov",
                from = start(rix)[1] - 10L,
@@ -56,10 +58,12 @@ sparse.density(x, width = 50, kernel = "epanechnikov",
     list. Also a \link[BSgenome:GenomeData-class]{GenomeData} where the
     per-chromosome elements are one of the above list types.
 
-    For \code{basesCovered}, and \code{densityCorr}, a list with elements
+    For \code{basesCovered} and \code{densityCorr}, a list with elements
     \code{"+"} and \code{"-"} representing locations of reads aligned to
     positive and negative strands (the values should be integers denoting
-    the location where the first sequenced base matched.)
+    the location where the first sequenced base
+    matched.) \code{densityCorr} has also come to support \code{GRanges}
+    input directly.
 
     For \code{sparse.density}, a numeric or integer vector for which
     density is to be computed.  
@@ -104,6 +108,10 @@ sparse.density(x, width = 50, kernel = "epanechnikov",
   \item{from, to}{ specifies range over which the density is to be
     computed. }
 
+  \item{maxDist}{ If distance to nearest neighbor is more than this, the
+    position is discarded. This removes isolated points, which are not
+    very informative.
+  }
   \item{\dots}{ Extra arguments, passed on as appropriate to other
     functions. }
 }

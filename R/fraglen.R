@@ -267,29 +267,36 @@ rle_sum_prod_prototype <- function (x1, n1, s1, x2, n2, s2, len)
 }
 
 
+setGeneric("densityCorr", function(x, ...) standardGeneric("densityCorr"))
+
+setMethod("densityCorr", "GenomicRanges",
+          function(x, ...)
+          {
+            applyPosByChrAndStrand(x, densityCorr, ...)
+          })
+
 ## this version only uses the range of the data
-
-densityCorr <- function(x, shift = seq(0, 500, 5), center = FALSE,
-                        width = seqLen * 2L, seqLen = 100L,
-                        ...)
-{
-    if (!is.list(x))
-        stop("'x' must be a list object")
-    if (!all(c("+", "-") %in% names(x)))
-        stop("x must have named elements '+' and '-'")
-    if (!any(sapply(x, length) > 0))
-      return(data.frame(mu = shift, corr = NA))
-    maxShift <- max(shift)
-    rng <- range(unlist(x)) + c(-1, 1) * (maxShift +  width)
-    dl <- lapply(x, sparse.density, width = width,
-                 from = rng[1], to = rng[2], ...)
-    if (center) dl <- lapply(dl, function(x) { x - mean(x) })
-    cl <- shiftApply(shift, dl$"+", dl$"-", FUN = RleSumProd, simplify = TRUE)
-    data.frame(mu = seqLen + shift * 2L,
-               corr = cl / with(dl, sqrt( RleSumProd(`+`, `+`) *
-                 RleSumProd(`-`, `-`)  ) ))
-}
-
+setMethod("densityCorr", "list",
+          function(x, shift = seq(0, 500, 5), center = FALSE,
+                   width = seqLen * 2L, seqLen = 100L, maxDist = 500L, ...)
+          {
+            if (!all(c("+", "-") %in% names(x)))
+              stop("x must have named elements '+' and '-'")
+            if (!any(sapply(x, length) > 0))
+              return(data.frame(mu = shift, corr = NA))
+            if (!is.null(maxDist))
+              x <- lapply(x, removeIsolated)
+            maxShift <- max(shift)
+            rng <- range(unlist(x)) + c(-1, 1) * (maxShift +  width)
+            dl <- lapply(x, sparse.density, width = width,
+                         from = rng[1], to = rng[2], ...)
+            if (center) dl <- lapply(dl, function(x) { x - mean(x) })
+            cl <- shiftApply(shift, dl$"+", dl$"-", FUN = RleSumProd,
+                             simplify = TRUE)
+            data.frame(mu = seqLen + shift * 2L,
+                       corr = cl / with(dl, sqrt( RleSumProd(`+`, `+`) *
+                         RleSumProd(`-`, `-`)  ) ))
+          })
 
 ## densityCorr <- function(x, shift = seq(0, 500, 5), ...)
 ## {
@@ -355,10 +362,8 @@ removeIsolated <- function(u, min.close = 500L)
 }
 
 
-coverage.estimate <- function(x, maxDist = 500L, ...)
+coverage.estimate <- function(x, ...)
 {
-    if (!is.null(maxDist))
-        x <- lapply(x, removeIsolated)
     d <- basesCovered(x, ...)
     with(d, mu[which.min(covered)])
 }
@@ -381,6 +386,21 @@ correlation.estimate <- function(x, maxDist = 500L, ...)
          correlation = correlation.estimate(x, ...))
 }
 
+## adapts GRanges to this ancient API
+applyPosByChrAndStrand <- function(x, FUN, ...) {
+  strand <- as.vector(strand(x))
+  splitData <-
+    split(data.frame(pos = ifelse(strand == "+", start(x), end(x)),
+                     strand = strand),
+          as.vector(seqnames(x)))
+  unlist(lapply(splitData,
+                function(y) {
+                  FUN(split(y[["pos"]],
+                            y[["strand"]]),
+                      ...)
+                }))
+}
+
 setGeneric("estimate.mean.fraglen", signature = "x",
            function(x, method = c("SISSR", "coverage", "correlation"), ...)
                standardGeneric("estimate.mean.fraglen"))
@@ -396,15 +416,6 @@ setMethod("estimate.mean.fraglen", "AlignedRead",
 
 setMethod("estimate.mean.fraglen", "GRanges",
           function(x, method = c("SISSR", "coverage", "correlation"), ...) {
-            strand <- as.vector(strand(x))
-            splitData <-
-              split(data.frame(pos = ifelse(strand == "+", start(x), end(x)),
-                               strand = strand),
-                    as.vector(seqnames(x)))
-            unlist(lapply(splitData,
-                   function(y) {
-                     .estimate.mean.fraglen(split(y[["pos"]],
-                                                  y[["strand"]]),
-                                            method = method, ...)
-                   }))
+            applyPosByChrAndStrand(x, .estimate.mean.fraglen,
+                                   method = match.arg(method), ...)
           })
