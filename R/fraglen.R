@@ -282,7 +282,7 @@ setMethod("densityCorr", "list",
           {
             if (!all(c("+", "-") %in% names(x)))
               stop("x must have named elements '+' and '-'")
-            if (!any(sapply(x, length) > 0))
+            if (!all(sapply(x, length) > 0))
               return(data.frame(mu = shift, corr = NA))
             if (!is.null(maxDist))
               x <- lapply(x, removeIsolated)
@@ -415,7 +415,15 @@ setMethod("estimate.mean.fraglen", "AlignedRead",
           })
 
 setMethod("estimate.mean.fraglen", "GRanges",
-          function(x, method = c("SISSR", "coverage", "correlation"), ...) {
-            applyPosByChrAndStrand(x, .estimate.mean.fraglen,
-                                   method = match.arg(method), ...)
+          function(x, method = c("SISSR", "coverage", "correlation"),
+                   weighted.mean = FALSE, ...)
+          {
+            if (!isTRUEorFALSE(weighted.mean))
+              stop("'weighted.mean' must be TRUE or FALSE")
+            ans <- applyPosByChrAndStrand(x, .estimate.mean.fraglen,
+                                          method = match.arg(method), ...)
+            if (weighted.mean) {
+              ans <- weighted.mean(ans, table(seqnames(x))[names(ans)])
+            }
+            ans
           })
