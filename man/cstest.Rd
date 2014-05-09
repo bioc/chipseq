@@ -11,14 +11,9 @@
 }
 \usage{data(cstest)}
 \format{
-
-  The dataset is on object of class \code{GenomeDataList} with data from
-  three chromosomes in two lanes representing CTCF and GFP pull-down in
-  mouse.
-
-  The per-chromosome data is represented as a list of positive and
-  negative strand alignment locations.  The recorded locations represent
-  the aligned position at the first cycle.
+  The dataset is on object of class \code{GRangesList} with read
+  alignments from three chromosomes in two lanes representing CTCF and
+  GFP pull-down in mouse.
 }
 \source{
   Short Read Archive, GEO accession number GSM288351
