@@ -2,6 +2,7 @@ useDynLib(chipseq)
 
 ## imports
 import(BiocGenerics)
+import(S4Vectors)
 import(IRanges)
 
 importClassesFrom(methods, list)
@@ -17,7 +18,8 @@ importFrom(methods, as, is, new)
 importFrom(BSgenome, GenomeData, GenomeDataList)
 importFrom(lattice, panel.abline, panel.polygon, xyplot)
 importFrom(ShortRead, alignQualityFilter, chromosome, chromosomeFilter,
-           compose, position, strandFilter, uniqueFilter)
+           compose, occurrenceFilter, position, srFilter, strandFilter,
+           uniqueFilter)
 importFrom(stats, dnorm, dpois, ppois)
 
 

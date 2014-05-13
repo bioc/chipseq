@@ -7,7 +7,7 @@ chipseqFilter <- function(exclude = "[_MXY]",
   if (!is.null(exclude) && (!is.character(exclude) || any(is.na(exclude))))
     stop("'exclude' must be character without NA's")
   uniqueness <- match.arg(uniqueness)
-  if (!IRanges:::isTRUEorFALSE(hasStrand))
+  if (!isTRUEorFALSE(hasStrand))
     stop("'hasStrand' must be TRUE or FALSE")
   filt <- srFilter()
   if (hasStrand)
