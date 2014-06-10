@@ -1,6 +1,6 @@
 Package: chipseq
 Title: chipseq: A package for analyzing chipseq data
-Version: 1.15.1
+Version: 1.15.2
 Author: Deepayan Sarkar, Robert Gentleman, Michael Lawrence, Zizhen Yao
 Description: Tools for helping process short read data for chipseq
         experiments
@@ -13,4 +13,4 @@ Maintainer: Bioconductor Package Maintainer
         <maintainer@bioconductor.org>
 License: Artistic-2.0
 LazyLoad: yes
-biocViews: ChIPSeq
+biocViews: ChIPSeq, Sequencing, Coverage, QualityControl, DataImport
