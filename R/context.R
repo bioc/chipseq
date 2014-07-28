@@ -2,8 +2,8 @@
 
 ### FIXME: could push up nearestTss to GenomicFeatures
 .nearestTss <- function(x, txdb) {
-  if (!is(txdb, "TranscriptDb"))
-    stop("'txdb' must be a 'TranscriptDb' object")
+  if (!is(txdb, "TxDb"))
+    stop("'txdb' must be a 'TxDb' object")
   tss <- resize(transcripts(txdb), 1L)
   seqlevels(tss) <- seqlevels(x)
   n <- nearest(x, tss, ignore.strand = TRUE)
