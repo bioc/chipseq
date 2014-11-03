@@ -74,9 +74,9 @@ qa_list <- lapply(sampleFiles, qa)
 report(do.call(rbind, qa_list))
 ## spend some time evaluating the QA report, then procede
 filter <- compose(chipseqFilter(), alignQualityFilter(15))
-cstest <- seqapply(sampleFiles, function(file) {
+cstest <- GenomicRangesList(lapply(sampleFiles, function(file) {
   as(readAligned(file, filter), "GRanges")
-})
+}))
 cstest <- cstest[seqnames(cstest) %in% c("chr10", "chr11", "chr12")]
 @ 
 %
@@ -89,15 +89,15 @@ cstest
 %
 <<convert-cstest, echo=FALSE, eval=FALSE>>=
 ## code used to convert the GenomeDataList to a GRangesList
-cstest <- seqapply(cstest, function(gd) {
+cstest <- GenomicRangesList(lapply(cstest, function(gd) {
   gr <- do.call(c, lapply(names(gd), function(chr) {
     pos <- gd[[chr]]
     starts <- c(pos[["-"]] - 23L, pos[["+"]])
     GRanges(chr, IRanges(starts, width = 24), 
             rep(c("-", "+"), elementLengths(pos)))
   }))
-})
-@ 
+}))
+@
 %
 \code{cstest} is an object of class \textit{GRangesList}, and has a
 list-like structure, each component representing the alignments from
@@ -127,7 +127,7 @@ methods. There are several implemented by the
 to be done for one sample from each experimental protocol. Here, we
 use SSISR, the default method:
 <<estimate.mean.fraglen>>=
-fraglen <- estimate.mean.fraglen(cstest$ctcf)
+fraglen <- estimate.mean.fraglen(cstest$ctcf, method="correlation")
 fraglen[!is.na(fraglen)]
 @
 %
@@ -183,12 +183,8 @@ depth.tab[,1:10]
 \section*{Processing multiple lanes}
 
 Although data from one lane is often a natural analytical unit, we
-typically want to apply any procedure to all lanes.  A function that
-is useful for this purpose is \code{seqapply}, which applies a
-function to a \Rclass{Sequence} and returns the result as another
-\Rclass{Sequence}, if possible. In this case, our input
-\Rclass{Sequence} is \Rclass{GRangesList}, and our expected output is a
-\Rclass{DataFrameList}.  Here is a simple summary function that
+typically want to apply any procedure to all lanes. 
+Here is a simple summary function that
 computes the frequency distribution of the number of reads.
 <<>>=
 islandReadSummary <- function(x)
@@ -211,7 +207,7 @@ head(islandReadSummary(cstest$ctcf))
 We can now use it to summarize the full dataset, flattening the
 returned \Rclass{DataFrameList} with the \code{stack} function.
 <<>>=
-nread.islands <- seqapply(cstest, islandReadSummary)
+nread.islands <- DataFrameList(lapply(cstest, islandReadSummary))
 nread.islands <- stack(nread.islands, "sample")
 nread.islands
 @ 
@@ -272,7 +268,7 @@ islandDepthSummary <- function(x)
   df
 }
 
-depth.islands <- seqapply(cstest, islandDepthSummary)
+depth.islands <- DataFrameList(lapply(cstest, islandDepthSummary))
 depth.islands <- stack(depth.islands, "sample")
 
 xyplot(log(count) ~ depth | sample, as.data.frame(depth.islands), 
