@@ -405,10 +405,6 @@ setGeneric("estimate.mean.fraglen", signature = "x",
            function(x, method = c("SISSR", "coverage", "correlation"), ...)
                standardGeneric("estimate.mean.fraglen"))
 
-setMethod("estimate.mean.fraglen", "GenomeData",
-          function(x, method = c("SISSR", "coverage", "correlation"), ...)
-              unlist(lapply(x, estimate.mean.fraglen, method = method, ...)))
-
 setMethod("estimate.mean.fraglen", "AlignedRead",
           function(x, method = c("SISSR", "coverage", "correlation"), ...) {
             estimate.mean.fraglen(as(x, "GRanges"), method = method, ...)

@@ -3,8 +3,7 @@
 % likely to be overwritten.
 %
 % \VignetteIndexEntry{A Sample ChIP-Seq analysis workflow}
-%\VignetteDepends{IRanges, BSgenome.Mmusculus.UCSC.mm9, lattice, 
-%    TxDb.Mmusculus.UCSC.mm9.knownGene}
+%\VignetteDepends{IRanges,lattice, TxDb.Mmusculus.UCSC.mm9.knownGene}
 %\VignetteKeywords{chip-seq, sequencing, visualization}
 %\VignettePackage{chipseq}
 

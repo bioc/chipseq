@@ -3,7 +3,6 @@
 
 \alias{estimate.mean.fraglen}
 \alias{estimate.mean.fraglen,AlignedRead-method}
-\alias{estimate.mean.fraglen,GenomeData-method}
 \alias{estimate.mean.fraglen,GRanges-method}
 
 \alias{basesCovered}
@@ -55,8 +54,7 @@ sparse.density(x, width = 50, kernel = "epanechnikov",
     the first sequenced base matched.) Supported (but again, deprecated)
     list types include: \link[IRanges:RangesList-class]{RangesList},
     \link[IRanges:IntegerList-class]{IntegerList} or an ordinary R
-    list. Also a \link[BSgenome:GenomeData-class]{GenomeData} where the
-    per-chromosome elements are one of the above list types.
+    list.
 
     For \code{basesCovered} and \code{densityCorr}, a list with elements
     \code{"+"} and \code{"-"} representing locations of reads aligned to
@@ -116,9 +114,6 @@ sparse.density(x, width = 50, kernel = "epanechnikov",
     functions. }
 }
 \details{
-  These functions are typically used in conjunction with
-  \code{\link[BSgenome:gdapply]{gdapply}}.
-  
   For the correlation method, the range over which densities are
   computed only cover the range of reads; that is, the beginning and end
   of chromosomes are excluded.
@@ -148,8 +143,5 @@ sparse.density(x, width = 50, kernel = "epanechnikov",
 \examples{
 data(cstest)
 estimate.mean.fraglen(cstest[["ctcf"]], method = "coverage")
-}
-\seealso{
-  \code{\link[BSgenome:gdapply]{gdapply}}
 }
 \keyword{univar}

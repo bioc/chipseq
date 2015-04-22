@@ -6,16 +6,13 @@ import(S4Vectors)
 import(IRanges)
 
 importClassesFrom(methods, list)
-importClassesFrom(BSgenome, GenomeData)
 importClassesFrom(ShortRead, AlignedRead)
 
 importMethodsFrom(methods, coerce)
 importMethodsFrom(GenomicRanges, strand)
-importMethodsFrom(BSgenome, gdapply)
 importMethodsFrom(ShortRead, name, readAligned)
 
 importFrom(methods, as, is, new)
-importFrom(BSgenome, GenomeData, GenomeDataList)
 importFrom(lattice, panel.abline, panel.polygon, xyplot)
 importFrom(ShortRead, alignQualityFilter, chromosome, chromosomeFilter,
            compose, occurrenceFilter, position, srFilter, strandFilter,

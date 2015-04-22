@@ -17,7 +17,7 @@ subsetSummary(x, chr, nstep, props = seq(0.1, 1, 0.1),
 }
 
 \arguments{
-  \item{x}{ A \code{"GenomeData"} object representing alignment
+  \item{x}{ A \code{"GRanges"} object representing alignment
     locations at the sample level. }
   \item{chr}{ The chromosome for which the summaries are to be obtained.
     Must specify a valid element of \code{x} }

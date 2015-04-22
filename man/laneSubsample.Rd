@@ -13,7 +13,7 @@ laneSubsample(lane1, lane2, fudge = 0.05)
 }
 \arguments{
   \item{lane1, lane2}{ Two lanes of data, each of class
-    \code{"GenomeData"}.  }  
+    \code{"GRanges"}.  }  
   \item{fudge}{ A numeric fudge factor.  For each chromosome, if the
     difference in the sizes relative to the size of the first dataset is
     less than \code{fudge}, no subsampling is done.
