@@ -438,7 +438,7 @@ The \Rpackage{GenomicFeatures} package facilitates obtaining gene
 annotations from different data sources. We could download the UCSC
 gene predictions for the mouse genome and generate a \Rclass{GRanges}
 object with the transcript regions (from the first to last exon,
-contiguous) using \Rfunction{makeTranscriptDbFromUCSC}; here we use
+contiguous) using \Rfunction{makeTxDbFromUCSC}; here we use
 a library containing a recent snapshot.
 <<>>=
 library(TxDb.Mmusculus.UCSC.mm9.knownGene)
