@@ -30,7 +30,7 @@ subsetSummary <-
              resample = TRUE, islands = TRUE,
              verbose = getOption("verbose"))
 {
-    warning("Deprecated: If you need this, please notify the maintainer")
+    .Defunct()
     g <- GRanges(chr, ranges(resize(x[seqnames(x) == chr], width=seqLen)))
     seqlengths(g) <- chromlens[chr]
     if (resample) g <- g[sample(length(g))]

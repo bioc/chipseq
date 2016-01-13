@@ -5,6 +5,8 @@
   Compute summaries for cumulative subsets of a short-read data set. 
 }
 \description{
+  THIS FUNCTION IS DEFUNCT!
+
   Divides a short-read dataset into several subsets, and computes
   various summaries cumulatively.  The goal is to study the
   characteristics of the data as a function of sample size.
@@ -54,13 +56,6 @@ subsetSummary(x, chr, nstep, props = seq(0.1, 1, 0.1),
   This function should be considered preliminary, in that it might
   change significantly or simply be removed in a subsequent version.
   If you like it the way it is, please notify the maintainer.
-}
-\examples{
-data(cstest)
-library(BSgenome.Mmusculus.UCSC.mm9)
-## summarize lane 1, chr10 at 0.1, 0.6 and 1.0 proportions
-subsetSummary(cstest[[1]], "chr10", props=seq(0.1, 1, 0.5),
-              chromlens=seqlengths(Mmusculus))
 }
 \author{
   Deepayan Sarkar, Michael Lawrence
