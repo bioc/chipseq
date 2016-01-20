@@ -46,9 +46,7 @@ data(isochores.mm9)
 
 ## str(isochore.mm9) # error because @annotation slot missing
 
-dfparams <- RDApplyParams(isochores.mm9, as.data.frame)
-
-isochore.df <- rdapply(dfparams) ## per-chromosome list
+isochore.df <- lapply(isochores.mm9, as.data.frame) ## per-chromosome list
 isochore.df <- isochore.df[paste("chr", 1:19, sep = "")]
 
 
