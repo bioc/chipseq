@@ -100,10 +100,10 @@ subsetSummary <-
             peaks.fdr.higher <- slice(current.cov, lower = fdr.floor)
         }
         peaks.fdr <- peaks.fdr.lower
-        npeaks.fdr <- sum(elementLengths(peaks.fdr.lower)) +
+        npeaks.fdr <- sum(elementNROWS(peaks.fdr.lower)) +
           (fdr.ceiling - fdr.interp) *
-          (sum(elementLengths(peaks.fdr.higher)) -
-           sum(elementLengths(peaks.fdr.lower)))
+          (sum(elementNROWS(peaks.fdr.higher)) -
+           sum(elementNROWS(peaks.fdr.lower)))
         current.peaks <- peaks.fixed
         if (use.fdr)
           current.peaks <- peaks.fdr
@@ -131,10 +131,10 @@ subsetSummary <-
         ##browser()
         ans[i, ] <- c(alpha.hat, bg.rate, old.bg, old.fg,
                       new.bg, new.fg, old.fg.area, old.total.area,
-                      reads.converted, sum(elementLengths(peaks.fixed)),
+                      reads.converted, sum(elementNROWS(peaks.fixed)),
                       npeaks.fdr,
-                      sum(elementLengths(peaks.fdr.lower)),
-                      sum(elementLengths(peaks.fdr.higher)),
+                      sum(elementNROWS(peaks.fdr.lower)),
+                      sum(elementNROWS(peaks.fdr.higher)),
                       fdr.ceiling)
         old.peaks <- ranges(current.peaks)
     }

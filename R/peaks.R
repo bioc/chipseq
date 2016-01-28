@@ -9,6 +9,6 @@ setMethod("peakSummary", "RleViews", function(x) {
 setMethod("peakSummary", "RleViewsList", function(x) {
   summaries <- unname(lapply(x, peakSummary))
   rd <- do.call(c, summaries)
-  names(rd) <- names(x)[elementLengths(summaries) > 0]
+  names(rd) <- names(x)[elementNROWS(summaries) > 0]
   rd
 })

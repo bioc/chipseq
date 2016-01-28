@@ -93,7 +93,7 @@ cstest <- GenomicRangesList(lapply(cstest, function(gd) {
     pos <- gd[[chr]]
     starts <- c(pos[["-"]] - 23L, pos[["+"]])
     GRanges(chr, IRanges(starts, width = 24), 
-            rep(c("-", "+"), elementLengths(pos)))
+            rep(c("-", "+"), elementNROWS(pos)))
   }))
 }))
 @
