@@ -1,6 +1,6 @@
 Package: chipseq
 Title: chipseq: A package for analyzing chipseq data
-Version: 1.25.0
+Version: 1.26.0
 Author: Deepayan Sarkar, Robert Gentleman, Michael Lawrence, Zizhen Yao
 Description: Tools for helping process short read data for chipseq
         experiments
