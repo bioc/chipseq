@@ -48,7 +48,7 @@ subsetSummary <-
     if (verbose)
       message(length(g), " reads in ", chr, ". Increments: ",
               paste(ids, collapse = ", "))
-    old.peaks <- RangesList()
+    old.peaks <- IRangesList()
     start <- 1L
     ans.cols <-
         c("alpha.hat", "bg.rate", "old.bg", "old.fg",
@@ -72,7 +72,7 @@ subsetSummary <-
         } else {
             old.total.area <- 0
             old.fg.area <- 0
-            old.islands <- RangesList()
+            old.islands <- IRangesList()
         }
         new.reads <- g[start:(ids[i])]
         new.reads <- new.reads[order(start(new.reads))]

@@ -44,16 +44,16 @@ sparse.density(x, width = 50, kernel = "epanechnikov",
 \arguments{
   \item{x}{
     For \code{estimate.mean.fraglen}, typically an
-    \link[ShortRead:AlignedRead-class]{AlignedRead} or a
-    \link[GenomicRanges:GRanges-class]{GRanges} object. Also supported
+    \link[ShortRead]{AlignedRead} or a
+    \link[GenomicRanges]{GRanges} object. Also supported
     but deprecated, as they do not have formal strand information:
-    \link[IRanges:RangedData-class]{RangedData} (with a "strand"
+    \link[IRanges]{RangedData} (with a "strand"
     column), or a list-like object with elements \code{"+"} and \code{"-"}
     representing locations of reads aligned to positive and negative
     strands (the values should be integers denoting the location where
     the first sequenced base matched.) Supported (but again, deprecated)
-    list types include: \link[IRanges:RangesList-class]{RangesList},
-    \link[IRanges:IntegerList-class]{IntegerList} or an ordinary R
+    list types include: \link[IRanges]{IntegerRangesList},
+    \link[IRanges]{IntegerList} or an ordinary R
     list.
 
     For \code{basesCovered} and \code{densityCorr}, a list with elements
