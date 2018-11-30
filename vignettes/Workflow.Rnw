@@ -326,7 +326,7 @@ To summarize the peaks for exploratory analysis, we call the
 peaks <- peakSummary(peaks.ctcf)
 @ 
 %
-The result is a \Rclass{RangedData} object with two columns: the view
+The result is a \Rclass{GRanges} object with two columns: the view
 maxs and the view sums. Beyond that, this object is often useful as a
 scaffold for adding additional statistics.
 

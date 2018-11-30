@@ -6,7 +6,7 @@
 \title{ Summarizing peak sets }
 \description{
   Summarizes a set of peaks into a
-  \code{\link[IRanges:RangedData-class]{RangedData}} object with columns
+  \code{\link[GenomicRanges:GRanges-class]{GRanges}} object with columns
   of statistics like the peak maxima and integrals (sums).
 }
 \usage{
@@ -19,7 +19,7 @@ peakSummary(x, ...)
 }
 
 \value{
-  A \code{RangedData} object of the peaks, with columns named
+  A \code{GRanges} object of the peaks, with columns named
   \code{max}, \code{maxpos} (position of the maximum, centered),
   and \code{sum}.
 }

@@ -32,19 +32,19 @@ setMethod("diffPeakSummary", c("RleViewsList", "RleViewsList"),
     peaks2 <- Views(cov2, all.peaks)
     peaks.comb <- Views(cov1 + cov2, all.peaks)
 
-    ans <- RangedData(all.peaks)
+    ans <- GRanges(all.peaks)
     
     ans$comb.max <- unlist(viewMaxs(peaks.comb))
     
     if (is.list(viewSummary)) {
       for (nm in names(viewSummary)) {
-        ans[[paste(nm, "1", sep = "")]] <- unlist(viewSummary[[nm]](peaks1))
-        ans[[paste(nm, "2", sep = "")]] <- unlist(viewSummary[[nm]](peaks2))
+          mcols(ans)[[paste0(nm, "1")]] <- unlist(viewSummary[[nm]](peaks1))
+          mcols(ans)[[paste0(nm, "2")]] <- unlist(viewSummary[[nm]](peaks2))
       }
     }
     else {
-      ans[["summary1"]] <- unlist(viewSummary(peaks1))
-      ans[["summary2"]] <- unlist(viewSummary(peaks2))
+      mcols(ans)[["summary1"]] <- unlist(viewSummary(peaks1))
+      mcols(ans)[["summary2"]] <- unlist(viewSummary(peaks2))
     }
 
     ans

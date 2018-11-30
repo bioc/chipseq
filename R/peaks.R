@@ -3,8 +3,8 @@
 setGeneric("peakSummary", function(x, ...) standardGeneric("peakSummary"))
 
 setMethod("peakSummary", "RleViews", function(x) {
-  RangedData(ranges(x), max = viewMaxs(x), maxpos = mid(viewRangeMaxs(x)),
-             sum = viewSums(x))
+  GRanges(ranges(x), max = viewMaxs(x), maxpos = mid(viewRangeMaxs(x)),
+          sum = viewSums(x))
 })
 setMethod("peakSummary", "RleViewsList", function(x) {
   summaries <- unname(lapply(x, peakSummary))
