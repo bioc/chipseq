@@ -89,7 +89,7 @@ cstest
 <<convert-cstest, echo=FALSE, eval=FALSE>>=
 ## code used to convert the GenomeDataList to a GRangesList
 cstest <- GenomicRangesList(lapply(cstest, function(gd) {
-  gr <- do.call(c, lapply(names(gd), function(chr) {
+  do.call(c, lapply(names(gd), function(chr) {
     pos <- gd[[chr]]
     starts <- c(pos[["-"]] - 23L, pos[["+"]])
     GRanges(chr, IRanges(starts, width = 24), 
