@@ -400,7 +400,7 @@ peaks.gfp <- slice(cov.gfp, lower = 8)
 
 peakSummary <- diffPeakSummary(peaks.gfp, peaks.ctcf)
 
-xyplot(asinh(sums2) ~ asinh(sums1) | space,
+xyplot(asinh(sums2) ~ asinh(sums1) | seqnames,
        data = as.data.frame(peakSummary), 
        panel = function(x, y, ...) {
            panel.xyplot(x, y, ...)
@@ -416,8 +416,8 @@ plot(trellis.last.object())
 
 We use a simple cutoff to flag peaks that are different.
 <<>>=
-peakSummary <- 
-    within(peakSummary,
+mcols(peakSummary) <- 
+    within(mcols(peakSummary),
        {
            diffs <- asinh(sums2) - asinh(sums1)
            resids <- (diffs - median(diffs)) / mad(diffs)
