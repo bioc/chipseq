@@ -3,7 +3,7 @@ title: "Some Basic Analysis of ChIP-Seq Data"
 author:
   - name: "Oluwabukola Bamigbade" 
     affiliation: "Vignette translation from Sweave to Rmarkdown / HTML"
-date:  "`r format(Sys.time(), '%B %d %Y')`"
+date:  "`r format(Sys.time(), '%B %d, %Y')`"
 vignette: >
   %\VignetteIndexEntry{Some Basic Analysis of ChIP-Seq Data}
   %\VignetteEngine{knitr::rmarkdown}
@@ -22,7 +22,7 @@ provides convenient interfaces to other powerful packages such as
 the `r CRANpkg("lattice")` and `r Biocpkg("rtracklayer")` packages for
 visualization.
 
-```{r setup, echo=TRUE, message=FALSE}
+```{r setup, message=FALSE, warning=FALSE}
 library(chipseq) 
 library(GenomicFeatures) 
 library(lattice)
@@ -59,9 +59,8 @@ cstest <- GenomicRangesList(lapply(sampleFiles, function(file) {
 cstest <- cstest[seqnames(cstest) %in% c("chr10", "chr11", "chr12")]
 ```
 
-The above step has been performed in advance, and
-the output has been included as a dataset in this package. We load
-it now: 
+The above step has been performed in advance, and the output has been included
+as a dataset in this package. We load it now:
 
 ```{r} 
 data(cstest)
@@ -79,9 +78,9 @@ cstest <- GenomicRangesList(lapply(cstest, function(gd)
 )) 
 ```
 
-`cstest` is an object of class *GRangesList*, and has a list-like
-structure, each component representing the alignments from one lane, as
-a *GRanges* object of stranded intervals. 
+`cstest` is an object of class *GRangesList*, and has a list-like structure,
+each component representing the alignments from one lane, as a *GRanges* object
+of stranded intervals.
 
 ```{r}
 cstest$ctcf
@@ -99,22 +98,19 @@ depending on whether the alignment was to the positive or negative
 strand, makes it more likely that we cover the actual site of
 interest.
 
-
-It is possible to estimate the fragment length, through a variety of
-methods. There are several implemented by the
-`estimate.mean.fraglen` function. Generally, this only needs
-to be done for one sample from each experimental protocol. Here, we
-use SSISR, the default method: 
+It is possible to estimate the fragment length, through a variety of methods.
+There are several implemented by the `estimate.mean.fraglen` function.
+Generally, this only needs to be done for one sample from each experimental
+protocol. Here, we use SSISR, the default method:
 
 ```{r estimate.mean.fraglen}
 fraglen <- estimate.mean.fraglen(cstest$ctcf, method="correlation")
 fraglen[!is.na(fraglen)] 
 ```
 
-Given the suggestion of $~190$ nucleotides,
-we extend all reads to be 200 bases long. This is done using the
-`resize` function, which considers the strand to determine the direction
-of extension: 
+Given the suggestion of $~190$ nucleotides, we extend all reads to be 200 bases
+long. This is done using the `resize` function, which considers the strand to
+determine the direction of extension:
 
 ```{r}
 ctcf.ext <- resize (cstest$ctcf, width = 200)
@@ -127,9 +123,8 @@ fragments that were precipitated.
 
 # Coverage, islands, and depth
 
-A useful summary of this information is the
-*coverage*, that is, how many times each base in the genome was
-covered by one of these intervals.
+A useful summary of this information is the *coverage*, that is, how many times
+each base in the genome was covered by one of these intervals.
 
 ```{r}
 cov.ctcf <- coverage(ctcf.ext)
@@ -162,9 +157,8 @@ depth.tab[,1:10]
 
 # Processing multiple lanes
 
-Although data from one lane is often a natural analytical unit, we
-typically want to apply any procedure to all lanes. 
-Here is a simple summary function that
+Although data from one lane is often a natural analytical unit, we typically
+want to apply any procedure to all lanes. Here is a simple summary function that
 computes the frequency distribution of the number of reads.
 
 ```{r}
@@ -186,9 +180,8 @@ Applying it to our test-case, we get
 head(islandReadSummary(cstest$ctcf)) 
 ``` 
 
-We can now use it to summarize
-the full dataset, flattening the returned *DataFrameList* with the
-`stack` function. 
+We can now use it to summarize the full dataset, flattening the returned
+*DataFrameList* with the `stack` function.
 
 ```{r} 
 nread.islands <- DataFrameList(lapply(cstest, islandReadSummary)) 
@@ -202,13 +195,14 @@ xyplot(log(count) ~  nread | sample, as.data.frame(nread.islands),
        layout = c(1, 2), pch = 16, type = c("p", "g"))
 ```
 
-If reads were sampled randomly from the genome, then the null
-distribution number of reads per island would have a geometric
-distribution; that is, 
-$$P(X = k) = p^{k-1} (1-p)$$ 
-In other words, $\log P(X = k)$ is linear in $k$. Although our 
-samples are not random, the islands with just one or two reads may be 
-representative of the null distribution. 
+If reads were sampled randomly from the genome, then the null distribution
+number of reads per island would have a geometric distribution; that is,
+
+$$P(X = k) = p^{k-1} (1-p)$$
+
+In other words, $\log P(X = k)$ is linear in $k$. Although our samples are not
+random, the islands with just one or two reads may be representative of the null
+distribution.
 
 ```{r fig.height=8}
 xyplot(log(count) ~ nread | sample, data = as.data.frame(nread.islands), 
@@ -294,9 +288,9 @@ To summarize the peaks for exploratory analysis, we call the
 peaks <- peakSummary(peaks.ctcf) 
 ``` 
 
-The result is a *GRanges* object with two
-columns: the view maxs and the view sums. Beyond that, this object is
-often useful as a scaffold for adding additional statistics.
+The result is a *GRanges* object with two columns: the view maxs and the view
+sums. Beyond that, this object is often useful as a scaffold for adding
+additional statistics.
 
 It is meaningful to ask about the contribution of each strand to each
 peak, as the sequenced region of pull-down fragments would be on
@@ -399,8 +393,7 @@ We can now estimate the promoter for each transcript:
 promoters <- flank(gregions, 1000, both = TRUE) 
 ```
 
-And count the peaks
-that fall into a promoter:
+And count the peaks that fall into a promoter:
 
 ```{r}
 peakSummary$inPromoter <- peakSummary %over% promoters
@@ -445,9 +438,8 @@ session$ctcfCov <- cov.ctcf
 session$ctcfPeaks <- peaks.ctcf 
 ``` 
 
-Once the tracks are uploaded, we can
-choose a region to view, such as the tallest peak on chr10 in the CTCF
-data: 
+Once the tracks are uploaded, we can choose a region to view, such as the
+tallest peak on chr10 in the CTCF data:
 
 ```{r rtracklayer-view, eval=FALSE}  
 peak.ord <- order(unlist(peak.depths), decreasing=TRUE) 
@@ -455,11 +447,10 @@ peak.sort <- as(peaks.ctcf, "GRanges")[peak.ord]
 view <- browserView(session, peak.sort[1], full = c("gfpCov", "ctcfCov")) 
 ```
 
-We coerce to *GRanges* so that we
-can sort the ranges across chromosomes. By passing the `full` parameter
-to `browserView` we instruct UCSC to display the coverage tracks as a
-bar chart. Next, we might programmatically display a view for the top 5
-tallest peaks: 
+We coerce to *GRanges* so that we can sort the ranges across chromosomes. By
+passing the `full` parameter to `browserView` we instruct UCSC to display the
+coverage tracks as a bar chart. Next, we might programmatically display a view
+for the top 5 tallest peaks:
 
 ```{r tracklayer-view-5, eval=FALSE} 
 views <- browserView(session, head(peak.sort, 5), full = c("gfpCov", "ctcfCov")) 
